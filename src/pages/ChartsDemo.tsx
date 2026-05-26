@@ -1433,6 +1433,12 @@ const ChartsDemo = () => {
 
           {/* VERIFY — accessibility, contrast, semantic role checks grouped together. */}
           <div id="flow-verify" className="scroll-mt-20 space-y-4">
+            {family !== "categorical" && (
+              <div className="rounded border border-chart-grid/50 bg-chart-grid/5 px-3 py-2 text-[11px] text-chart-axis">
+                <span className="font-medium text-foreground">Ramp audit scope:</span> metrics below cover the {n} discrete ramp stops.
+                ECharts renders a <span className="font-medium">continuous gradient</span> between stops — colors at intermediate data values are interpolated in sRGB and are not individually audited.
+              </div>
+            )}
             <AccessibilityHarness audit={audit} colors={auditedColors.map((c) => c.hex)} bgHex={chartTheme.tokens.bg.hex} />
             <LazyMount minHeight={260}>
               <VisionMatrix option={option as Record<string, unknown>} />

@@ -52,10 +52,9 @@ function simulate(c: ColorRecord, mode: VisionMode): ColorRecord {
 }
 
 function relativeLuminance(c: { r: number; g: number; b: number }) {
-  const lin = (v: number) => {
-    const x = v; // already 0..1
-    return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
-  };
+  // Use IEC 61966-2-1 threshold (0.04045) — consistent with toGrayscale and cvd.ts.
+  const lin = (v: number) =>
+    v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
   return 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
 }
 

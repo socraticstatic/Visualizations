@@ -199,6 +199,10 @@ export function solveCategorical(input: SolveInput): SolveResult {
     const i = lockedCount + Math.floor(rand() * swappable);
     if (i < lockedCount || i >= input.n) continue;
     const cand = candidates[Math.floor(rand() * candidates.length)];
+    // Reject a candidate that duplicates a slot already in the palette —
+    // gamut-boundary clamping can map two OKLCH points to the same sRGB hex,
+    // which would produce ΔE=0 between those slots.
+    if (current.some((p, idx) => idx !== i && p.hex === cand.hex)) continue;
     const trial = current.slice();
     trial[i] = cand;
     const trialScore =
