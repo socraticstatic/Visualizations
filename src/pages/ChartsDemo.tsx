@@ -92,6 +92,15 @@ import {
   genStackedData,
   genHeatmap,
   genDiverging,
+  genScatter,
+  genBubble,
+  genRadar,
+  genTreemapCategorical,
+  genTreemapSequential,
+  genSankey,
+  genCandlestick,
+  genChoropleth,
+  genPie,
   type DataMode,
 } from "@/charts/fixtures";
 
@@ -575,7 +584,7 @@ const ChartsDemo = () => {
 
 
 
-  function buildOption(kind: ChartKind, n: number, chartTheme: ReturnType<typeof getChartTheme>) {
+  function buildOption(kind: ChartKind, n: number, chartTheme: ReturnType<typeof getChartTheme>, dm: DataMode) {
     const base = buildBase(chartTheme);
     switch (kind) {
       case "line":
@@ -584,10 +593,10 @@ const ChartsDemo = () => {
           legend: { ...base.legend, top: 0 },
           xAxis: { ...base.xAxis, type: "value" },
           yAxis: { ...base.yAxis, type: "value" },
-          series: buildLineSeries(chartTheme, genLineData(chartTheme.effectiveN, dataMode)),
+          series: buildLineSeries(chartTheme, genLineData(chartTheme.effectiveN, dm)),
         };
       case "bar": {
-        const { categories, series } = genStackedData(chartTheme.effectiveN, dataMode);
+        const { categories, series } = genStackedData(chartTheme.effectiveN, dm);
         return {
           ...base,
           legend: { ...base.legend, top: 0 },
@@ -601,7 +610,7 @@ const ChartsDemo = () => {
         };
       }
       case "stacked-bar": {
-        const { categories, series } = genStackedData(chartTheme.effectiveN, dataMode);
+        const { categories, series } = genStackedData(chartTheme.effectiveN, dm);
         return {
           ...base,
           legend: { ...base.legend, top: 0 },
@@ -612,16 +621,14 @@ const ChartsDemo = () => {
         };
       }
       case "scatter": {
-        const series = Array.from({ length: chartTheme.effectiveN }, (_, i) => ({
-          name: SERIES_NAMES[i],
+        const scatterData = genScatter(chartTheme.effectiveN, dm);
+        const series = scatterData.map((s, i) => ({
+          name: s.name,
           type: "scatter" as const,
           symbol: chartTheme.shapes[i],
           symbolSize: 12,
           itemStyle: { color: chartTheme.colorHexes[i], opacity: 0.85 },
-          data: Array.from({ length: 20 }, () => [
-            Math.random() * 100 + i * 5,
-            Math.random() * 100 + i * 4,
-          ]),
+          data: s.data,
         }));
         return {
           ...base,
@@ -632,9 +639,8 @@ const ChartsDemo = () => {
         };
       }
       case "pie": {
-        const data = Array.from({ length: chartTheme.effectiveN }, (_, i) => ({
-          name: SERIES_NAMES[i],
-          value: 20 + Math.round(60 * Math.abs(Math.sin(i * 1.7))),
+        const data = genPie(chartTheme.effectiveN, dm).map((d, i) => ({
+          ...d,
           itemStyle: { color: chartTheme.colorHexes[i], decal: chartTheme.decals[i] },
         }));
         return {
@@ -654,7 +660,7 @@ const ChartsDemo = () => {
         };
       }
       case "heatmap": {
-        const { days, hours, data } = genHeatmap(dataMode);
+        const { days, hours, data } = genHeatmap(dm);
         return {
           ...base,
           tooltip: { ...base.tooltip, position: "top" },
@@ -672,14 +678,17 @@ const ChartsDemo = () => {
         };
       }
       case "diverging-bar": {
-        const data = genDiverging(dataMode);
+        const data = genDiverging(dm);
+        // Compute range from actual data so the scale always fits — no hardcoded ±50.
+        const absMax = Math.max(...data.map((d) => Math.abs(d.value)));
+        const range = Math.ceil(absMax / 10) * 10 || 10;
         return {
           ...base,
-          grid: { ...base.grid, right: 80 },
+          grid: { ...base.grid, right: 110 },
           xAxis: { ...base.xAxis, type: "value" },
           yAxis: { ...base.yAxis, type: "category", data: data.map((d) => d.name) },
           visualMap: {
-            ...buildVisualMap(chartTheme, "diverging", { min: -50, max: 50, steps: Math.max(3, n) }),
+            ...buildVisualMap(chartTheme, "diverging", { min: -range, max: range, steps: Math.max(3, n) }),
             dimension: 0,
           },
           series: [
@@ -694,7 +703,7 @@ const ChartsDemo = () => {
 
       // --- New categorical kinds ---
       case "area": {
-        const series = buildLineSeries(chartTheme, genLineData(chartTheme.effectiveN, dataMode)).map((s) => ({
+        const series = buildLineSeries(chartTheme, genLineData(chartTheme.effectiveN, dm)).map((s) => ({
           ...s,
           areaStyle: { color: s.color, opacity: 0.35 },
         }));
@@ -707,7 +716,7 @@ const ChartsDemo = () => {
         };
       }
       case "stacked-area": {
-        const series = buildLineSeries(chartTheme, genLineData(chartTheme.effectiveN, dataMode)).map((s) => ({
+        const series = buildLineSeries(chartTheme, genLineData(chartTheme.effectiveN, dm)).map((s) => ({
           ...s,
           stack: "total",
           areaStyle: { color: s.color, opacity: 0.7 },
@@ -721,7 +730,7 @@ const ChartsDemo = () => {
         };
       }
       case "grouped-bar": {
-        const { categories, series } = genStackedData(chartTheme.effectiveN, dataMode);
+        const { categories, series } = genStackedData(chartTheme.effectiveN, dm);
         return {
           ...base,
           legend: { ...base.legend, top: 0 },
@@ -735,17 +744,14 @@ const ChartsDemo = () => {
         };
       }
       case "bubble": {
-        const series = Array.from({ length: chartTheme.effectiveN }, (_, i) => ({
-          name: SERIES_NAMES[i],
+        const bubbleData = genBubble(chartTheme.effectiveN, dm);
+        const series = bubbleData.map((s, i) => ({
+          name: s.name,
           type: "scatter" as const,
           symbol: chartTheme.shapes[i],
           itemStyle: { color: chartTheme.colorHexes[i], opacity: 0.7 },
           symbolSize: (d: number[]) => 8 + d[2] * 1.5,
-          data: Array.from({ length: 12 }, () => [
-            Math.random() * 100,
-            Math.random() * 100,
-            5 + Math.random() * 20,
-          ]),
+          data: s.data,
         }));
         return {
           ...base,
@@ -756,9 +762,8 @@ const ChartsDemo = () => {
         };
       }
       case "donut": {
-        const data = Array.from({ length: chartTheme.effectiveN }, (_, i) => ({
-          name: SERIES_NAMES[i],
-          value: 20 + Math.round(60 * Math.abs(Math.sin(i * 1.7))),
+        const data = genPie(chartTheme.effectiveN, dm).map((d, i) => ({
+          ...d,
           itemStyle: { color: chartTheme.colorHexes[i], decal: chartTheme.decals[i] },
         }));
         return {
@@ -782,12 +787,13 @@ const ChartsDemo = () => {
           name,
           max: 100,
         }));
+        const radarData = genRadar(chartTheme.effectiveN, dm);
         const series = [
           {
             type: "radar" as const,
-            data: Array.from({ length: chartTheme.effectiveN }, (_, i) => ({
-              name: SERIES_NAMES[i],
-              value: indicator.map(() => 30 + Math.round(60 * Math.random())),
+            data: radarData.map((item, i) => ({
+              name: item.name,
+              value: item.value,
               lineStyle: {
                 color: chartTheme.colorHexes[i],
                 type: chartTheme.dashes[i] === "solid" ? "solid" : (chartTheme.dashes[i] as number[]),
@@ -813,9 +819,8 @@ const ChartsDemo = () => {
         };
       }
       case "treemap-categorical": {
-        const data = Array.from({ length: chartTheme.effectiveN }, (_, i) => ({
-          name: SERIES_NAMES[i],
-          value: 20 + Math.round(80 * Math.random()),
+        const data = genTreemapCategorical(chartTheme.effectiveN, dm).map((d, i) => ({
+          ...d,
           itemStyle: { color: chartTheme.colorHexes[i] },
         }));
         return {
@@ -843,14 +848,14 @@ const ChartsDemo = () => {
           })),
           ...targets.map((t) => ({ name: t, itemStyle: { color: chartTheme.tokens.muted.hex } })),
         ];
-        const links = sources.flatMap((s, i) =>
-          targets.map((t) => ({
-            source: s,
-            target: t,
-            value: 5 + Math.round(40 * Math.random()),
-            lineStyle: { color: chartTheme.colorHexes[i], opacity: 0.4 },
-          }))
-        );
+        const sankeyLinks = genSankey(sources, targets, dm);
+        const links = sankeyLinks.map((l) => {
+          const si = sources.indexOf(l.source);
+          return {
+            ...l,
+            lineStyle: { color: chartTheme.colorHexes[si] ?? chartTheme.tokens.muted.hex, opacity: 0.4 },
+          };
+        });
         return {
           backgroundColor: chartTheme.tokens.bg.hex,
           tooltip: base.tooltip,
@@ -892,7 +897,7 @@ const ChartsDemo = () => {
       case "choropleth": {
         // No GeoJSON loaded — render a grid of "regions" as a proxy so the
         // sequential ramp + threshold steps are still visualized.
-        const regions = Array.from({ length: 36 }, (_, i) => [i % 6, Math.floor(i / 6), Math.round(100 * Math.random())]);
+        const regions = genChoropleth(dm);
         return {
           ...base,
           tooltip: { ...base.tooltip, position: "top" },
@@ -910,12 +915,12 @@ const ChartsDemo = () => {
       }
       case "treemap-sequential": {
         const ramp = sequentialRamp(chartTheme.tokens.seqLow, chartTheme.tokens.seqHigh, n).map((c) => c.hex);
-        const data = Array.from({ length: 12 }, (_, i) => {
-          const v = Math.random();
-          const bucket = Math.min(n - 1, Math.floor(v * n));
+        const data = genTreemapSequential(dm).map(({ value }, i) => {
+          const v01 = value / 200; // normalise to ~[0,1]
+          const bucket = Math.min(n - 1, Math.floor(v01 * n));
           return {
             name: `Item ${i + 1}`,
-            value: 20 + Math.round(80 * v),
+            value,
             itemStyle: { color: ramp[bucket] },
           };
         });
@@ -1030,7 +1035,7 @@ const ChartsDemo = () => {
 
       // --- Additional kinds ---
       case "step-line": {
-        const series = buildLineSeries(chartTheme, genLineData(chartTheme.effectiveN, dataMode)).map((s) => ({
+        const series = buildLineSeries(chartTheme, genLineData(chartTheme.effectiveN, dm)).map((s) => ({
           ...s,
           step: "end" as const,
         }));
@@ -1043,7 +1048,7 @@ const ChartsDemo = () => {
         };
       }
       case "horizontal-bar": {
-        const { categories, series } = genStackedData(chartTheme.effectiveN, dataMode);
+        const { categories, series } = genStackedData(chartTheme.effectiveN, dm);
         return {
           ...base,
           legend: { ...base.legend, top: 0 },
@@ -1057,9 +1062,8 @@ const ChartsDemo = () => {
         };
       }
       case "rose": {
-        const data = Array.from({ length: chartTheme.effectiveN }, (_, i) => ({
-          name: SERIES_NAMES[i],
-          value: 20 + Math.round(60 * Math.abs(Math.sin(i * 1.7))),
+        const data = genPie(chartTheme.effectiveN, dm).map((d, i) => ({
+          ...d,
           itemStyle: { color: chartTheme.colorHexes[i], decal: chartTheme.decals[i] },
         }));
         return {
@@ -1109,11 +1113,13 @@ const ChartsDemo = () => {
         };
       }
       case "funnel": {
-        const data = Array.from({ length: chartTheme.effectiveN }, (_, i) => ({
-          name: SERIES_NAMES[i],
-          value: 100 - i * (80 / chartTheme.effectiveN),
-          itemStyle: { color: chartTheme.colorHexes[i], decal: chartTheme.decals[i] },
-        }));
+        // Funnel is ordered largest→smallest; sort genPie output descending.
+        const data = genPie(chartTheme.effectiveN, dm)
+          .sort((a, b) => b.value - a.value)
+          .map((d, i) => ({
+            ...d,
+            itemStyle: { color: chartTheme.colorHexes[i], decal: chartTheme.decals[i] },
+          }));
         return {
           backgroundColor: chartTheme.tokens.bg.hex,
           textStyle: base.textStyle,
@@ -1170,16 +1176,8 @@ const ChartsDemo = () => {
         // Two semantic colors from the diverging tokens: up (positive) / down (negative).
         const up = chartTheme.tokens.divPos.hex;
         const down = chartTheme.tokens.divNeg.hex;
-        const data: number[][] = [];
-        let last = 100;
-        for (let i = 0; i < 30; i++) {
-          const open = last;
-          const close = open + (Math.random() - 0.5) * 14;
-          const high = Math.max(open, close) + Math.random() * 5;
-          const low = Math.min(open, close) - Math.random() * 5;
-          data.push([open, close, low, high]);
-          last = close;
-        }
+        const ohlc = genCandlestick(dm);
+        const data = ohlc.map(({ open, close, low, high }) => [open, close, low, high]);
         return {
           ...base,
           xAxis: {
@@ -1204,8 +1202,8 @@ const ChartsDemo = () => {
       }
     }
   }
-  const option = useMemo(() => buildOption(kind, n, chartTheme), [kind, n, chartTheme, dataMode]);
-  const optionB = useMemo(() => buildOption(kindB, nB, chartThemeB), [kindB, nB, chartThemeB, dataMode]);
+  const option = useMemo(() => buildOption(kind, n, chartTheme, dataMode), [kind, n, chartTheme, dataMode]);
+  const optionB = useMemo(() => buildOption(kindB, nB, chartThemeB, dataMode), [kindB, nB, chartThemeB, dataMode]);
 
   return (
     <div className="min-h-screen bg-chart-bg text-foreground">
@@ -1244,7 +1242,7 @@ const ChartsDemo = () => {
             </span>
           </div>
 
-          <div className={!compare ? "grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(360px,460px)] lg:items-start" : ""}>
+          <div className={!compare ? "grid gap-6 lg:grid-cols-[450px_minmax(0,1fr)] lg:items-start" : ""}>
             {!compare && (
               <div className="lg:sticky lg:top-4 space-y-3">
                 <ChartCard
@@ -1258,6 +1256,7 @@ const ChartsDemo = () => {
                 <PaletteRuleExplainer kind={kind} n={n} requestedN={requestedN} />
               </div>
             )}
+          <div className="space-y-4 min-w-0">
           <div className="flex flex-wrap items-end gap-x-6 gap-y-3 text-sm">
 
             <label className="flex flex-col gap-1" data-tour="chart-kind">
@@ -1336,7 +1335,6 @@ const ChartsDemo = () => {
               </span>
             </label>
             </div>
-          </div>
 
           {compare && vision === "normal" && (
 
@@ -1544,6 +1542,8 @@ const ChartsDemo = () => {
           </div>
           <NextStageButton current="ship" />
           </div>
+          </div>
+        </div>
         </section>
 
 
