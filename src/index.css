@@ -1,0 +1,185 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Chart system — surfaces */
+    --chart-bg: 0 0% 100%;
+    --chart-surface: 210 40% 98%;
+    --chart-grid: 214 32% 91%;
+    --chart-axis: 215 19% 35%;
+    --chart-tooltip-bg: 222 47% 11%;
+    --chart-tooltip-fg: 210 40% 98%;
+
+    /* Chart system — neutrals */
+    --chart-muted: 215 16% 65%;
+    --chart-context: 215 20% 80%;
+    --chart-null: 215 14% 90%;
+    --chart-other: 215 14% 55%;
+
+    /* Chart system — status / semantic */
+    --chart-positive: 152 60% 36%;
+    --chart-negative: 0 72% 45%;
+    --chart-warn: 38 92% 50%;
+    --chart-info: 210 90% 50%;
+    --chart-target: 222 47% 25%;
+    --chart-forecast: 215 20% 60%;
+
+    /* Chart system — categorical anchors (brand-locked seeds for the solver) */
+    --chart-cat-anchor-1: 210 85% 45%;
+    --chart-cat-anchor-2: 28 88% 50%;
+    --chart-cat-anchor-3: 152 55% 38%;
+
+    /* Chart system — interaction states */
+    --chart-hover: 222 47% 20%;
+    --chart-selected: 222 47% 11%;
+    --chart-focus: 210 90% 55%;
+    --chart-disabled: 215 14% 80%;
+
+    /* Chart system — sequential / diverging endpoints */
+    --chart-seq-low: 210 60% 96%;
+    --chart-seq-high: 222 80% 30%;
+    --chart-div-neg: 0 72% 45%;
+    --chart-div-mid: 210 20% 96%;
+    --chart-div-pos: 152 60% 36%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Chart system — surfaces */
+    --chart-bg: 222 47% 6%;
+    --chart-surface: 222 47% 9%;
+    --chart-grid: 217 33% 18%;
+    --chart-axis: 215 20% 65%;
+    --chart-tooltip-bg: 210 40% 96%;
+    --chart-tooltip-fg: 222 47% 11%;
+
+    /* Chart system — neutrals */
+    --chart-muted: 215 16% 45%;
+    --chart-context: 215 16% 30%;
+    --chart-null: 217 33% 14%;
+    --chart-other: 215 16% 50%;
+
+    /* Chart system — status / semantic */
+    --chart-positive: 152 65% 50%;
+    --chart-negative: 0 75% 60%;
+    --chart-warn: 38 95% 60%;
+    --chart-info: 210 95% 65%;
+    --chart-target: 210 40% 90%;
+    --chart-forecast: 215 20% 55%;
+
+    /* Chart system — categorical anchors (brand-locked seeds for the solver) */
+    --chart-cat-anchor-1: 210 90% 65%;
+    --chart-cat-anchor-2: 28 92% 62%;
+    --chart-cat-anchor-3: 152 60% 55%;
+
+    /* Chart system — interaction states */
+    --chart-hover: 210 40% 90%;
+    --chart-selected: 210 40% 98%;
+    --chart-focus: 210 95% 65%;
+    --chart-disabled: 215 16% 30%;
+
+    /* Chart system — sequential / diverging endpoints */
+    --chart-seq-low: 222 47% 12%;
+    --chart-seq-high: 210 90% 75%;
+    --chart-div-neg: 0 75% 60%;
+    --chart-div-mid: 222 47% 14%;
+    --chart-div-pos: 152 65% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

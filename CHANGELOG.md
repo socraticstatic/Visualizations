@@ -1,0 +1,244 @@
+# Changelog
+
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The version here is also exported from code as `PALETTE_VERSION`.
+
+## [Unreleased]
+
+### Changed
+- **Full UX/UAT pass on the surrounding harness.**
+  - `AutoAuditSummary`: rewrote the "permutations not optimal" alert. Solver pass-rate is non-monotone in N (smaller N can need a relaxation while a larger N satisfies everything — already documented in `safeMaxN`), so the panel no longer asks the user to "report this combination" or styles itself as a destructive alert. It now uses the warn token + `role="status"` and explains the trade-off.
+  - `echartsTheme.buildBase`: chart legend is now `type: "scroll"` anchored at `top: 8` with `grid.top: 56`, so the wrapped-legend row no longer overlaps the Y-axis tick labels (`Wayne` colliding with `180` / `80` on N=12 line and bar charts).
+  - `Toggle` (used for theme / preview-as / fixtures): each button now exposes `aria-pressed`, the group has `role="group"` + `aria-labelledby`, and the selected state has `font-medium` plus a visible `focus-visible:ring-2` so the active option is announceable and keyboard-distinguishable.
+  - Coach tour now auto-dismisses on the first builder change (`onApply`) so the popover doesn't float over stale anchors as the dropdown / slider re-renders.
+  - `PalettePresets` save-row: labelled the input (`sr-only` + matching `htmlFor`), restyled to show clear focus ring and active-button affordance, and the placeholder now reads as a name prompt instead of a disabled "Save current…" call-to-action.
+- **Accessibility/contrast pass on the surrounding UI (not the chart itself).** Bumped `--chart-axis` light-mode lightness from 47% → 35% so labels around the chart cross WCAG AA at small sizes. Stripped stacked `opacity-60/70/80` modifiers from already-muted text across `ChartsDemo`, `BenchmarkPanel`, `WorkflowPresets`, `EntityPins`, `VisionPreviewToggle`, `AuditSummaryCard`, `DensityPreview`, `PalettePresets`, `FullPermutationAudit`, `PaletteRuleExplainer`, `OptimalOnlyBadge`, `BuilderAuditStatus` — muted-on-background no longer compounds into sub-3:1 ratios. Bumped every `text-[9px]` to `text-[10px]`. `Index` and `NotFound` now use `min-h-dvh`, semantic `<main>`, design-system text tokens (no more `text-muted-foreground` on `bg-muted`), and visible `focus-visible:ring-2` on the primary CTA / return link.
+
+
+
+### Fixed
+- **Solver is now ~20× faster, killing slider lag at the root.** Browser CPU profile of an N-slider scrub showed `simulateRgb` (CVD Machado matrices) + `convertRgbToOklab` consuming **~18 s of self-time per interaction** — `cvdDeltaE` was re-simulating and re-converting the same ~1700 candidate colors thousands of times across annealing steps. Added a `WeakMap<ColorRecord, {deutan,protan,tritan}>` cache in `palette/distance.ts` so each unique candidate is projected to CVD-OKLab exactly once, and a `Map<bandKey, ColorRecord[]>` cache in `palette/categorical.ts` so the 1728-record candidate cloud is built once per (posture, isDarkBg). Re-profile after the fix: `simulateRgb` 18.6 s → 137 ms, `cvdDeltaE` 8.0 s → 1.7 s. Combined with the rAF-scheduled commit and `(theme, posture, N)` cache prewarm shipped in the previous fix, slider clicks now snap the chart to the new N within one frame.
+
+
+
+
+### Changed
+- **N slider is fully responsive while dragging.** Extracted the slider + readout into an isolated `NSlider` subcomponent that owns its own `drag` state, so each pixel of movement re-renders only the slider (not the 2700-line `ChartsDemo` tree). The committed value still flows back through `applyPrimaryBuilder` / `applyVariantB` on `pointerup` / `keyup` / `blur`, but the commit is now wrapped in `startTransition` so the solver-heavy palette recompute is treated as a low-priority update and the thumb keeps tracking the cursor smoothly even while the chart catches up.
+- **N slider is bigger and only recomputes on release.** The range input now stretches to fill the controls row (`flex-1`, `min-w-[280px]`, `h-3`, `accent-primary`) with a larger readout, so it's easier to grab and scrub.
+- **N slider now opens to the kind's full recommendedN (up to 12 for categorical), not the solver-safe cap.** The builder is a teaching tool: users can drag past the safe-by-construction range and watch the audit panel light up with the specific contrast / ΔE / CVD warnings their choice triggered. Default snap on kind/theme change still lands on `min(recommendedN, safeMaxN)` so out-of-the-box state is fully compliant. The slider label now reads `min · safe · max` and surfaces a `⚠ above safe cap` badge when the user crosses into the educational range. Updated `variantCapInvariant` to verify both invariants: zero relaxations at the safe cap, and the slider clamps at `recommendedN` (not the safe cap). Bumped `PALETTE_VERSION` to `0.7.0`.
+
+
+### Fixed
+- **Light theme chart stayed visually dark.** Two bugs compounded: (1) the theme-sync effect was a regular `useEffect`, so the `chartTheme` memo had already resolved its tokens against the still-`.dark` documentElement by the time the class was removed, and no re-render was triggered afterward; (2) light-theme lookups read directly from `documentElement`, which in compare mode could be flipped to `.dark` by the *other* chart's theme. Promoted the sync to `useLayoutEffect` + `colorRev` bump, and replaced `ensureDarkRoot()` with `ensureThemedRoot("dark"|"light")` so each theme resolves its `--chart-*` tokens from a dedicated off-screen root that is immune to whatever class is on `<html>`.
+
+### Fixed
+- **Builder N slider was collapsing to 1–2 in the browser.** `getChartTheme(theme="dark")` looked for a `.dark` element with `document.querySelector(".dark")` and fell back to `documentElement` when none existed — but the app never adds `.dark` to `<html>`, so dark-theme requests were silently reading the *light* `--chart-*` tokens. The orange anchor (`28 88% 50%`) then failed the ≥3:1 WCAG contrast probe against the light `#fff` background, `safeMaxN` collapsed to 1, and the slider hard-capped there. Added `ensureDarkRoot()` which mounts a hidden `<div data-chart-dark-root class="dark">` under `<body>` so `getComputedStyle` resolves the real dark tokens. Tests that seed their own `.dark` element still win (the helper prefers any existing one). All 1442 tests pass; N now opens up to each kind's full safe cap (e.g. line = 5, bar = 6).
+
+### Changed
+- **Palette builder moved to top of `/charts`.** The builder section (chart preview + N/kind/theme controls + vision toggle + rule explainer) now renders directly under the flow stepper, above the audit/summary suite (`OptimalOnlyBadge`, `AutoAuditSummary`, `FullPermutationAudit`, `BuilderAuditStatus`, `AuditSummaryCard`, compare scorecards). The builder is the point of the app, so it gets the primary fold and everything else slides below it.
+
+### Added
+- **`VisionPreviewToggle` mounted directly beside the chart.** Segmented 5-way control (Normal / Deutan / Protan / Tritan / Mono) that flips the live preview filter without scrolling to the deep controls row, so dashed/dotted patterns and pairwise color differences can be verified instantly. Shares the same `vision` state as the existing deep "Preview as" toggle, and surfaces a reminder that decal/dash/marker patterns stay on in every mode.
+- **`PaletteRuleExplainer` panel beside the chart.** New compact aside (mounted under the chart card in the sticky column) that reads from `BEST_PRACTICE[kind]` and explains, in plain language, the active palette rule set: chart kind, family (categorical / sequential / diverging), posture, why that family was picked, rendering N vs. recommended vs. hard cap, and the rule's rationale. No second source of truth — solver rules and copy share `BEST_PRACTICE`.
+- **Color-blind-safe compliance indicator in the builder status panel.** `BuilderAuditStatus` now renders a headline "Color-blind safe / Not color-blind safe" badge plus per-mode chips (deutan, protan, tritan, achromatopsia) showing the live minimum pairwise ΔE against each threshold, and a per-chart-kind N-rule chip (current N vs. `recommendedN` / `maxN`). Sequential and diverging palettes get a "CVD-safe (ramp)" badge instead since pairwise categorical ΔE doesn't apply. The panel re-evaluates on every builder change (kind, N, theme, compare).
+
+### Changed
+- **Single `onApply(variant, next)` handler on `/charts`.** Collapsed `applyPrimaryBuilder` / `applyVariantB` into one entry point that every palette mutation flows through — kind/N/theme controls beside the chart, variant-B controls, palette presets, workflow presets, URL hydration, and share-link deep-links. Both legacy names are now thin wrappers; nothing outside `onApply` is allowed to call `setKind` / `setRequestedN` / `setTheme` (or their B counterparts), so every change is clamped via `clampBuiltInN` and runs the snap-skip guard exactly once. The removed recommender-as-builder controls have no remaining path back into state.
+
+
+### Fixed
+- **Consolidated `/charts` to one working palette builder beside the chart.** Removed the recommender-as-builder controls from the top of the builder card, routed preset/workflow/share-link hydration through the same clamped builder apply path, and clear stale inline ColorPicker token overrides on mount so built-in controls are the single source of truth and every selectable palette remains compliant.
+
+### Changed
+- **`ChartRecommender` folded into the palette builder.** Removed the standalone "Don't know which chart? Describe your data" section that lived above the builder and moved the same data-shape / N-series / signed controls inside the `Palette builder` card, just above the kind/N/theme row. Applying a recommendation now updates the builder in place (no scroll), and the `#flow-choose` anchor still resolves for FlowStepper deep-links.
+
+### Removed
+- **Manual brand-anchor color picker removed from the builder.** There were effectively two palette builders on `/charts`: the kind/N/theme controls beside the chart (which auto-enforce best practices) and a separate `BrandAnchorsSummary` + `ColorPicker` + `WarningList` block below it that let users override anchors and produce non-compliant palettes (low ΔE, CVD collisions, sub-3:1 contrast warnings). Kept the builder beside the chart and dropped the manual override surface so the only path through the tool produces compliant palettes. `manualOverrides` resolves to `false` permanently, so audit/warning panels stay in their "all optimal" state. `ColorPicker` and `BrandAnchorsSummary` components remain in the codebase but are no longer mounted on the demo page.
+
+### Fixed
+- **`ChartRecommender` "Apply to builder" now actually applies.** The kind/theme effect was racing the recommender and immediately re-snapping `requestedN` to the kind's default, so applying e.g. "time-series, 9 series" silently reverted N (and applying the current kind appeared to do nothing). Added a `skipNextKindSnap` ref that the recommender sets before calling `setKind`, letting its chosen N stick; also smooth-scrolls to the builder so the change is visible.
+- **Builder defaults now match per-kind `recommendedN`.** Initial `requestedN` is seeded from `BEST_PRACTICE[kind].recommendedN` (line=5, bar=6) instead of a hardcoded `5`, and switching chart type always snaps the slider to the new kind's `recommendedN` rather than only re-clamping when out of range. Previously a user toggling from line (rec 5) → bar (rec 6) → heatmap (rec 7) → scatter (rec 8) would keep N pinned at the old value and see a suboptimal palette flagged by the slider's `rec` indicator. First render is skipped via a ref so shared URLs with a non-recommended `?n=…` survive hydration. Applies to both the primary builder and Variant B.
+
+### Changed
+- **Builder information architecture re-ordered around user flow** on `/charts`. Top-level sequence is now Choose → Build → Verify → Storytell → Reuse → Ship → Reference, matching how a designer actually moves through the tool. `ChartRecommender` moved to the very top (it's the entry decision); `PalettePresets` + `EntityPins` demoted into a "Reuse" group inside the builder (you save *after* you have something worth saving); `Export palette` / `Export audit` / `ShareLink` pulled out of the controls row into a dedicated **Ship** strip alongside `CodeSnippet` (terminal actions stop competing with the kind / N / theme selectors); `ContrastReport` moved up next to `AccessibilityHarness` + `VisionMatrix` + `SemanticRoleAudit` + `DensityPreview` (Verify group); `InsightCallouts` / `EmphasisPreview` / `BenchmarkPanel` consolidated into Storytell; `ExplainPanel` + `Glossary` moved into a separate Reference footer section below the builder so they read as documentation rather than workflow.
+
+
+- **Side-by-side builder layout** on `/charts`. The chart preview now lives in the left column of the Palette builder section, with the chart-type / N / theme / vision / fixtures selectors in the right column (sticky chart at `lg` and up). Removes the long scroll between picking a control and seeing it land. Falls back to the previous stacked layout when Compare side-by-side is enabled (the LinkedCompareCharts block already owns its own dual layout). Container max-width bumped from 1400 → 1600 px to host the two-column grid comfortably.
+
+### Added
+
+- **On-demand "Run audit" button + progress indicator** on `FullPermutationAudit`. The exhaustive (theme × kind × N) sweep now runs in 6-permutation chunks via `requestAnimationFrame` so the UI stays responsive, with a live `Loader2` spinner, an `X / Y (NN%)` counter, and an ARIA-labelled progress bar (`role="progressbar"`, `aria-valuenow/min/max`) underneath the header. Clicking "Run audit" cancels any in-flight run (via a `runIdRef` guard) and restarts. Auto-runs once on mount and whenever the manual-overrides gate flips off; shows "last run HH:MM:SS" once complete.
+
+- **`BuilderAuditStatus` live panel** — concise red/green status row pinned near the builder controls that re-renders on every state change (kind, N, theme, vision, fixtures, compare, manual overrides). Reads the existing live `AuditReport` (no extra solver pass) and surfaces an overall pass/warn/fail pill plus three metric chips per variant: **ΔE** (normal vision, threshold ≥ `THRESHOLDS.minDeltaENormal`), **CVD-ΔE** (worst of deutan/protan/tritan, threshold ≥ `THRESHOLDS.minDeltaECvd`), and **WCAG** (worst contrast vs background, threshold ≥ 3:1). Each chip flips amber within 15 % of threshold and red below, so the failing axis is identifiable at a glance without opening Verify. Compare-normal mode shows a second row for Variant B.
+
+- **`FullPermutationAudit` panel** that exhaustively sweeps every (theme × kind × N) permutation reachable from the built-in builder controls and surfaces a per-row breakdown of which constraint failed. Tags each failure with `ΔE`, `CVD-ΔE`, `WCAG`, or `solver` and prints the specific number (e.g. `slots 3↔5 CVD-ΔE 9.4 < 12`, `slot 2 contrast 2.71:1 < 3:1`). Collapsed by default with a single-line summary; auto-expands when any permutation is non-optimal so the failing rows are impossible to miss. Stays hidden when manual ColorPicker overrides are active.
+
+- **`AutoAuditSummary` panel** that auto-runs the accessibility / contrast / ΔE / CVD sweep across every N reachable from the built-in slider for the current (kind, theme) on every render of the default builder state — and for Variant B when compare-normal mode is on. Shows a green "{N} reachable permutations swept · all optimal" pill in the happy path (the structural guarantee from `safeMaxN`), and flips to a red alert listing the failing `variant · N` + first failing reason if any permutation ever slips through the cap (canary for future regressions). Gated on `hasManualColorOverrides` so it only audits the built-in slot — manual ColorPicker edits remain owned by Verify.
+
+- **`OptimalOnlyBadge` status indicator** in the builder UI (`/charts`, rendered between the FlowStepper and AuditSummaryCard). Shows a green "Optimal-only" pill when no manual `ColorPicker` overrides are active — confirming at a glance that every (kind, N, theme) permutation reachable from the built-in controls is guaranteed to pass ΔE / CVD / WCAG 3:1 contrast with zero solver relaxations (per `safeMaxN` enforcement). Flips to an amber "Manual overrides · optimality not guaranteed" pill when the user has edited tokens via `ColorPicker`, pointing them to Verify. Appends a `· probed` suffix when the runtime safe-N probe lowered the cap below the kind's recommended N for the current anchors.
+- **Variant A / Variant B cap invariant tests.** New `src/charts/__tests__/variantCapInvariant.test.ts` mirrors the ChartsDemo slider-cap formula (`n = min(max(minN, requestedN), min(recommendedN, safeMaxN(theme, posture)))`) and asserts that across every (themeA × kindA × themeB × kindB) combination — pinning *both* sliders to `recommendedN` — each variant lands exactly at its cap, produces zero solver relaxations, and passes pairwise ΔE / CVD-ΔE / WCAG 3:1 contrast. A second suite simulates a stale shared URL (`requestedN=999`) and asserts the cap still binds on each variant while keeping the palette optimal. 1332 cases total; complements the single-variant N-sweep in `builtinBuilderInvariant.test.ts` by locking the cross-variant guarantee that compare mode actually exposes to users.
+- **Categorical solver property tests.** New `src/charts/__tests__/categorical.test.ts` exercises `solveCategorical` across N=2..8 on a dark background: determinism (identical inputs → identical palette across runs, confirming the seeded mulberry32 PRNG), exact slot count, every emitted color is a valid `#rrggbb` with RGB components in `[0,1]` (proves the OKLCH → sRGB chroma-reduction stays in-gamut), the "satisfies thresholds OR reports the corresponding relaxation" contract for both `minDeltaENormal` and `minDeltaECvd`, and lock-honoring (a locked anchor appears verbatim in slot 0 and the rest of the palette fills around it). Closes out Tier 3.5's "property tests for the optimizer" deliverable.
+- **Test coverage for recent modules.** New `src/charts/__tests__/entityPins.test.ts` covers `buildPinPermutation` (identity permutation with no pins, single pin honored, second collision bumped to next free slot with `collisions` surfaced, out-of-range pins ignored) and `applyPinsToTheme` (color / dash / decal / shape remap together). New `src/charts/__tests__/urlState.test.ts` round-trips a full builder state, asserts `compare=false` is omitted from the encoded query and returns `undefined` on decode, and handles empty hashes. New `src/charts/__tests__/fixtures.test.ts` locks determinism (identical inputs → identical outputs) for every generator and verifies the messy-mode characteristics that make fixtures useful as a palette stress test: ~6 % nulls on lines, missing cells on heatmaps, and ±extreme outliers on diverging.
+
+
+- **Entity pins** on `/charts`. New `src/charts/entityPins.ts` builds a deterministic slot permutation from a user pin map (entityId → slotIndex) and the active entity list — collision-safe (later pins to a taken slot bump to the next free slot and surface as a collision), preserves natural order for unpinned entities, and exposes an `applyPinsToTheme` helper that remaps `colorHexes`, `dashes`, `decals`, and `shapes` together (so slot N stays paired across all four encodings). New `src/components/charts/EntityPins.tsx` is a collapsible per-series table with an "Auto / Slot k" dropdown, the resolved active slot, and a live swatch; persists via the existing `setEntityColor` / `getEntityColor` / `clearEntityColors` in `src/charts/overrides.ts` (`localStorage["chart-entity-color-pins-v1"]`). Pins apply to every categorical chart kind on the page and survive reload, theme flip, posture switch, and N changes — closing out JTBD-3 ("keep the same entity the same color everywhere") with a real UI on top of the existing primitives.
+
+- **Preset diff** inside the Presets panel on `/charts`. Adds a "Compare presets" sub-panel with two dropdowns (curated + user presets + the current builder state) and a structural diff table (chart kind label, family, posture, N, recommended N, max N, theme). Rows that differ are highlighted in `--chart-warning/10`, and an ⚠ marker flags any N above the kind's `recommendedN`. Lets designers reason about why two saved configurations behave differently — e.g. same chart but one is above the recommended N cap, or one uses `comparative` posture vs. `exploratory` — without having to flip back and forth in the builder. Powered by `BEST_PRACTICE` + `CHART_KIND_LABEL`; no extra state persisted.
+- **Messy / realistic fixtures toggle** on `/charts`. New `src/charts/fixtures.ts` extracts every chart data generator (`genLineData`, `genStackedData`, `genHeatmap`, `genDiverging`) and adds a `DataMode = "synthetic" | "messy"` parameter, driven by a seeded `mulberry32` PRNG so each `(kind, n, mode)` always renders the same fixture. **Synthetic** is the old smooth sine/cosine data (no missing values, no ties, no outliers). **Messy** introduces the patterns that actually break dashboards: long-tail series magnitudes (first series dominates), one dedicated near-zero "dead" series, one spiky outlier series, ~6 % missing values on line/area, two heavy hot spots + missing cells on heatmaps, and ±extreme outliers + near-midpoint ties on diverging. New `Fixtures` toggle in the palette builder header (synthetic / messy) flips the active fixture for line / step-line / area / stacked-area / bar / stacked-bar / grouped-bar / horizontal-bar / heatmap / diverging-bar / diverging-heatmap — surfaces palettes that *look* fine on synthetic data but collapse on realistic distributions (near-zero stacks vanish, near-tie categorical slots become indistinguishable, near-midpoint diverging cells merge).
+
+- **Emphasis preview** on `/charts`. New `src/components/charts/EmphasisPreview.tsx` renders the current chart with one designer-picked "hero" series at full chroma and every other series collapsed to `--chart-muted` (thinner stroke, no markers, faded fill). Available for line, step-line, area, stacked-area, bar, stacked-bar, grouped-bar, and horizontal-bar kinds. Lets designers verify the storytelling pattern — one entity guides the reader's eye, the rest stay as readable context — degrades gracefully with the audited palette before they hand it to engineering.
+- **Insight callouts** on `/charts`. New `src/components/charts/InsightCallouts.tsx` auto-generates plain-English observations about the current categorical palette using OKLCH chroma / hue analysis plus the existing `deltaE`, `cvdDeltaE`, and `contrastRatio` helpers: which slot is most/least saturated (and by how much vs. the palette average), the hue families covered, the tightest CVD pair and tightest normal-vision pair (with slot indices and ΔE), the tightest contrast-vs-background slot, and the OKLab lightness spread (grayscale-survival proxy). Descriptive, not prescriptive — surfaces the palette's *shape* so designers don't have to eyeball it.
+- **Vision matrix** on `/charts`. New `src/components/charts/VisionMatrix.tsx` renders the current chart five times side-by-side under normal, deuteranopia, protanopia, tritanopia, and grayscale, reusing the SVG color-matrix filters already mounted by the page. Designers can scan all five at once instead of flipping the vision toggle, surfacing series that collide for any audience in a single glance. Mounts under any chart kind (categorical, sequential, diverging).
+- **Glossary** on `/charts`. New `src/components/charts/Glossary.tsx` is a collapsible reference panel that defines every technical term the tool surfaces (ΔE, OKLab, CVD, WCAG 2.2 SC 1.4.11, posture, anchor, decal, dash, shape, relaxation, Top-N + Other, stable assignment), each with a plain-language summary, a longer explanation, and a pointer to the source file or library that implements it. Mounts at the bottom of the audit section so designers can confirm a term's meaning without leaving the page.
+- **Shareable deep links** on `/charts`. New `src/charts/urlState.ts` encodes/decodes the builder configuration (chart kind, N, theme, vision, compare flag, Variant B kind/N/theme) into the URL hash, and `src/components/charts/ShareLink.tsx` exposes a `useUrlStateSync` hook + "Copy share link" button next to the Export buttons. State is hydrated on mount and `history.replaceState`'d on every change, so a permalink in a ticket or Slack lands the recipient on the exact same configuration. Brand-anchor overrides remain in `localStorage` (per-user) and are intentionally excluded — the link captures the recipe, not the colors.
+- **Ready-to-paste React + ECharts snippet** on `/charts`. New `src/charts/codeSnippet.ts` emits a self-contained `<KindChart>.tsx` component for the current chart kind with the audited palette / dashes / decals / shapes / chrome tokens baked in. Per-kind option templates cover line, step-line, area, stacked area, bar / stacked-bar / grouped-bar / horizontal-bar, pie / donut, and scatter; everything else falls back to the line template. New `src/components/charts/CodeSnippet.tsx` mounts under categorical charts with Show/Hide, Copy to clipboard, and Download `.tsx` actions. Depends only on `echarts` + `echarts-for-react` at the consumer's site — no design-tool runtime.
+- **Semantic role audit** on `/charts`. New `src/components/charts/SemanticRoleAudit.tsx` panel scores each semantic token (`positive`, `negative`, `target`, `forecast`, `muted`, `other`) on (a) WCAG 2.2 SC 1.4.11 contrast vs. the current chart background (≥ 3:1) and (b) collision with the *current* categorical palette under normal vision (`THRESHOLDS.minDeltaENormal`) and worst-of-three CVD (`THRESHOLDS.minDeltaECvd`). Surfaces the silent failure where a "positive" green KPI bar blends into one of the categorical series, or where a brand red collapses onto a slot for deutan/protan viewers. Status column reads `✓ safe` / `⚠ CVD risk` / `✗ collision` with the offending slot index in the row tooltip.
+
+
+- **Presets panel** on `/charts`. New `src/components/charts/PalettePresets.tsx` ships 6 curated starters tuned to common jobs ("Finance KPI", "Analytics exploratory", "Board / comparative", "Marketing share", "Ops heatmap", "Variance / diverging") and lets users save/name/delete their own `(kind, n, theme)` triples. User presets persist under `localStorage["chart-palette-presets-v1"]`. Color overrides are intentionally separate (`overrides.ts`) so presets stay solver-stable.
+- **Benchmark vs. published systems**. New `src/charts/benchmarks.ts` ships canonical hex lists for Tableau 10, IBM Carbon Categorical, ColorBrewer Set2, Observable Plot tab10, and Material 500. New `src/components/charts/BenchmarkPanel.tsx` scores each palette and the current solver palette with identical math (min pairwise ΔE in OKLab, worst-of-three CVD ΔE, worst contrast vs. the *user's current background*) and renders a comparison table with pass/fail vs. `THRESHOLDS` and ★ winners per column. Mounts under categorical charts only.
+- **Density preview**. New `src/components/charts/DensityPreview.tsx` renders every categorical slot at realistic chart-element sizes — 11px legend swatch, 2px line stroke, 4px bar, 8px scatter dot, and a deterministic 18-point sparkline — against the active chart background. Surfaces slots that disappear at small sizes before they ship.
+- **Copy rationale** button inside the Explain panel. Builds a paragraph-formatted decision rationale (inputs · family · posture · N · solver/ramp note · relaxations · accessibility verdict) and copies it to the clipboard for pasting into PRs, tickets, or design specs. Uses the existing `toast` for feedback.
+
+### Added
+
+- **Chart recommender** (data shape → chart kind). New `src/components/charts/ChartRecommender.tsx` panel above the Palette builder asks three data-side questions (shape, number of series/categories, signed values) and outputs a recommended `ChartKind` + N + one-line rationale, drawn from `BEST_PRACTICE`. "Apply to builder" calls `setKind` + `setRequestedN` so the rest of the tool re-runs against the recommendation. Shapes covered: time-series, categories, parts-of-whole, distribution, two-numeric, matrix, flow, geo, single-KPI. Recommendations include the "use horizontal bar past 8 categories" / "switch from donut to bar past 5 slices" / "diverging when signed" defaults.
+- **Coach tour** on `/charts`. New `src/components/charts/CoachTour.tsx` is a 4-step dismissible overlay (chart kind → N slider → Export palette → ColorPicker) anchored to elements via `data-tour="..."` attributes. Auto-opens on first visit (persisted under `localStorage["chart-tour-seen-v1"]`); replayable via a new "Take the tour" button in the page header. Each step highlights the target with a 2px `--chart-info` ring and dims the rest of the page.
+
+### Added
+
+- **Export palette** (handoff for designers + engineers). New `src/charts/paletteExport.ts` module emits the live palette snapshot in five formats: **CSS variables** (`:root` / `.dark` blocks for both Variant A and an optional Variant B under `[data-chart-variant="b"]`), **Tailwind v3 config** snippet (`chart.cat/seq/div` referencing the CSS vars), **ECharts theme JSON** (`registerTheme` payload with `color`, `backgroundColor`, axis/legend/tooltip styling, sequential + diverging `visualMap` ramps), **Figma Tokens / Tokens Studio JSON** (W3C-style nested `chart.{surface,semantic,categorical,sequential,diverging}` with `$metadata`), and a printable **SVG swatch sheet** (categorical + sequential + diverging on one page, labeled with hex + slot index). New `src/components/charts/ExportPalette.tsx` mounts a tabbed modal with copy-to-clipboard and download buttons (plus a live SVG preview). Wired into `/charts` as a green "Export palette" button next to the existing "Export audit report" (renamed from "Export comparison" to disambiguate).
+- **Brand anchors summary** on `/charts`. New `src/components/charts/BrandAnchorsSummary.tsx` renders a per-anchor table (slot, swatch, hex, ΔE vs. bg, contrast vs. bg, status) above the ColorPicker. Anchors are **locked** verbatim into the categorical solver — never nudged — so the only failure mode is an anchor that itself misses contrast against the background; statuses surface that explicitly (`Locked · safe`, `Locked · low ΔE vs. bg`, `Locked · low contrast`, `Unused (N too low)`). The "Edit anchors" button scrolls to the ColorPicker.
+
+### Changed
+- **Palette builder slider now enforces best-practice bounds.** Both Variant A and Variant B sliders are hard-bounded to `[minN, rule.maxN]` (categorical: 1, sequential/diverging: 3) instead of allowing overflow past `maxN`. The current value is colored `--chart-warning` when above `recommendedN`, and an inline "use recommended" link snaps to `rule.recommendedN`. When the chart kind changes and the prior N falls outside the new kind's range, N auto-clamps to the new `recommendedN` via a `useEffect`. `overflow` / `overflowB` are now always `false` (cannot occur from the slider) and the slider footer reads `min · rec · max` instead of `rec ≤ · max`.
+- Renamed the existing **"Export comparison"** button to **"Export audit report"** to disambiguate from the new palette export.
+
+### Added
+
+
+- **Diff summary panel** on `/charts` when Compare is on with `vision === "normal"`. Renders a compact A-vs-B table for chart kind, N (rendered), theme, and overflow / above-recommended-N warnings, with differing rows visually emphasized.
+
+
+### Changed
+- **Export comparison** now produces an "A vs. B" report when Compare side-by-side is on with `vision === "normal"`. The exported HTML includes two independent normal-vision charts (re-rendered via the ECharts UMD CDN) plus per-variant warning lists, per-vision ΔE audits, normal-vision readability scorecards, and palette swatches side by side. The CVD-projection columns are dropped because both variants render at normal vision. The original single-variant + CVD-simulation layout still ships when `vision !== "normal"` or Variant B is absent. `exportComparisonReport` accepts a new optional `variantB: VariantBlock` field; warning building was extracted into `buildWarningList` in `ChartsDemo` so Variant B can compute its own prioritized warnings against its own audit/relaxations.
+
+### Added
+- **Reset Variant B** button in the Variant B panel on `/charts`. Restores Variant B defaults: chart kind `bar`, N=5, theme `dark`.
+
+### Added
+- **Variant readability scorecard** on `/charts`. When Compare side-by-side is on with `vision === "normal"`, a side-by-side table renders below the two charts showing per-slot metrics for Variant A and Variant B independently: color swatch, contrast vs. its own background (WCAG 2.2 SC 1.4.11, ≥ 3:1), worst pairwise ΔE vs. other slots in the same palette (`THRESHOLDS.minDeltaENormal`), and a per-row verdict. Lets you directly compare which configuration produces the more readable palette.
+
+### Added
+- **6 new chart kinds** wired to the right palette family: categorical — step line, horizontal bar, rose (polar bar), boxplot (per-group color via one-series-per-group pattern), funnel; sequential — gauge (bands driven by the sequential ramp); diverging — candlestick (up/down from `--chart-div-pos` / `--chart-div-neg`). Each kind has a matching `BEST_PRACTICE` entry (posture, max/recommended N, rationale, warn fn).
+- **Back-to-home link** in the `/charts` header.
+
+### Changed
+- Chart moved to the top of `/charts`, directly under the header (before the Palette builder controls), so the visualization is the first thing the user sees. Default chart height bumped from 460 → 520.
+
+- **Color picker** on `/charts`. A simple panel below the token preview lets you edit the chart design tokens directly — the 3 categorical anchors (`--chart-cat-anchor-1/2/3`), sequential ramp endpoints (`--chart-seq-low/high`), diverging ramp stops (`--chart-div-neg/mid/pos`), and chart background (`--chart-bg`). Picks are written to the active theme's root (light → `:root`, dark → `.dark`) as `H S% L%` triples so existing `hsl(var(--token))` consumers pick them up immediately. The categorical solver re-runs (cache cleared, `colorRev` bump invalidates memoized chart themes), so ΔE / CVD / contrast metrics, warnings, swatches, and audits all update live. "Reset to defaults" removes the inline overrides. New file `src/components/charts/ColorPicker.tsx`.
+
+### Changed
+- **Compare side-by-side** is now enabled in normal vision too. When `vision === "normal"`, Compare reveals a "Variant B" panel (independent chart kind, N, theme) and renders Variant A vs. Variant B side-by-side instead of normal vs. CVD-simulated. Linked hover continues to mirror series/data points across both panes via the existing `LinkedCompareCharts` (now optionally accepting `optionB`/`kindB`/`nB`/`themeB`). CVD-only panels (Difference overlay, per-series Scorecard, ΔE diff list) remain gated to non-normal vision because their semantics only apply when comparing the same palette across vision modes.
+
+### Added
+- **Linked hover** between the normal-vision and simulated-vision charts in Compare mode. Hovering a series or data point in either chart dispatches ECharts' `highlight` action on the matching `seriesIndex` / `dataIndex` of the peer chart (and `downplay` on mouseout), so the corresponding mark is emphasized in both views simultaneously. Pairing is 1:1 because both charts render the same `option`. A one-tick suppression flag prevents feedback loops between the two instances.
+
+### Changed
+- `EChart` wrapper now exposes `onReady` (forwards the underlying ECharts instance) and `onEvents` (forwards event handlers to `echarts-for-react`). Existing call sites are unaffected — both props are optional.
+
+### Added
+- **Export comparison** button on `/charts`. Opens a self-contained HTML report in a new tab containing: header (chart kind, family, posture, theme, N + cap info, palette version, generated timestamp), accessibility summary tiles, both charts re-rendered via the ECharts UMD CDN (normal + simulated vision via the same SVG color-matrix filters as the live preview), the full warning list, the per-vision ΔE audit table, the per-series readability scorecard (contrast + worst pairwise ΔE, normal vs. simulated, with pass/fail), and palette swatches. Print → Save as PDF works natively; popup-blocked fallback downloads the HTML. New module `src/charts/exportReport.ts`; no new runtime deps.
+
+### Added
+- **Per-series readability scorecard** on `/charts`. When **Compare side-by-side** is on with a non-normal vision, a new table renders below the two charts showing for every slot: color swatch (normal vs. simulated), contrast vs. background under both visions (WCAG 2.2 SC 1.4.11, ≥ 3:1), worst pairwise ΔE vs. all other slots under both visions (`THRESHOLDS.minDeltaENormal` / `minDeltaECvd` / `minDeltaL` for achromatopsia), and a per-row verdict (`✓ pass` / `⚠ degrades under <vision>` / `✗ fails`). Pass/fail values are tinted with `--chart-positive` / `--chart-negative` so the exact slots that lose readability under the simulated vision are obvious at a glance.
+
+### Added
+- **Difference overlay** mode on `/charts`. When **Compare side-by-side** is on and a non-normal vision mode is previewed, a new toggle highlights which slots/segments become unreadable: per-slot ΔE shifts (normal hex → simulated hex), pairwise collisions where ΔE drops below the CVD threshold (`THRESHOLDS.minDeltaECvd`, or `minDeltaL` for achromatopsia), and a floating badge on the simulated chart card listing the colliding slot pairs (e.g. `#2↔#5`). Slots involved in collisions are outlined in `--chart-negative`.
+
+### Added
+- 14 new chart kinds wired to the right palette family: **categorical** — area, stacked area, grouped bar, bubble, donut, radar, treemap (categorical), sankey; **sequential** — calendar heatmap, choropleth (grid proxy, no GeoJSON), treemap (sequential), density / hexbin; **diverging** — diverging heatmap (correlation matrix), waterfall (positive / negative / subtotal from semantic tokens).
+- Each new kind has a best-practice rule in `bestPractices.ts` (hard cap, soft cap, posture, rationale, optional warning) so the warning list and "Explain this palette" panel work without further changes.
+
+### Added
+- **Compare side-by-side** toggle on `/charts`. When "Preview as" is set to a non-normal vision mode, renders the same chart twice — normal vs. the selected mode — for direct readability comparison.
+
+### Changed
+- Vision-simulation filter now scopes to the chart container instead of the whole page, so the surrounding UI (warnings, harness, token preview) stays in normal vision and remains legible while previewing CVD/grayscale.
+
+### Added
+- **Token preview** panel on `/charts`. Collapsible per-theme readout of every chart token (chrome, status, anchors, sequential ramp, diverging ramp) with a live in-situ chrome mock (background + axis + grid + tooltip) and a per-token WCAG contrast ratio vs. the chart background. Pass/fail tinted against per-token minimums (axis ≥ 4.5:1, status/anchors ≥ 3:1).
+
+### Added
+- Visible **warning list** on `/charts`. Aggregates every issue at the current chart-type + N: hard-cap overflow, soft-cap recommendation, per-vision ΔE failures (normal + deutan + protan + tritan + achromatopsia), WCAG 2.2 SC 1.4.11 contrast failure, and any constraint relaxations the solver applied. Severity-sorted (error → warn → info) with counts; renders a green "all clear" badge when nothing is wrong. Uses `role="alert"` + `aria-live="polite"`.
+
+### Added
+- **"Explain this palette"** panel on `/charts`. Walks through every auto-decision in plain English: family + why, posture + why, N clamping + overflow behavior, ramp / solver notes, applied constraint relaxations, accessibility verdict (per vision mode + WCAG contrast), and a final ship/warn/don't-ship recommendation.
+
+### Added
+- Restored **Theme** (light / dark) and **Preview as** (normal / deutan / protan / tritan / achromatopsia) controls on `/charts`. These describe the user's *context*, not their palette preference — the system still picks the colors. Theme switches token sets; "Preview as" applies a CVD/grayscale filter to the rendered chart so designers can sanity-check what their colorblind users will see.
+
+### Added
+- `src/charts/bestPractices.ts` — per-chart-type rules: hard `maxN`, soft `recommendedN`, posture, palette family, rationale string, and per-N warning callbacks. Sources cited inline (Few, Munzner, ColorBrewer, WCAG 2.2).
+- `src/charts/audit.ts` — palette accessibility audit. Worst-pair OKLab ΔE under normal + deutan + protan + tritan + achromatopsia, plus WCAG 2.2 SC 1.4.11 (≥ 3:1) contrast ratio vs. background. Returns `pass` / `warn` / `fail`.
+- `/charts` accessibility harness panel — overall verdict badge, per-vision ΔE pass/fail, worst contrast ratio vs. background, expandable per-color contrast list.
+- N is hard-capped to the chart-type maximum (e.g. pie ≤ 5, line ≤ 7, stacked-bar ≤ 6); requesting more triggers Top-N + "Other" with a visible explanation. Soft warnings appear when above the recommended count or when configuration is otherwise risky (e.g. even-step diverging ramp).
+- `src/charts/chartKinds.ts` — single source of truth for chart-kind enum + labels (extracted from the demo page).
+
+### Changed
+- `/charts` reduced to two inputs only: **chart type** and **data-point count**. Posture, palette family, theme, and vision are derived automatically — the user never picks colors or tunes the optimizer.
+- Added `POSTURE_FOR_KIND` mapping so each chart type gets the right optimizer posture by default.
+
+### Removed
+- Theme / posture / vision toggles from the `/charts` UI (they were user-facing knobs on a system that's supposed to decide for you).
+
+## [0.1.0] - 2026-05-06
+
+### Added
+- Project plan covering tokens, optimizer, encoding scales, ECharts adapter, demo, and QA harness.
+- `README.md` mirroring the plan with run + QA-harness instructions.
+- `CHANGELOG.md` (this file), Keep-a-Changelog format, semver-aligned with `PALETTE_VERSION`.
+- Documentation-maintenance contract: every change updates README + CHANGELOG; persisted to project memory.
+- Dependencies: `culori`, `echarts`, `echarts-for-react`.
+- Tier 1: chart design tokens in `src/index.css` (light + dark) and Tailwind `chart` color group in `tailwind.config.ts`.
+- Tier 1: `src/charts/constraints.ts` with ΔE thresholds, posture presets, overflow rule, relaxation priority.
+- Tier 2: `src/charts/palette/` — `cvd.ts` (Machado 2009), `distance.ts` (OKLab ΔE + worst-of-three CVD), `gamut.ts` (chroma-reduction), `categorical.ts` (seeded farthest-point + annealing maximin solver), `ramps.ts` (monotonic-L sequential + diverging), `assignment.ts` (bipartite stable assignment).
+- Tier 2: `src/charts/encoding.ts` aligning color, dash, decal, and marker-shape scales 1:1.
+- Tier 3: `src/charts/echartsTheme.ts` adapter with `buildLineSeries`, `buildBarSeries`, `buildVisualMap` helpers.
+- Tier 3: `src/components/charts/EChart.tsx` wrapper with atomic theme swap.
+- Tier 3: `/charts` demo route — multi-line + N slider, stacked bar with decals, scatter with shapes, sequential heatmap, diverging variance bar, KPI tile.
+- Tier 3: QA harness — theme / vision / posture toggles + contrast report with pass/fail and relaxations.
+- Lifecycle: `setEntityColor(entityId, slotIndex)` per-user pin in `localStorage`; `PALETTE_VERSION` constant exported.
+- Tests in `src/charts/__tests__/` — property tests on the optimizer, unit tests on gamut/ramps/assignment.
+
+### Added
+- Sticky flow stepper (Choose → Build → Verify → Storytell → Reuse → Ship → Reference) on `/charts` that highlights the section currently in view and scrolls to it on click. New component `src/components/charts/FlowStepper.tsx`; section anchors added in `ChartsDemo.tsx`.
+- Inline "Next: <stage> →" quick-nav buttons at the end of Verify, Storytell, Reuse, and Ship stages. Scrolls forward through the workflow without losing palette/kind/N/theme selections. New component `src/components/charts/NextStageButton.tsx`.
+- Top-level `AuditSummaryCard` on `/charts`: at-a-glance pass/warn/fail status with WCAG contrast, min ΔE (normal + worst CVD), constraint-relaxation count, warning counts (errors/warns/info), and the top issue. Includes a "Details →" jump to the Verify stage. New component `src/components/charts/AuditSummaryCard.tsx`.
+- Workflow presets: save and reload the full builder state (kind, N, theme, vision, fixtures/dataMode, compare flag, and Variant B kind/N/theme) as a named preset. Persisted in `localStorage` (`chart-workflow-presets-v1`) with JSON import/export. New component `src/components/charts/WorkflowPresets.tsx`, mounted in the Reuse stage alongside `PalettePresets`.
+
+### Fixed
+- `AuditSummaryCard` no longer reports failures/warnings in default built-in mode. It now requires a `hasManualOverrides` prop and only surfaces warning counts, top issues, and fail/warn status when the user has manually overridden palette tokens via `ColorPicker`. Without overrides it reports "Built-in palette · constraints enforced by solver". Adds `src/charts/manualOverrides.ts` helper. This enforces the project-wide rule that audit/contrast/ΔE/CVD warnings only fire for manual overrides.
+
+### Changed
+- **BREAKING (UX)**: Built-in N sliders (Variant A and Variant B) are now hard-capped at `rule.recommendedN` instead of `rule.maxN`. Every (kind, N, theme) combination reachable via built-in controls is now guaranteed to produce an optimal palette with no warnings, no relaxations, and no above-recommended states. The legacy `recommendedN < N ≤ maxN` band is only reachable via shared URLs or manual `ColorPicker` overrides — and is documented as "hard cap" in the slider hint. `PALETTE_VERSION` bumped to `0.2.0`.
+
+### Changed
+- N sliders are now hard-capped at `min(rule.recommendedN, safeMaxN(theme, posture))`, where `safeMaxN` is a runtime probe that returns the largest N for which the solver produces a palette with **zero relaxations** and full pairwise ΔE / CVD-ΔE / WCAG-contrast satisfaction for the active theme. Every reachable built-in permutation is now provably optimal. New module `src/charts/builtinBounds.ts`.
+- When the probed safe max is below `recommendedN`, the slider hint shows `(probed: rec N)` so designers can see when the active anchors are limiting the kind below its theoretical recommendation. This signals a solver/anchor improvement opportunity without ever shipping a failing palette.
+- The solver-safe cache is invalidated whenever the theme flips or the user edits a `ColorPicker` token, so the probe always reflects the active anchors.
+
+### Added
+- `src/charts/__tests__/builtinBuilderInvariant.test.ts` (86 cases): asserts that every (theme, kind, N) tuple reachable via the safe cap produces zero solver relaxations and passes pairwise ΔE / CVD-ΔE / 3:1 background contrast.
+
+`PALETTE_VERSION` bumped to `0.3.0`.
+
+## [Unreleased]
+### Fixed
+- ChartsDemo N slider is now fully uncontrolled during drag (DOM-only thumb + label updates via refs); React only re-renders on release, eliminating lag.
+- ChartsDemo N slider: coalesce solver runs to last value with 120ms idle debounce so rapid keyboard/scrub no longer queues a solve per keystroke.
+- ChartsDemo: memoized EChart wrapper and switched ECharts to `lazyUpdate=true` so 8+ chart instances coalesce setOption calls and skip redraws when props are unchanged.
+- ChartsDemo: lazy-mount Vision Matrix (5 charts), Emphasis Preview, and Density Preview via IntersectionObserver so off-screen panels don't re-render on every palette change.
