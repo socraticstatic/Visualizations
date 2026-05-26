@@ -36,7 +36,8 @@ export function VisionMatrix({ option, height = 180 }: Props) {
           into each other; dash / decal / shape should still differentiate them.
         </p>
       </header>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="overflow-x-auto -mx-4 px-4 pb-1">
+      <div className="grid gap-3 min-w-[680px]" style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
         {MODES.map((m) => (
           <div
             key={m.id}
@@ -51,6 +52,7 @@ export function VisionMatrix({ option, height = 180 }: Props) {
             </div>
           </div>
         ))}
+      </div>
       </div>
     </section>
   );

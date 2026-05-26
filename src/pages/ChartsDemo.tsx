@@ -1237,9 +1237,23 @@ const ChartsDemo = () => {
         <section id="flow-build" className="scroll-mt-20 rounded-lg border border-chart-grid bg-chart-surface p-4 space-y-4">
           <div id="flow-choose" className="scroll-mt-20 flex items-center justify-between gap-3">
             <h2 className="text-sm font-medium uppercase tracking-wide text-chart-axis">Palette builder</h2>
-            <span className="text-[11px] text-chart-positive">
-              Constrained mode · every available N passes ΔE / CVD / WCAG
-            </span>
+            {family === "categorical" ? (
+              <span className="text-[11px] text-chart-positive">
+                Constrained mode · every available N passes ΔE / CVD / WCAG
+              </span>
+            ) : !audit.bgPass ? (
+              <span className="text-[11px] text-destructive">
+                Ramp · WCAG contrast {audit.worstContrastVsBg.toFixed(2)}:1 fails (≥ 3:1 required) — see Verify panel
+              </span>
+            ) : audit.overall === "warn" ? (
+              <span className="text-[11px] text-chart-target">
+                Ramp · marginal at current N — see Verify panel
+              </span>
+            ) : (
+              <span className="text-[11px] text-chart-positive">
+                Ramp · passes WCAG contrast at current N
+              </span>
+            )}
           </div>
 
           <div className={!compare ? "grid gap-6 lg:grid-cols-[450px_minmax(0,1fr)] lg:items-start" : ""}>
