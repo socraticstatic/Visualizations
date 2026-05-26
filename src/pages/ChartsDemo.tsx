@@ -543,7 +543,7 @@ const ChartsDemo = () => {
       if (!v.pass) {
         ws.push({
           severity: v.mode === "normal" ? "error" : "warn",
-          title: `${v.mode} fails ΔE ≥ ${v.threshold.toFixed(0)} (got ${v.minDeltaE.toFixed(1)})`,
+          title: `${v.mode} fails ${v.mode === "achromatopsia" ? "ΔL" : "ΔE"} ≥ ${v.threshold < 1 ? v.threshold.toFixed(1) : v.threshold.toFixed(0)} (got ${v.minDeltaE.toFixed(1)})`,
           detail:
             v.mode === "achromatopsia"
               ? "Two slots collapse to indistinguishable grays — meaning will be lost in print, projector, or grayscale screenshots."
@@ -575,7 +575,7 @@ const ChartsDemo = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [overflow, requestedN, kind, rule, n, audit, chartTheme.solve.relaxations]
   );
-  const overflowB = false; // Variant B slider is also hard-bounded to ruleB.maxN
+  const overflowB = ruleB.family === "categorical" && nB > safeBuiltinMaxB;
   const warningsB = useMemo(
     () => buildWarningList(kindB, ruleB, requestedNB, nB, overflowB, auditB, chartThemeB.solve.relaxations),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -903,7 +903,9 @@ const ChartsDemo = () => {
           tooltip: { ...base.tooltip, position: "top" },
           xAxis: { ...base.xAxis, type: "category", data: ["A", "B", "C", "D", "E", "F"], show: false },
           yAxis: { ...base.yAxis, type: "category", data: ["1", "2", "3", "4", "5", "6"], show: false },
-          visualMap: { ...buildVisualMap(chartTheme, "sequential", { min: 0, max: 100, steps: n }), type: "piecewise", pieces: undefined },
+          // type:"piecewise" + splitNumber:n creates n discrete bins matching the
+          // audited ramp steps, so rendered colors align with the audited palette.
+          visualMap: { ...buildVisualMap(chartTheme, "sequential", { min: 0, max: 100, steps: n }), type: "piecewise", splitNumber: n },
           series: [
             {
               type: "heatmap",
@@ -2508,9 +2510,13 @@ function AccessibilityHarness({
           <div key={v.mode} className="rounded border border-chart-grid p-2">
             <div className="text-[10px] uppercase tracking-wide opacity-70">{v.mode}</div>
             <div className={`tabular-nums ${badgeFor(v.pass)}`}>
-              {v.minDeltaE === Infinity ? "n/a" : `ΔE ${v.minDeltaE.toFixed(1)}`}
+              {v.minDeltaE === Infinity
+                ? "n/a"
+                : `${v.mode === "achromatopsia" ? "ΔL" : "ΔE"} ${v.minDeltaE.toFixed(1)}`}
             </div>
-            <div className="text-[10px] opacity-80">≥ {v.threshold.toFixed(0)}</div>
+            <div className="text-[10px] opacity-80">
+              ≥ {v.threshold < 1 ? v.threshold.toFixed(1) : v.threshold.toFixed(0)}
+            </div>
           </div>
         ))}
       </div>
@@ -2607,7 +2613,7 @@ function ExplainPanel({
     const visionPart =
       failing.length === 0
         ? `All five vision modes (normal + deutan + protan + tritan + achromatopsia) clear their ΔE thresholds.`
-        : `These vision modes do not clear ΔE thresholds: ${failing.map((v) => `${v.mode} (ΔE ${v.minDeltaE.toFixed(1)} < ${v.threshold.toFixed(0)})`).join(", ")}.`;
+        : `These vision modes do not clear thresholds: ${failing.map((v) => `${v.mode} (${v.mode === "achromatopsia" ? "ΔL" : "ΔE"} ${v.minDeltaE.toFixed(1)} < ${v.threshold < 1 ? v.threshold.toFixed(1) : v.threshold.toFixed(0)})`).join(", ")}.`;
     return `${visionPart} ${bgPart}`;
   })();
 

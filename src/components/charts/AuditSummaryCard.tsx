@@ -36,21 +36,30 @@ export function AuditSummaryCard({
   hasManualOverrides,
   onJumpToVerify,
 }: Props) {
-  // Only count/surface warnings when the user has taken manual control.
-  // In built-in mode the solver guarantees the palette meets every constraint
-  // (with documented relaxations), so we report a clean pass.
-  const effectiveWarnings = hasManualOverrides ? warnings : [];
-  const errors = effectiveWarnings.filter((w) => w.severity === "error").length;
-  const warns = effectiveWarnings.filter((w) => w.severity === "warn").length;
-  const infos = effectiveWarnings.filter((w) => w.severity === "info").length;
-
   const passNormal = solve.minPairDeltaE >= THRESHOLDS.minDeltaENormal;
   const passCvd = solve.minCvdDeltaE >= THRESHOLDS.minDeltaECvd;
   const passBg = audit.bgPass;
   const noRelax = solve.relaxations.length === 0;
 
+  // In built-in mode the solver guarantees ΔE/CVD/relaxation constraints.
+  // But WCAG background contrast is CSS-token-driven and must always be surfaced.
+  const bgWarning = warnings.find((w) => w.title.toLowerCase().includes("contrast vs. background"));
+  const effectiveWarnings = hasManualOverrides
+    ? warnings
+    : !passBg && bgWarning
+    ? [bgWarning]
+    : [];
+  const errors = effectiveWarnings.filter((w) => w.severity === "error").length;
+  const warns = effectiveWarnings.filter((w) => w.severity === "warn").length;
+  const infos = effectiveWarnings.filter((w) => w.severity === "info").length;
+
+  // In built-in mode the solver guarantees ΔE, CVD, and relaxation constraints for
+  // categorical charts — but WCAG background contrast is CSS-token-driven and never
+  // solver-guaranteed for diverging/sequential families. Always surface bgPass.
   const status: "pass" | "warn" | "fail" = !hasManualOverrides
-    ? "pass"
+    ? !passBg
+      ? "fail"
+      : "pass"
     : audit.overall === "fail" || errors > 0 || !passBg
     ? "fail"
     : audit.overall === "warn" || warns > 0 || !passNormal || !passCvd || !noRelax || overflow
@@ -73,7 +82,7 @@ export function AuditSummaryCard({
       icon: "!",
     },
     fail: {
-      label: "Accessibility failure",
+      label: hasManualOverrides ? "Accessibility failure" : "WCAG contrast fails · ramp token needs adjustment",
       tone: "text-chart-negative",
       bg: "bg-chart-negative/10 border-chart-negative/40",
       icon: "✕",

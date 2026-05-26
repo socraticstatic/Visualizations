@@ -149,6 +149,21 @@ export function AutoAuditSummary({
   const totalChecked = variants.reduce((sum, v) => sum + v.data.results.length, 0);
 
   if (failures.length === 0) {
+    // If every variant was skipped (diverging/sequential — no solver sweep),
+    // report honestly instead of claiming vacuous "all optimal".
+    if (totalChecked === 0) {
+      return (
+        <div
+          className="flex items-center gap-2 rounded-md border border-chart-grid/50 bg-chart-grid/5 px-3 py-2 text-xs text-chart-axis"
+          role="status"
+        >
+          <span>
+            <strong className="font-semibold">Auto-audit:</strong> Ramp palette — solver sweep does
+            not apply. WCAG contrast and ΔE details are in the Verify panel.
+          </span>
+        </div>
+      );
+    }
     return (
       <div
         className="flex items-center gap-2 rounded-md border border-chart-positive/30 bg-chart-positive/5 px-3 py-2 text-xs text-chart-positive"
