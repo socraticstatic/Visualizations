@@ -503,12 +503,12 @@ const ChartsDemo = () => {
     );
   }, [chartThemeB, ruleB.family, nB]);
   const audit = useMemo(
-    () => auditPalette(auditedColors, chartTheme.tokens.bg),
-    [auditedColors, chartTheme]
+    () => auditPalette(auditedColors, chartTheme.tokens.bg, family !== "categorical"),
+    [auditedColors, chartTheme, family]
   );
   const auditB = useMemo(
-    () => auditPalette(auditedColorsB, chartThemeB.tokens.bg),
-    [auditedColorsB, chartThemeB]
+    () => auditPalette(auditedColorsB, chartThemeB.tokens.bg, ruleB.family !== "categorical"),
+    [auditedColorsB, chartThemeB, ruleB.family]
   );
 
   // Build the prioritized warning list for any (kind, n, audit) tuple.
@@ -2512,19 +2512,22 @@ function AccessibilityHarness({
         <div className={`text-xs font-semibold ${overallClass}`}>{overallLabel}</div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
-        {audit.perVision.map((v) => (
-          <div key={v.mode} className="rounded border border-chart-grid p-2">
-            <div className="text-[10px] uppercase tracking-wide opacity-70">{v.mode}</div>
-            <div className={`tabular-nums ${badgeFor(v.pass)}`}>
-              {v.minDeltaE === Infinity
-                ? "n/a"
-                : `${v.mode === "achromatopsia" ? "ΔL" : "ΔE"} ${v.minDeltaE.toFixed(1)}`}
+        {audit.perVision.map((v) => {
+          const isNa = v.minDeltaE === Infinity;
+          return (
+            <div key={v.mode} className="rounded border border-chart-grid p-2">
+              <div className="text-[10px] uppercase tracking-wide opacity-70">{v.mode}</div>
+              <div className={`tabular-nums ${isNa ? "text-chart-axis" : badgeFor(v.pass)}`}>
+                {isNa
+                  ? "n/a"
+                  : `${v.mode === "achromatopsia" ? "ΔL" : "ΔE"} ${v.minDeltaE.toFixed(1)}`}
+              </div>
+              <div className="text-[10px] opacity-80">
+                {isNa ? "not applicable" : `≥ ${v.threshold < 1 ? v.threshold.toFixed(1) : v.threshold.toFixed(0)}`}
+              </div>
             </div>
-            <div className="text-[10px] opacity-80">
-              ≥ {v.threshold < 1 ? v.threshold.toFixed(1) : v.threshold.toFixed(0)}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <div className="text-xs text-chart-axis">
         Worst contrast vs. background:{" "}
@@ -2612,14 +2615,21 @@ function ExplainPanel({
       : `Solver: seeded farthest-point traversal under worst-of-three CVD ΔE, then ${chartTheme.solve.relaxations.length === 0 ? "simulated annealing converged with no relaxations" : `simulated annealing with relaxations on ${chartTheme.solve.relaxations.join(", ")}`}.`;
 
   const a11ySummary = (() => {
-    const failing = audit.perVision.filter((v) => !v.pass);
     const bgPart = audit.bgPass
       ? `WCAG 2.2 SC 1.4.11 contrast vs. background passes (worst ${audit.worstContrastVsBg.toFixed(2)}:1, threshold 3:1).`
       : `WCAG 2.2 SC 1.4.11 contrast vs. background **fails** (worst ${audit.worstContrastVsBg.toFixed(2)}:1, need ≥ 3:1).`;
-    const visionPart =
-      failing.length === 0
-        ? `All five vision modes (normal + deutan + protan + tritan + achromatopsia) clear their ΔE thresholds.`
-        : `These vision modes do not clear thresholds: ${failing.map((v) => `${v.mode} (${v.mode === "achromatopsia" ? "ΔL" : "ΔE"} ${v.minDeltaE.toFixed(1)} < ${v.threshold < 1 ? v.threshold.toFixed(1) : v.threshold.toFixed(0)})`).join(", ")}.`;
+    let visionPart: string;
+    if (family !== "categorical") {
+      // Pairwise ΔE separation is not a meaningful metric for gradient ramps —
+      // adjacent stops are intentionally close. Only WCAG contrast is audited.
+      visionPart = `Pairwise ΔE not applicable for ${family} ramps — gradient stops are designed to be perceptually adjacent. WCAG contrast is the primary accessibility metric.`;
+    } else {
+      const failing = audit.perVision.filter((v) => !v.pass);
+      visionPart =
+        failing.length === 0
+          ? `All five vision modes (normal + deutan + protan + tritan + achromatopsia) clear their ΔE thresholds.`
+          : `These vision modes do not clear thresholds: ${failing.map((v) => `${v.mode} (${v.mode === "achromatopsia" ? "ΔL" : "ΔE"} ${v.minDeltaE.toFixed(1)} < ${v.threshold < 1 ? v.threshold.toFixed(1) : v.threshold.toFixed(0)})`).join(", ")}.`;
+    }
     return `${visionPart} ${bgPart}`;
   })();
 
@@ -2635,8 +2645,12 @@ function ExplainPanel({
       audit.overall === "pass"
         ? "ship it."
         : audit.overall === "warn"
-        ? "usable, but consider lowering N or switching chart type."
-        : "do not ship at this N — lower N or pick a different chart type."
+        ? family === "categorical"
+          ? "usable, but consider lowering N or switching chart type."
+          : "usable, but WCAG contrast is marginal — consider adjusting the ramp CSS token."
+        : family === "categorical"
+        ? "do not ship at this N — lower N or pick a different chart type."
+        : "do not ship — WCAG contrast fails against the background. Adjust the ramp CSS token color (--chart-seq-low / --chart-seq-high for sequential, --chart-div-* for diverging) until the worst stop clears 3:1."
     }`,
   ].join("\n\n");
 
@@ -2700,8 +2714,12 @@ function ExplainPanel({
           — {audit.overall === "pass"
             ? "ship it."
             : audit.overall === "warn"
-            ? "usable, but consider lowering N or switching chart type."
-            : "do not ship at this N — lower N or pick a different chart type."}
+            ? family === "categorical"
+              ? "usable, but consider lowering N or switching chart type."
+              : "usable, but WCAG contrast is marginal — adjust the ramp CSS token."
+            : family === "categorical"
+            ? "do not ship at this N — lower N or pick a different chart type."
+            : "do not ship — WCAG contrast fails. Adjust the ramp CSS token (--chart-seq-low / --chart-seq-high for sequential, --chart-div-* for diverging) until the worst stop clears 3:1."}
         </Row>
       </div>
     </details>

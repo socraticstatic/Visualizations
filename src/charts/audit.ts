@@ -80,9 +80,33 @@ export interface AuditReport {
   overall: "pass" | "warn" | "fail";
 }
 
-export function auditPalette(palette: ColorRecord[], background: ColorRecord): AuditReport {
+/**
+ * @param skipPairwiseDeltaE - Pass true for sequential/diverging ramps.
+ *   Gradient stops are intentionally close; pairwise ΔE separation is not a
+ *   meaningful metric for ramps and would always flag them as failing. When
+ *   true, all vision-mode ΔE entries report Infinity (pass); overall is
+ *   determined solely by WCAG background contrast.
+ */
+export function auditPalette(
+  palette: ColorRecord[],
+  background: ColorRecord,
+  skipPairwiseDeltaE = false
+): AuditReport {
   const modes: VisionMode[] = ["normal", "deutan", "protan", "tritan", "achromatopsia"];
   const perVision: VisionResult[] = modes.map((mode) => {
+    const threshold =
+      mode === "normal"
+        ? THRESHOLDS.minDeltaENormal
+        : mode === "achromatopsia"
+        ? THRESHOLDS.minDeltaL * 100 // ΔL only
+        : THRESHOLDS.minDeltaECvd;
+
+    // Ramp families: pairwise separation is not meaningful — gradient stops
+    // are designed to be perceptually close. Report n/a (Infinity = pass).
+    if (skipPairwiseDeltaE) {
+      return { mode, minDeltaE: Infinity, pass: true, threshold };
+    }
+
     let min = Infinity;
     if (palette.length >= 2) {
       const sim = palette.map((c) => simulate(c, mode));
@@ -93,12 +117,6 @@ export function auditPalette(palette: ColorRecord[], background: ColorRecord): A
         }
       }
     }
-    const threshold =
-      mode === "normal"
-        ? THRESHOLDS.minDeltaENormal
-        : mode === "achromatopsia"
-        ? THRESHOLDS.minDeltaL * 100 // ΔL only
-        : THRESHOLDS.minDeltaECvd;
     return {
       mode,
       minDeltaE: palette.length >= 2 ? min : Infinity,
