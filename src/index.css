@@ -88,10 +88,11 @@ All colors MUST be HSL.
     --chart-disabled: 215 14% 80%;
 
     /* Chart system — sequential / diverging endpoints */
-    --chart-seq-low: 210 60% 96%;
+    /* seq-low / div-mid are the "faded" ramp stops; kept at ≥3:1 vs white bg (WCAG SC 1.4.11) */
+    --chart-seq-low: 210 45% 56%;
     --chart-seq-high: 222 80% 30%;
     --chart-div-neg: 0 72% 45%;
-    --chart-div-mid: 210 20% 96%;
+    --chart-div-mid: 210 10% 56%;
     --chart-div-pos: 152 60% 36%;
   }
 
@@ -166,10 +167,11 @@ All colors MUST be HSL.
     --chart-disabled: 215 16% 30%;
 
     /* Chart system — sequential / diverging endpoints */
-    --chart-seq-low: 222 47% 12%;
+    /* seq-low / div-mid kept at ≥3:1 vs dark bg (WCAG SC 1.4.11) */
+    --chart-seq-low: 222 50% 48%;
     --chart-seq-high: 210 90% 75%;
     --chart-div-neg: 0 75% 60%;
-    --chart-div-mid: 222 47% 14%;
+    --chart-div-mid: 222 15% 50%;
     --chart-div-pos: 152 65% 50%;
   }
 }

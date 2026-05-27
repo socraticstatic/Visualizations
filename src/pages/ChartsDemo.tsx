@@ -652,7 +652,7 @@ const ChartsDemo = () => {
           series: [
             {
               type: "pie",
-              radius: ["35%", "70%"],
+              radius: "70%",
               data,
               label: { color: chartTheme.tokens.axis.hex },
             },

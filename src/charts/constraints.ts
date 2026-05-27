@@ -16,7 +16,9 @@ export interface PostureConfig {
 }
 
 export const POSTURE: Record<Posture, PostureConfig> = {
-  kpi: { maxCategorical: 1, chromaBias: "low" },
+  // kpi posture covers single-metric callouts AND part-to-whole charts
+  // (pie, donut, rose, funnel) that need up to 8 distinct low-chroma slots.
+  kpi: { maxCategorical: 8, chromaBias: "low" },
   comparative: { maxCategorical: 12, chromaBias: "medium" },
   exploratory: { maxCategorical: 12, chromaBias: "high" },
 };
