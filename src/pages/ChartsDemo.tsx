@@ -1228,7 +1228,7 @@ const ChartsDemo = () => {
               Take the tour
             </button>
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight">Chart Color & Encoding System</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Micah's Chart System for Sane and Useful Color Strategies</h1>
           <p className="text-sm text-chart-axis">
             Pick a chart type and the number of data points — get a proven palette with matched dash, decal, and
             shape encodings. <span className="opacity-80">v{PALETTE_VERSION}</span>

@@ -4,7 +4,7 @@ const Index = () => {
   return (
     <main className="min-h-dvh bg-background text-foreground flex items-center justify-center p-8">
       <div className="max-w-2xl space-y-6 text-center">
-        <h1 className="text-4xl font-semibold tracking-tight">Chart Color & Encoding System</h1>
+        <h1 className="text-4xl font-semibold tracking-tight">Micah's Chart System for Sane and Useful Color Strategies</h1>
         <p className="text-foreground/90">
           A token-driven, math-backed palette system for ECharts dashboards. Color is paired 1:1 with dash,
           decal, and shape so meaning survives colorblindness, grayscale, and small marks.
