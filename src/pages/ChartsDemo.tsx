@@ -237,7 +237,7 @@ const ChartsDemo = () => {
   // app's mode), and vision preview (to see what colorblind users see).
   const [kind, setKind] = useState<ChartKind>("line");
   const [requestedN, setRequestedN] = useState(BEST_PRACTICE.line.recommendedN);
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>("light");
   const [vision, setVision] = useState<Vision>("normal");
   const [dataMode, setDataMode] = useState<DataMode>("synthetic");
   const [compare, setCompare] = useState(false);
@@ -1258,9 +1258,9 @@ const ChartsDemo = () => {
             )}
           </div>
 
-          <div className={!compare ? "grid gap-6 lg:grid-cols-[450px_minmax(0,1fr)] lg:items-start" : ""}>
+          <div className={!compare ? "grid gap-6 lg:grid-cols-[minmax(400px,520px)_minmax(0,1fr)] lg:items-start" : ""}>
             {!compare && (
-              <div className="lg:sticky lg:top-4 space-y-3">
+              <div className="lg:sticky lg:top-[52px] space-y-3">
                 <ChartCard
                   title={`${CHART_KIND_LABEL[kind]} — ${family} palette${vision !== "normal" ? ` · preview as ${vision}` : ""}`}
                 >
