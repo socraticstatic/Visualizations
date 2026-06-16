@@ -119,6 +119,11 @@ const SERIES_NAMES = [
   "Wayne",
 ];
 
+// Default number of data points/series on first load and whenever the chart
+// kind changes. Two keeps the canvas readable out of the gate — users dial N up
+// with the slider to stress-test the palette, rather than landing on a busy 12.
+const DEFAULT_N = 2;
+
 function clampBuiltInN(k: ChartKind, t: Theme, requested: number) {
   const r = BEST_PRACTICE[k];
   const min = r.family === "categorical" ? 1 : 3;
@@ -236,7 +241,7 @@ const ChartsDemo = () => {
   // Context inputs the user CAN pick: chart kind, N, theme (light/dark — their
   // app's mode), and vision preview (to see what colorblind users see).
   const [kind, setKind] = useState<ChartKind>("line");
-  const [requestedN, setRequestedN] = useState(BEST_PRACTICE.line.recommendedN);
+  const [requestedN, setRequestedN] = useState(DEFAULT_N);
   const [theme, setTheme] = useState<Theme>("light");
   const [vision, setVision] = useState<Vision>("normal");
   const [dataMode, setDataMode] = useState<DataMode>("synthetic");
@@ -245,7 +250,7 @@ const ChartsDemo = () => {
   // Variant B — only used when compare is on AND vision is "normal"
   // (so the user is comparing two configurations rather than a CVD preview).
   const [kindB, setKindB] = useState<ChartKind>("bar");
-  const [requestedNB, setRequestedNB] = useState(BEST_PRACTICE.bar.recommendedN);
+  const [requestedNB, setRequestedNB] = useState(DEFAULT_N);
 
   const [themeB, setThemeB] = useState<Theme>("dark");
   // Bumped whenever the user edits a chart token via the ColorPicker, so the
@@ -295,12 +300,7 @@ const ChartsDemo = () => {
     const curTheme = isA ? theme : themeB;
     const nextKind = next.kind ?? curKind;
     const nextTheme = next.theme ?? curTheme;
-    const nextRule = BEST_PRACTICE[nextKind];
-    const defaultN = Math.min(
-      nextRule.recommendedN,
-      nextRule.family === "categorical" ? safeMaxN(nextTheme, nextRule.posture) : nextRule.recommendedN
-    );
-    const nextN = clampBuiltInN(nextKind, nextTheme, next.n ?? defaultN);
+    const nextN = clampBuiltInN(nextKind, nextTheme, next.n ?? DEFAULT_N);
     if (isA) {
       skipNextKindSnap.current = true;
       if (next.kind && next.kind !== kind) setKind(next.kind);
@@ -431,12 +431,12 @@ const ChartsDemo = () => {
   useEffect(() => {
     if (firstKindRender.current) { firstKindRender.current = false; return; }
     if (skipNextKindSnap.current) { skipNextKindSnap.current = false; return; }
-    setRequestedN(Math.min(rule.recommendedN, safeBuiltinMaxA));
+    setRequestedN(Math.min(DEFAULT_N, safeBuiltinMaxA));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind, theme]);
   useEffect(() => {
     if (firstKindBRender.current) { firstKindBRender.current = false; return; }
-    setRequestedNB(Math.min(ruleB.recommendedN, safeBuiltinMaxB));
+    setRequestedNB(Math.min(DEFAULT_N, safeBuiltinMaxB));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kindB, themeB]);
 
@@ -1258,14 +1258,14 @@ const ChartsDemo = () => {
             )}
           </div>
 
-          <div className={!compare ? "grid gap-6 lg:grid-cols-[minmax(400px,520px)_minmax(0,1fr)] lg:items-start" : ""}>
+          <div className={!compare ? "grid gap-6 lg:grid-cols-[minmax(560px,1.6fr)_minmax(320px,1fr)] lg:items-start" : ""}>
             {!compare && (
               <div className="lg:sticky lg:top-[52px] space-y-3">
                 <ChartCard
                   title={`${CHART_KIND_LABEL[kind]} — ${family} palette${vision !== "normal" ? ` · preview as ${vision}` : ""}`}
                 >
                   <div style={{ filter: VISION_FILTER[vision] }}>
-                    <EChart option={option} height={460} />
+                    <EChart option={option} height={560} />
                   </div>
                 </ChartCard>
                 <VisionPreviewToggle value={vision} onChange={setVision} />

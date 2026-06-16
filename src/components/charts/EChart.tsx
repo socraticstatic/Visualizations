@@ -1,5 +1,5 @@
 import ReactECharts from "echarts-for-react";
-import { memo, useMemo } from "react";
+import { memo, useMemo, useRef } from "react";
 import type { CSSProperties } from "react";
 import type * as echarts from "echarts";
 
@@ -27,6 +27,34 @@ const EChartInner = ({
   // setOption calls within the same tick — important when many EChart
   // instances re-render together (vision matrix, compare mode).
   const opts = useMemo(() => option, [option]);
+
+  // echarts-for-react only resizes on window.resize, not on *container* resize.
+  // When a parent grid/flex cell changes width without a window event (sticky
+  // columns settling, the layout reflowing after data load, a sidebar toggling),
+  // the canvas keeps its stale init width and bleeds over neighboring content.
+  // A ResizeObserver on the wrapper keeps the canvas pinned to its real box.
+  const chartRef = useRef<echarts.ECharts | null>(null);
+  const observerRef = useRef<ResizeObserver | null>(null);
+
+  const handleReady = (chart: echarts.ECharts) => {
+    chartRef.current = chart;
+    onReady?.(chart);
+
+    const dom = chart.getDom();
+    const target = dom?.parentElement ?? dom;
+    if (target && typeof ResizeObserver !== "undefined") {
+      observerRef.current?.disconnect();
+      const ro = new ResizeObserver(() => {
+        // guard against resize-after-dispose
+        if (chartRef.current && !chartRef.current.isDisposed?.()) {
+          chartRef.current.resize();
+        }
+      });
+      ro.observe(target);
+      observerRef.current = ro;
+    }
+  };
+
   return (
     <ReactECharts
       option={opts}
@@ -34,7 +62,7 @@ const EChartInner = ({
       lazyUpdate
       style={{ height, width: "100%", ...style }}
       className={className}
-      onChartReady={(chart) => onReady?.(chart as unknown as echarts.ECharts)}
+      onChartReady={(chart) => handleReady(chart as unknown as echarts.ECharts)}
       onEvents={onEvents}
     />
   );
