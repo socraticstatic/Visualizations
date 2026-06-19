@@ -1,5 +1,7 @@
 # Chart Color & Encoding System
 
+By **Micah Boswell** ([socraticstatic](https://github.com/socraticstatic)). Copyright © 2026 Micah Boswell. All rights reserved.
+
 A token-driven, math-backed palette system for ECharts dashboards. Generates categorical, sequential, and diverging palettes that are proven against contrast, color-vision deficiency (CVD), and grayscale, and pairs every color slot with a matching dash, decal, and marker shape so meaning survives even when color fails.
 
 > Current version: **0.1.0** (see `CHANGELOG.md`).
@@ -219,3 +221,13 @@ This rule is persisted to project memory (`mem://index.md`).
 - OKLab for math, HSL for CSS, hex/rgba into ECharts via the adapter.
 - Seeded PRNG → reproducible palettes.
 - Solver runs once per `(theme, posture, N)` at module init; cached.
+
+---
+
+## License
+
+Copyright © 2026 **Micah Boswell**. All rights reserved.
+
+This project is proprietary. See [`LICENSE`](LICENSE) for full terms. No part of
+this software may be copied, modified, distributed, or used without express
+written permission from Micah Boswell.

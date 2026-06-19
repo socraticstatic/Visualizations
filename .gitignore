@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Scaffolding / tooling artifacts (not part of this project)
+.scaffold
+.claude
+extracted
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
