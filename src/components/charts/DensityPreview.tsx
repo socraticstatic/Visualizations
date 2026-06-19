@@ -31,12 +31,12 @@ export function DensityPreview({ theme }: Props) {
         <table className="w-full tabular-nums">
           <thead className="text-chart-axis">
             <tr className="border-b border-chart-grid text-left">
-              <th className="py-1 pr-2 w-10">#</th>
-              <th className="py-1 pr-2">Legend (11px)</th>
-              <th className="py-1 pr-2">Line (2px)</th>
-              <th className="py-1 pr-2">Bar (4px)</th>
-              <th className="py-1 pr-2">Dot (8px)</th>
-              <th className="py-1 pr-2">Sparkline</th>
+              <th className="py-1 pr-2 w-8">#</th>
+              <th className="py-1 pr-2">Legend</th>
+              <th className="py-1 pr-2">Line</th>
+              <th className="py-1 pr-2">Bar</th>
+              <th className="py-1 pr-2">Dot</th>
+              <th className="py-1 pr-2">Spark</th>
               <th className="py-1 pr-2">Hex</th>
             </tr>
           </thead>
@@ -59,26 +59,50 @@ export function DensityPreview({ theme }: Props) {
                     </span>
                   </td>
                   <td className="py-1 pr-2">
-                    <svg width="120" height="14" style={{ background: bg }}>
+                    <svg
+                      viewBox="0 0 120 14"
+                      height="14"
+                      preserveAspectRatio="none"
+                      className="block w-full"
+                      style={{ background: bg }}
+                    >
                       <line x1="2" y1="7" x2="118" y2="7" stroke={c} strokeWidth="2" />
                     </svg>
                   </td>
                   <td className="py-1 pr-2">
-                    <svg width="120" height="14" style={{ background: bg }}>
+                    <svg
+                      viewBox="0 0 120 14"
+                      height="14"
+                      preserveAspectRatio="none"
+                      className="block w-full"
+                      style={{ background: bg }}
+                    >
                       {Array.from({ length: 10 }).map((_, j) => (
                         <rect key={j} x={j * 12 + 2} y={3} width={4} height={8} fill={c} />
                       ))}
                     </svg>
                   </td>
                   <td className="py-1 pr-2">
-                    <svg width="120" height="14" style={{ background: bg }}>
+                    <svg
+                      viewBox="0 0 120 14"
+                      height="14"
+                      preserveAspectRatio="none"
+                      className="block w-full"
+                      style={{ background: bg }}
+                    >
                       {Array.from({ length: 6 }).map((_, j) => (
                         <circle key={j} cx={10 + j * 20} cy={7} r={4} fill={c} />
                       ))}
                     </svg>
                   </td>
                   <td className="py-1 pr-2">
-                    <svg width="148" height="20" style={{ background: bg }}>
+                    <svg
+                      viewBox="0 0 148 20"
+                      height="20"
+                      preserveAspectRatio="none"
+                      className="block w-full"
+                      style={{ background: bg }}
+                    >
                       <path d={path} stroke={c} strokeWidth="1.5" fill="none" />
                     </svg>
                   </td>
