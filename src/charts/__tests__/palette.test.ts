@@ -34,12 +34,29 @@ describe("sequentialRamp", () => {
 });
 
 describe("divergingRamp", () => {
+  const neg = fromHsl(0, 72, 45);
+  const mid = fromHsl(210, 20, 96);
+  const pos = fromHsl(152, 60, 36);
+
   it("returns the requested number of steps", () => {
-    const neg = fromHsl(0, 72, 45);
-    const mid = fromHsl(210, 20, 96);
-    const pos = fromHsl(152, 60, 36);
     expect(divergingRamp(neg, mid, pos, 9)).toHaveLength(9);
     expect(divergingRamp(neg, mid, pos, 8)).toHaveLength(8);
+  });
+
+  it("odd step counts place the midpoint exactly once, at the center", () => {
+    const ramp = divergingRamp(neg, mid, pos, 9);
+    expect(ramp[4].hex).toBe(mid.hex);
+    expect(ramp.filter((c) => c.hex === mid.hex)).toHaveLength(1);
+  });
+
+  it("even step counts have no duplicated adjacent stops", () => {
+    for (const steps of [4, 6, 8, 10]) {
+      const ramp = divergingRamp(neg, mid, pos, steps);
+      expect(ramp).toHaveLength(steps);
+      for (let i = 1; i < ramp.length; i++) {
+        expect(ramp[i].hex).not.toBe(ramp[i - 1].hex);
+      }
+    }
   });
 });
 

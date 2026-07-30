@@ -52,9 +52,12 @@ function bandFor(posture: Posture, isDarkBg: boolean): BandConfig {
   // these limits the solver picked colors that failed the WCAG probe and
   // collapsed `safeMaxN` to 1.
   const baseL = isDarkBg ? { lMin: 0.55, lMax: 0.9 } : { lMin: 0.28, lMax: 0.58 };
+  // Bands must actually differ per bias or the documented posture distinction
+  // (exploratory = full chroma, comparative = medium, kpi = muted) is a lie.
+  // Out-of-gamut high-chroma candidates are clamped by reduceToSrgb.
   const chroma =
     cfg.chromaBias === "high"
-      ? { cMin: 0.08, cMax: 0.24 }
+      ? { cMin: 0.1, cMax: 0.3 }
       : cfg.chromaBias === "medium"
       ? { cMin: 0.08, cMax: 0.24 }
       : { cMin: 0.04, cMax: 0.12 };

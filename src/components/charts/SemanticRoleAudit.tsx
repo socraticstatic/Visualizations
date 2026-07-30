@@ -1,7 +1,7 @@
 /**
  * Semantic role audit.
  *
- * The categorical solver guarantees ΔE between *categorical* slots, but
+ * The categorical solver enforces ΔE floors between *categorical* slots, but
  * semantic tokens (positive, negative, warn, info, target, forecast) are
  * shipped as fixed brand colors. Two common silent failures:
  *

@@ -26,8 +26,8 @@
 import { describe, it, expect } from "vitest";
 import { BEST_PRACTICE } from "@/charts/bestPractices";
 import type { ChartKind } from "@/charts/chartKinds";
-import { solveCategorical } from "@/charts/palette/categorical";
-import { fromHsl, deltaE, cvdDeltaE } from "@/charts/palette/distance";
+import { getChartTheme } from "@/charts/echartsTheme";
+import { deltaE, cvdDeltaE, type ColorRecord } from "@/charts/palette/distance";
 import { contrastRatio } from "@/charts/audit";
 import { THRESHOLDS, CVD_SEVERITY } from "@/charts/constraints";
 import { safeMaxN, clearSafeMaxNCache } from "@/charts/builtinBounds";
@@ -90,29 +90,13 @@ function seedTokens() {
 seedTokens();
 clearSafeMaxNCache();
 
-const THEME_TOKENS = {
-  light: {
-    bg: fromHsl(0, 0, 100),
-    grid: fromHsl(214, 32, 91),
-    anchors: [fromHsl(210, 85, 45), fromHsl(28, 88, 50), fromHsl(152, 55, 38)],
-  },
-  dark: {
-    bg: fromHsl(222, 47, 6),
-    grid: fromHsl(217, 33, 18),
-    anchors: [fromHsl(210, 90, 65), fromHsl(28, 92, 62), fromHsl(152, 60, 55)],
-  },
-} as const;
-
-type ThemeName = keyof typeof THEME_TOKENS;
+type ThemeName = "light" | "dark";
 
 const CATEGORICAL_KINDS = (Object.keys(BEST_PRACTICE) as ChartKind[]).filter(
   (k) => BEST_PRACTICE[k].family === "categorical"
 );
 
-function passes(
-  palette: ReturnType<typeof solveCategorical>["palette"],
-  bg: ReturnType<typeof fromHsl>
-) {
+function passes(palette: ColorRecord[], bg: ColorRecord) {
   for (let i = 0; i < palette.length; i++) {
     if (contrastRatio(palette[i], bg) < 3) return false;
     for (let j = i + 1; j < palette.length; j++) {
@@ -142,16 +126,10 @@ function effectiveN(kind: ChartKind, theme: ThemeName, requestedN: number) {
   return Math.min(Math.max(minN, requestedN), sliderMax(kind));
 }
 
+/** Exercise the exact code path the builder uses (getChartTheme, locks: []). */
 function solveVariant(kind: ChartKind, theme: ThemeName, n: number) {
   const rule = BEST_PRACTICE[kind];
-  const { bg, grid, anchors } = THEME_TOKENS[theme];
-  return solveCategorical({
-    n,
-    posture: rule.posture,
-    background: bg,
-    grid,
-    locks: anchors.slice(0, Math.min(3, n)),
-  });
+  return getChartTheme(theme, rule.posture, n);
 }
 
 describe("Variant A & B — at the safe cap, both variants are zero-relaxation optimal", () => {
@@ -166,17 +144,17 @@ describe("Variant A & B — at the safe cap, both variants are zero-relaxation o
             const a = solveVariant(kindA, themeA, capA);
             const b = solveVariant(kindB, themeB, capB);
 
-            expect(a.relaxations).toEqual([]);
-            expect(b.relaxations).toEqual([]);
+            expect(a.solve.relaxations).toEqual([]);
+            expect(b.solve.relaxations).toEqual([]);
 
-            expect(a.palette).toHaveLength(capA);
-            expect(b.palette).toHaveLength(capB);
+            expect(a.solve.palette).toHaveLength(capA);
+            expect(b.solve.palette).toHaveLength(capB);
 
             if (capA >= 2) {
-              expect(passes(a.palette, THEME_TOKENS[themeA].bg)).toBe(true);
+              expect(passes(a.solve.palette, a.tokens.bg)).toBe(true);
             }
             if (capB >= 2) {
-              expect(passes(b.palette, THEME_TOKENS[themeB].bg)).toBe(true);
+              expect(passes(b.solve.palette, b.tokens.bg)).toBe(true);
             }
           });
         }
@@ -193,7 +171,7 @@ describe("Slider clamps to sliderMax (recommendedN); over-request is bounded", (
         const n = effectiveN(kind, theme, OVER_REQUEST);
         expect(n).toBe(sliderMax(kind));
         const result = solveVariant(kind, theme, n);
-        expect(result.palette).toHaveLength(n);
+        expect(result.solve.palette).toHaveLength(n);
         // Above the safe cap, relaxations are allowed and expected — they
         // are the educational signal surfaced by the audit panel.
       });

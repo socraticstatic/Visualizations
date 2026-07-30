@@ -7,10 +7,10 @@ import { THRESHOLDS } from "@/charts/constraints";
  * to the builder controls and re-renders on every builder state change.
  *
  * Shows two layers of validation for the active palette:
- *   1. Per-CVD-mode color-blind-safe compliance (deutan, protan, tritan,
+ *   1. Per-CVD-mode floor compliance (deutan, protan, tritan,
  *      achromatopsia) — each mode passes only when its minimum pairwise
- *      ΔE clears the configured threshold. This is the headline
- *      "Color-blind safe" indicator.
+ *      ΔE clears the configured floor. This is the headline
+ *      "CVD floors met + redundant encodings" indicator.
  *   2. Per-chart-type rule compliance (N within the kind's recommended /
  *      hard cap, family match) plus the standard ΔE / WCAG metrics.
  *
@@ -187,8 +187,8 @@ function VariantRow({ info }: { info: BuilderVariantInfo }) {
             family !== "categorical"
               ? `${family} palette — per-mode pairwise ΔE doesn't apply; sequential ordering carries the signal.`
               : cvdAllPass
-              ? "Every pair of slots is distinguishable under deutan, protan, tritan and achromatopsia simulation."
-              : "At least one pair of slots collapses under a CVD simulation. Reduce N or change the palette."
+              ? "Every pair of slots clears the configured per-mode ΔE floor under deutan, protan, tritan and achromatopsia simulation. The floors are deliberately minimal at high N — the paired dash / decal / shape encodings carry identity where color alone cannot."
+              : "At least one pair of slots falls below the configured CVD ΔE floor. Reduce N or change the palette."
           }
         >
           <CbIcon className={`h-3.5 w-3.5 ${cbTone.text}`} aria-hidden />
@@ -197,8 +197,8 @@ function VariantRow({ info }: { info: BuilderVariantInfo }) {
             {family !== "categorical"
               ? "CVD-safe (ramp)"
               : cvdAllPass
-              ? "Color-blind safe"
-              : "Not color-blind safe"}
+              ? "CVD floors met + redundant encodings"
+              : "Below CVD floor"}
           </span>
         </div>
 
@@ -215,7 +215,7 @@ function VariantRow({ info }: { info: BuilderVariantInfo }) {
         </div>
       </div>
 
-      {/* Per-CVD-mode breakdown — explicit, scannable proof of safety. */}
+      {/* Per-CVD-mode breakdown: live minimum pairwise ΔE vs. each floor. */}
       {family === "categorical" && (
         <div className="flex flex-wrap items-center gap-1.5 pl-1">
           {cvdResults.map((r) => (

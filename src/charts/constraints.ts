@@ -44,8 +44,12 @@ export const THRESHOLDS = {
 } as const;
 
 /**
- * If the solver cannot satisfy all constraints simultaneously, relax in this
- * order. The harness reports which relaxations were applied.
+ * Priority ranking for constraint floors, most-acceptable-to-miss first.
+ *
+ * NOTE: the solver does NOT step through this list loosening constraints —
+ * it runs one annealing pass and then reports (in `SolveResult.relaxations`)
+ * which floors the final palette missed. This list documents which of those
+ * misses are considered least harmful, for humans reading the audit output.
  */
 export const RELAXATION_ORDER: Array<keyof typeof THRESHOLDS> = [
   "minDeltaEvsGrid",

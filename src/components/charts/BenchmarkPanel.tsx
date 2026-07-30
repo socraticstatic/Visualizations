@@ -1,6 +1,6 @@
 /**
  * Side-by-side comparison of the current solver palette vs. published systems
- * (Tableau, IBM Carbon, ColorBrewer, Material, Observable Plot tab10) measured
+ * (Tableau, IBM Carbon, ColorBrewer, Material, Observable 10) measured
  * with the same math against the user's current chart background.
  *
  * Helps designers defend the solver's output — or pick a published system if
@@ -30,7 +30,7 @@ export function BenchmarkPanel({ ours, background }: Props) {
       <details className="rounded border border-chart-grid p-3 text-xs">
         <summary className="cursor-pointer text-chart-axis font-medium">Benchmark vs. published systems</summary>
         <div className="mt-2 text-chart-axis">
-          Need N ≥ 2 to compare against Tableau, Carbon, ColorBrewer, Material, and Plot tab10.
+          Need N ≥ 2 to compare against Tableau, Carbon, ColorBrewer, Material, and Observable 10.
         </div>
       </details>
     );

@@ -7,13 +7,15 @@
  *   - Brewer / ColorBrewer — sequential & diverging step recommendations.
  *   - WCAG 2.2 — non-text contrast (1.4.11) ≥ 3:1.
  *
- * User override (PALETTE_VERSION 0.4.0): every categorical chart kind is
- * allowed up to 12 simultaneous slots. The literature ceilings (5–7 for
- * lines, etc.) are demoted to `warn(n)` advisories — the user explicitly
- * wants a 12-slot palette available, and the solver guarantees every
- * reachable N is ΔE / CVD / WCAG compliant. If the runtime probe
- * (`safeMaxN`) can't deliver 12 compliant slots for a given theme /
- * posture, the slider tops out at the highest N that can.
+ * User override: every categorical chart kind is allowed up to 12
+ * simultaneous slots. The literature ceilings (5–7 for lines, etc.) are
+ * demoted to `warn(n)` advisories — the user explicitly wants a 12-slot
+ * palette available. Honesty note: at N=12 the configured ΔE/CVD floors in
+ * `constraints.ts` are deliberately minimal (color alone cannot separate 12
+ * hues under dichromacy); the paired dash / decal / marker-shape scales are
+ * what keep slots identifiable. `safeMaxN` probes the highest N that clears
+ * every configured floor plus WCAG 3:1 contrast, and the slider's safe cap
+ * tops out there.
  */
 import type { ChartKind } from "./chartKinds";
 import type { Posture } from "./constraints";
@@ -46,7 +48,7 @@ export const BEST_PRACTICE: Record<ChartKind, BestPractice> = {
     maxN: CAT_MAX,
     recommendedN: CAT_REC,
     rationale:
-      "Lines must be distinguishable in both color and dash. The system caps at 12 series and guarantees every pair stays distinguishable under deutan / protan / tritan / achromatopsia simulation.",
+      "Lines must be distinguishable in both color and dash. The system caps at 12 series; the solver maximizes pairwise separation under deutan / protan / tritan / achromatopsia simulation, and past ~6 hues the paired dash patterns — not color — are what keep series identifiable.",
     warn: (n) =>
       n > 7
         ? "Past ~7 series, even a perfect palette starts to feel busy — small multiples often read better."
@@ -117,7 +119,7 @@ export const BEST_PRACTICE: Record<ChartKind, BestPractice> = {
     maxN: CAT_MAX,
     recommendedN: CAT_REC,
     rationale:
-      "Filled areas occlude each other. The solver guarantees CVD-distinct hues; at high N prefer translucent fills or switch to lines.",
+      "Filled areas occlude each other. The solver maximizes CVD separation between fills; at high N prefer translucent fills or switch to lines.",
     warn: (n) => (n > 4 ? "Areas overlap heavily above ~4 series — switch to lines or small multiples if readability suffers." : null),
   },
   "stacked-area": {
@@ -145,7 +147,7 @@ export const BEST_PRACTICE: Record<ChartKind, BestPractice> = {
     maxN: CAT_MAX,
     recommendedN: CAT_REC,
     rationale:
-      "Bubbles already encode value via size; color groups them. Solver keeps up to 12 groups CVD-distinct.",
+      "Bubbles already encode value via size; color groups them. The solver maximizes CVD separation for up to 12 groups.",
   },
   donut: {
     family: "categorical",
@@ -172,7 +174,7 @@ export const BEST_PRACTICE: Record<ChartKind, BestPractice> = {
     maxN: CAT_MAX,
     recommendedN: CAT_REC,
     rationale:
-      "Treemap uses size for magnitude; color identifies the top-level group. Up to 12 groups, solver-guaranteed compliant.",
+      "Treemap uses size for magnitude; color identifies the top-level group. Up to 12 groups, solver-optimized with decals as the fallback identity channel.",
   },
   sankey: {
     family: "categorical",

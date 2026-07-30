@@ -83,7 +83,7 @@ const ENTRIES: Entry[] = [
     term: "Relaxation",
     short: "What gave when constraints couldn't all be satisfied.",
     detail:
-      "If the optimizer can't hit every threshold (e.g., N=12 with tight CVD bounds), it loosens constraints in a documented order: grid contrast → ΔL → CVD ΔE → normal ΔE → background ΔE. Every relaxation is reported in the audit, so you can see what was sacrificed.",
+      "If the optimizer can't hit every floor (e.g., N=12 with tight CVD bounds), the audit reports which floors the final palette missed. RELAXATION_ORDER ranks those misses from least to most harmful (grid contrast → ΔL → CVD ΔE → normal ΔE → background ΔE) for humans reading the report — the solver itself runs a single annealing pass rather than loosening constraints stepwise.",
     source: "src/charts/constraints.ts (RELAXATION_ORDER)",
   },
   {

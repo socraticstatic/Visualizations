@@ -21,10 +21,10 @@ type Mode = "normal" | "deutan" | "protan" | "tritan" | "achromatopsia";
 
 const MODES: Array<{ id: Mode; label: string; sub: string; filter: string }> = [
   { id: "normal", label: "Normal", sub: "trichromatic", filter: "none" },
-  { id: "deutan", label: "Deuteranopia", sub: "~6% of men", filter: "url(#cvd-deutan)" },
-  { id: "protan", label: "Protanopia", sub: "~2% of men", filter: "url(#cvd-protan)" },
-  { id: "tritan", label: "Tritanopia", sub: "rare, ~0.01%", filter: "url(#cvd-tritan)" },
-  { id: "achromatopsia", label: "Grayscale", sub: "print / projector", filter: "grayscale(1)" },
+  { id: "deutan", label: "Deuteranopia", sub: "~1% of men (deutan class ~6%)", filter: "url(#cvd-deutan)" },
+  { id: "protan", label: "Protanopia", sub: "~1% of men (protan class ~2%)", filter: "url(#cvd-protan)" },
+  { id: "tritan", label: "Tritanopia", sub: "very rare", filter: "url(#cvd-tritan)" },
+  { id: "achromatopsia", label: "Grayscale", sub: "print / projector", filter: "url(#cvd-gray)" },
 ];
 
 interface Props {

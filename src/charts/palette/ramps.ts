@@ -44,11 +44,13 @@ export function divergingRamp(
   pos: ColorRecord,
   steps: number
 ): ColorRecord[] {
-  // Symmetric around midpoint; matched ΔL on each arm.
+  // Symmetric around midpoint; matched ΔL on each arm. Odd step counts land
+  // one stop exactly on the midpoint; even counts approach it from both sides
+  // without including it (each arm is sampled with the midpoint as an
+  // endpoint, then the midpoint stop is dropped) so no stop is duplicated.
   const half = Math.floor(steps / 2);
   const odd = steps % 2 === 1;
-  const negArm = sequentialRamp(neg, mid, half + (odd ? 1 : 0));
-  const posArm = sequentialRamp(mid, pos, half + (odd ? 1 : 0));
-  // Drop duplicated midpoint when odd.
-  return odd ? [...negArm, ...posArm.slice(1)] : [...negArm, ...posArm];
+  const negArm = sequentialRamp(neg, mid, half + 1);
+  const posArm = sequentialRamp(mid, pos, half + 1);
+  return odd ? [...negArm, ...posArm.slice(1)] : [...negArm.slice(0, -1), ...posArm.slice(1)];
 }

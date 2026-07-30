@@ -6,8 +6,9 @@
  *   - Tableau 10              — Tableau Desktop default categorical (10)
  *   - IBM Carbon Categorical  — Carbon Charts categorical-14 (first 10)
  *   - ColorBrewer Set2        — qualitative Set2 (8)
- *   - Material Design 2014    — primary 500s, picked for high pairwise ΔE (10)
- *   - Observable Plot Tab10   — Plot's "tableau10" interpreter (10)
+ *   - Material Design 2014    — 700-series primaries, picked for contrast on
+ *                               light backgrounds (10)
+ *   - Observable 10           — Observable Plot's "observable10" scheme (10)
  *
  * Every palette is rendered against the *current chart background* so contrast
  * verdicts reflect the user's own theme — not the originating system's.
@@ -52,9 +53,9 @@ export const BENCHMARKS: Benchmark[] = [
     ],
   },
   {
-    id: "tab10",
-    name: "Observable Plot tab10",
-    source: "Plot scheme",
+    id: "observable10",
+    name: "Observable 10",
+    source: "Observable Plot observable10 scheme",
     hexes: [
       "#4269D0", "#EFB118", "#FF725C", "#6CC5B0", "#3CA951",
       "#FF8AB7", "#A463F2", "#97BBF5", "#9C6B4E", "#9498A0",
@@ -62,8 +63,8 @@ export const BENCHMARKS: Benchmark[] = [
   },
   {
     id: "material",
-    name: "Material 500",
-    source: "Material Design primaries",
+    name: "Material 700",
+    source: "Material Design 2014 primaries (700 series)",
     hexes: [
       "#1976D2", "#D32F2F", "#388E3C", "#F57C00", "#7B1FA2",
       "#00796B", "#FBC02D", "#5D4037", "#455A64", "#C2185B",

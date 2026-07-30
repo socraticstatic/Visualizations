@@ -86,7 +86,7 @@ const FAMILY_META = {
     label: "Categorical",
     tone: "border-chart-info/40 bg-chart-info/10 text-chart-info",
     text: "text-chart-info",
-    why: "Discrete slots, no inherent order. Picked for maximum pairwise distinguishability — every pair clears ΔE, CVD, and WCAG thresholds, and slots are paired 1:1 with dash, decal, and marker shape.",
+    why: "Discrete slots, no inherent order. The solver maximizes pairwise separation against the configured ΔE / CVD floors and WCAG contrast, and slots are paired 1:1 with dash, decal, and marker shape — the redundant channels that carry identity at high N.",
   },
   sequential: {
     label: "Sequential",

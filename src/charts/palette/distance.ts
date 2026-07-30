@@ -32,7 +32,15 @@ export function fromHsl(h: number, s: number, l: number): ColorRecord {
 
 /** Read a `hsl(var(--token))` style HSL triple from a CSS variable. */
 export function fromCssVar(varName: string, root: HTMLElement = document.documentElement): ColorRecord {
-  const raw = getComputedStyle(root).getPropertyValue(varName).trim();
+  let raw = getComputedStyle(root).getPropertyValue(varName).trim();
+  // jsdom does not resolve custom-property inheritance from stylesheets or
+  // ancestor elements, so the off-screen themed roots created by
+  // ensureThemedRoot come back empty there. Fall back to the document root,
+  // which is where tests seed tokens inline — in a real browser the first
+  // read always succeeds and this branch is never taken.
+  if (!raw && root !== document.documentElement) {
+    raw = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  }
   if (!raw) throw new Error(`CSS var ${varName} is empty`);
   return fromCss(`hsl(${raw})`);
 }

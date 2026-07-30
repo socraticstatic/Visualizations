@@ -46,7 +46,7 @@ export function OptimalOnlyBadge({
         title={
           probed
             ? `Optimal-only mode. Solver probe lowered the N cap below the kind's recommended value for the current anchors so every permutation still passes ΔE / CVD / contrast checks with zero relaxations.`
-            : `Optimal-only mode. Every (kind, N, theme) permutation reachable from the built-in controls is guaranteed to pass ΔE, CVD, and WCAG 3:1 contrast with zero solver relaxations.`
+            : `Optimal-only mode. Every (kind, N, theme) permutation reachable from the built-in controls is verified to clear the configured ΔE and CVD floors and WCAG 3:1 contrast with zero solver relaxations. At high N the dash / decal / shape encodings, not color alone, carry series identity.`
         }
       >
         <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />

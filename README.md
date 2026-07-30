@@ -2,16 +2,16 @@
 
 By **Micah Boswell** ([socraticstatic](https://github.com/socraticstatic)). Copyright © 2026 Micah Boswell. All rights reserved.
 
-A token-driven, math-backed palette system for ECharts dashboards. Generates categorical, sequential, and diverging palettes that are proven against contrast, color-vision deficiency (CVD), and grayscale, and pairs every color slot with a matching dash, decal, and marker shape so meaning survives even when color fails.
+A token-driven, math-backed palette system for ECharts dashboards. Generates categorical, sequential, and diverging palettes that are audited against WCAG contrast, color-vision deficiency (CVD) simulation, and grayscale, and pairs every color slot with a matching dash, decal, and marker shape so meaning survives even when color fails. Honesty note: past ~6 hues, no palette keeps colors reliably distinct under dichromacy — the configured CVD/ΔE floors in `constraints.ts` are deliberately minimal at high N, and the redundant dash/decal/shape encodings are what carry series identity.
 
-> Current version: **0.1.0** (see `CHANGELOG.md`).
+> Current version: **0.7.0** (`PALETTE_VERSION` in `src/charts/version.ts`; history in `CHANGELOG.md`).
 
 ---
 
 ## Jobs To Be Done
 
 **Primary**
-- **JTBD-1** — Pick a palette I can defend (contrast + CVD + grayscale proven).
+- **JTBD-1** — Pick a palette I can defend (contrast + CVD + grayscale audited).
 - **JTBD-2** — Charts stay readable for colorblind users (color + dash + decal + shape).
 - **JTBD-3** — Same entity stays the same color everywhere.
 - **JTBD-4** — Doesn't break when series count changes (graceful Top-N + Other).
@@ -91,7 +91,7 @@ Semantic chart tokens in `index.css` (HSL, light + dark): surfaces, neutrals, st
 ### Tier 3 — Adapter, demo, lifecycle
 - `echartsTheme.ts` reads CSS vars at runtime and emits an ECharts theme + helpers (`buildLineSeries`, `buildBarSeries`, `buildVisualMap`).
 - `components/charts/EChart.tsx` wraps `echarts-for-react` with atomic theme swap.
-- `/charts` is a **constrained palette builder** beside the chart preview: chart type, N, theme, vision preview, and fixtures are controlled from one place. Posture, palette family, and ramp shape are derived. N is hard-capped to the runtime-probed safe max so every reachable built-in palette passes ΔE / CVD / WCAG checks with zero solver relaxations.
+- `/charts` is a **constrained palette builder** beside the chart preview: chart type, N, theme, vision preview, and fixtures are controlled from one place. Posture, palette family, and ramp shape are derived. The default N snap is capped to the runtime-probed safe max so out-of-the-box palettes clear every configured ΔE / CVD floor and WCAG 3:1 contrast with zero solver relaxations; the slider can be dragged past the safe cap into an educational range where the audit panel shows exactly which floors break.
 - Every render runs the accessibility audit (`audit.ts`): per-vision OKLab ΔE (normal + deutan + protan + tritan + achromatopsia) against per-mode thresholds, plus WCAG 2.2 SC 1.4.11 (≥ 3:1) contrast vs. background. Result is shown as a `pass` / `warn` / `fail` badge with per-vision detail.
 - `setEntityColor(entityId, slotIndex)` persists per-user pins in `localStorage`.
 - `PALETTE_VERSION` aligns with `CHANGELOG.md`.
@@ -118,7 +118,7 @@ Covers the palette primitives (`stableAssign`, `sequentialRamp` L-monotonicity, 
 
 ### Reading the accessibility harness
 - **Overall verdict**: `pass` (all modes pass + WCAG ≥ 3:1), `warn` (≤ 1 vision mode fails, contrast still passes), or `fail`.
-- **Per-vision tiles**: minimum pairwise ΔE under each simulation, vs. the configured threshold.
+- **Per-vision tiles**: minimum pairwise ΔE under each simulation, vs. the configured threshold. Note the CVD and normal-vision thresholds (`constraints.ts`) are deliberately low floors, not perceptual guarantees — they exist to catch outright collisions while the dash/decal/shape scales carry identity at high N.
 - **Worst contrast vs. background**: WCAG 2.2 SC 1.4.11 ratio for non-text marks; threshold ≥ 3:1.
 - **Best-practice rationale**: one-line explanation of why this chart type has its specific limits, plus per-N warnings (e.g. "Pie charts above 5 slices misrepresent magnitudes").
 
@@ -152,7 +152,7 @@ The **Entity pins** panel (categorical charts) lets you lock a series to a speci
 
 ### Benchmark vs. published systems
 
-For categorical charts, a **Benchmark vs. published systems** table scores the current solver palette next to Tableau 10, IBM Carbon Categorical, ColorBrewer Set2, Observable Plot tab10, and Material 500 — using identical math (min pairwise ΔE in OKLab, worst-of-three CVD ΔE, worst contrast vs. *your current background*). ★ marks the winner per column.
+For categorical charts, a **Benchmark vs. published systems** table scores the current solver palette next to Tableau 10, IBM Carbon Categorical, ColorBrewer Set2, Observable 10, and Material 700 — using identical math (min pairwise ΔE in OKLab, worst-of-three CVD ΔE, worst contrast vs. *your current background*). ★ marks the winner per column.
 
 ### Density preview
 

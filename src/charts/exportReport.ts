@@ -70,7 +70,7 @@ const VISION_FILTER: Record<VisionMode, string> = {
   deutan: "url(#cvd-deutan)",
   protan: "url(#cvd-protan)",
   tritan: "url(#cvd-tritan)",
-  achromatopsia: "grayscale(1)",
+  achromatopsia: "url(#cvd-gray)",
 };
 
 const SVG_FILTERS = `
@@ -79,6 +79,7 @@ const SVG_FILTERS = `
     <filter id="cvd-deutan"><feColorMatrix type="matrix" values="0.367 0.861 -0.228 0 0  0.280 0.673 0.047 0 0  -0.012 0.043 0.969 0 0  0 0 0 1 0"/></filter>
     <filter id="cvd-protan"><feColorMatrix type="matrix" values="0.152 1.053 -0.205 0 0  0.115 0.786 0.099 0 0  -0.004 -0.048 1.052 0 0  0 0 0 1 0"/></filter>
     <filter id="cvd-tritan"><feColorMatrix type="matrix" values="1.256 -0.077 -0.179 0 0  -0.078 0.931 0.148 0 0  0.005 0.691 0.304 0 0  0 0 0 1 0"/></filter>
+    <filter id="cvd-gray"><feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0 0 0 1 0"/></filter>
   </defs>
 </svg>`;
 

@@ -5,8 +5,8 @@
  * and the ordered list of active entities. Guarantees:
  *
  *   - Result is a true permutation (no slot used twice) — when two entities
- *     pin to the same slot, later assignments push the earlier one to the
- *     next free slot, preserving overall identity.
+ *     pin to the same slot, the earlier entity keeps it and the later one is
+ *     bumped to the lowest free slot (and reported in `collisions`).
  *   - Entities without pins keep their natural order, filling remaining slots.
  *   - Stable: re-running with the same inputs yields the same output.
  *
