@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { EChart } from "@/components/charts/EChart";
 import {
@@ -56,11 +56,14 @@ const VISION_FILTER: Record<Vision, string> = {
   deutan: "url(#cvd-deutan)",
   protan: "url(#cvd-protan)",
   tritan: "url(#cvd-tritan)",
-  achromatopsia: "grayscale(1)",
+  achromatopsia: "url(#cvd-gray)",
 };
 
 function VisionFilters() {
-  // Approximate Machado-style matrices for in-DOM preview.
+  // Machado 2009 severity-1.0 matrices rounded to 3 dp. SVG filters apply
+  // feColorMatrix in linearRGB by default, matching the linear-space math in
+  // palette/cvd.ts, so the preview and the numeric audit agree. The gray
+  // filter uses the same Rec. 709 luma coefficients as audit.ts toGrayscale.
   return (
     <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden>
       <defs>
@@ -80,6 +83,12 @@ function VisionFilters() {
           <feColorMatrix
             type="matrix"
             values="1.256 -0.077 -0.179 0 0  -0.078 0.931 0.148 0 0  0.005 0.691 0.304 0 0  0 0 0 1 0"
+          />
+        </filter>
+        <filter id="cvd-gray">
+          <feColorMatrix
+            type="matrix"
+            values="0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0.2126 0.7152 0.0722 0 0  0 0 0 1 0"
           />
         </filter>
       </defs>
@@ -201,36 +210,97 @@ function NSlider({
     });
   };
 
-  return (
-    <div className="flex items-center gap-3">
-      <input
-        ref={inputRef}
-        type="range"
-        min={min}
-        max={max}
-        defaultValue={clamped}
-        onPointerDown={() => { draggingRef.current = true; }}
-        onKeyDown={() => { draggingRef.current = true; }}
-        onInput={(e) => {
-          if (labelRef.current) labelRef.current.textContent = (e.target as HTMLInputElement).value;
-          scheduleCommit();
-        }}
-        onPointerUp={commitNow}
-        onKeyUp={commitNow}
-        onBlur={commitNow}
-        className="flex-1 h-3 min-w-[280px] cursor-pointer accent-primary touch-none"
-        title={title}
-      />
+  const range = Math.max(1, max - min);
+  const safeClamped = Math.min(Math.max(safe, min), max);
+  const safePct = ((safeClamped - min) / range) * 100;
+  // Track: safe zone in the focus tint, educational zone (past the safe cap)
+  // in the warn tint — the slider itself shows where the guarantees end.
+  const trackBg =
+    safeClamped >= max
+      ? `linear-gradient(to right, hsl(var(--chart-focus) / 0.35), hsl(var(--chart-focus) / 0.35))`
+      : `linear-gradient(to right, hsl(var(--chart-focus) / 0.35) 0%, hsl(var(--chart-focus) / 0.35) ${safePct}%, hsl(var(--chart-warn) / 0.3) ${safePct}%, hsl(var(--chart-warn) / 0.3) 100%)`;
 
-      <span ref={labelRef} className="tabular-nums w-8 text-base font-medium">{clamped}</span>
-      <span className="text-[10px] text-chart-axis">
-        min {min} · safe {safe} · max {max}
-        {overflowLabel && (
-          <span className="ml-1 text-chart-negative" title={overflowLabel}>
-            ⚠ above safe cap
+  const stepBy = (delta: number) => {
+    const next = Math.min(max, Math.max(min, Number(inputRef.current?.value ?? clamped) + delta));
+    if (inputRef.current) inputRef.current.value = String(next);
+    if (labelRef.current) labelRef.current.textContent = String(next);
+    draggingRef.current = false;
+    commitValue(next);
+  };
+
+  const stepBtn =
+    "flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-chart-grid bg-chart-bg text-base font-medium text-foreground transition-colors duration-150 hover:bg-chart-grid/40 active:scale-95 disabled:pointer-events-none disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chart-focus";
+
+  return (
+    <div className="space-y-0.5">
+      <div className="flex items-center gap-3">
+        <button type="button" aria-label={`Decrease to ${clamped - 1}`} className={stepBtn} onClick={() => stepBy(-1)} disabled={clamped <= min}>
+          −
+        </button>
+        <div className="relative flex-1 min-w-[240px]">
+          <input
+            ref={inputRef}
+            type="range"
+            min={min}
+            max={max}
+            defaultValue={clamped}
+            onPointerDown={() => { draggingRef.current = true; }}
+            onKeyDown={() => { draggingRef.current = true; }}
+            onInput={(e) => {
+              if (labelRef.current) labelRef.current.textContent = (e.target as HTMLInputElement).value;
+              scheduleCommit();
+            }}
+            onPointerUp={commitNow}
+            onKeyUp={commitNow}
+            onBlur={commitNow}
+            className="n-slider touch-none"
+            style={{ "--n-track": trackBg } as CSSProperties}
+            title={title}
+          />
+          {/* Tick per step; the safe-cap boundary tick is emphasized. */}
+          <div className="pointer-events-none absolute inset-x-[11px] top-[19px] flex justify-between" aria-hidden>
+            {Array.from({ length: range + 1 }, (_, i) => {
+              const v = min + i;
+              return (
+                <span
+                  key={v}
+                  className={
+                    v === safeClamped && safeClamped < max
+                      ? "h-2 w-0.5 rounded-full bg-chart-warn"
+                      : "h-1.5 w-px bg-chart-axis/40"
+                  }
+                />
+              );
+            })}
+          </div>
+          {/* min / safe / max labels aligned to their track positions. */}
+          <div className="relative mx-[11px] h-4 text-[10px] leading-4 text-chart-axis" aria-hidden>
+            <span className="absolute left-0">{min}</span>
+            {safeClamped > min && safeClamped < max && (
+              <span className="absolute -translate-x-1/2 font-medium text-foreground" style={{ left: `${safePct}%` }}>
+                safe {safeClamped}
+              </span>
+            )}
+            <span className="absolute right-0">
+              {safeClamped >= max ? `safe · max ${max}` : `max ${max}`}
+            </span>
+          </div>
+        </div>
+        <button type="button" aria-label={`Increase to ${clamped + 1}`} className={stepBtn} onClick={() => stepBy(1)} disabled={clamped >= max}>
+          +
+        </button>
+        <div className="flex min-w-[56px] shrink-0 flex-col items-center justify-center rounded-md border border-chart-grid bg-chart-bg px-2.5 py-1">
+          <span ref={labelRef} className="tabular-nums text-lg font-semibold leading-5">
+            {clamped}
           </span>
-        )}
-      </span>
+          <span className="text-[10px] leading-3 text-chart-axis">of {max}</span>
+        </div>
+      </div>
+      {overflowLabel && (
+        <p className="text-[11px] text-chart-negative" title={overflowLabel}>
+          ⚠ above the safe cap ({safeClamped}) — the audit panel shows which floors break
+        </p>
+      )}
     </div>
   );
 }
@@ -1230,7 +1300,7 @@ const ChartsDemo = () => {
           </div>
           <h1 className="text-3xl font-semibold tracking-tight">Micah's Chart System for Sane and Useful Color Strategies</h1>
           <p className="text-sm text-chart-axis">
-            Pick a chart type and the number of data points — get a proven palette with matched dash, decal, and
+            Pick a chart type and the number of data points — get an audited palette with matched dash, decal, and
             shape encodings. <span className="opacity-80">v{PALETTE_VERSION}</span>
           </p>
         </header>
@@ -1241,7 +1311,7 @@ const ChartsDemo = () => {
             <h2 className="text-sm font-medium uppercase tracking-wide text-chart-axis">Palette builder</h2>
             {family === "categorical" ? (
               <span className="text-[11px] text-chart-positive">
-                Constrained mode · every available N passes ΔE / CVD / WCAG
+                Constrained mode · default N clears every configured floor; the audit flags any N that doesn't
               </span>
             ) : !audit.bgPass ? (
               <span className="text-[11px] text-destructive">
@@ -1435,8 +1505,8 @@ const ChartsDemo = () => {
           <div id="flow-verify" className="scroll-mt-20 space-y-4">
             {family !== "categorical" && (
               <div className="rounded border border-chart-grid/50 bg-chart-grid/5 px-3 py-2 text-[11px] text-chart-axis">
-                <span className="font-medium text-foreground">Ramp audit scope:</span> metrics below cover the {n} discrete ramp stops.
-                ECharts renders a <span className="font-medium">continuous gradient</span> between stops — colors at intermediate data values are interpolated in sRGB and are not individually audited.
+                <span className="font-medium text-foreground">Ramp audit scope:</span> the chart renders {n} discrete piecewise bins,
+                one per audited ramp stop — every color on screen is a color the metrics below cover.
               </div>
             )}
             <AccessibilityHarness audit={audit} colors={auditedColors.map((c) => c.hex)} bgHex={chartTheme.tokens.bg.hex} />
@@ -1724,7 +1794,9 @@ const ChartsDemo = () => {
           theme,
           themeA: chartTheme,
           themeB: compare && vision === "normal" ? chartThemeB : undefined,
-          rampSteps: 9,
+          // Match the rendered chart: seq/div exports carry the same number
+          // of stops the builder is showing; categorical kinds default to 9.
+          rampSteps: family === "sequential" ? n : family === "diverging" ? Math.max(3, n) : 9,
         }}
       />
       <CoachTour open={tourOpen} onClose={() => setTourOpen(false)} />

@@ -238,7 +238,16 @@ export function buildBarSeries(
   });
 }
 
-/** Build a sequential or diverging visualMap config. */
+/**
+ * Build a sequential or diverging visualMap config.
+ *
+ * Piecewise, with exactly `steps` bins — one per audited ramp stop — so the
+ * colors on screen ARE the colors the accessibility harness audits, and the
+ * N slider visibly drives the binning. (The old `type: "continuous"` map
+ * interpolated a gradient between fixed endpoints: N changed which stops got
+ * audited but had no visible effect on the chart, and intermediate rendered
+ * colors were never audited.)
+ */
 export function buildVisualMap(
   theme: ChartTheme,
   kind: "sequential" | "diverging",
@@ -250,13 +259,13 @@ export function buildVisualMap(
       ? sequentialRamp(theme.tokens.seqLow, theme.tokens.seqHigh, steps).map((c) => c.hex)
       : divergingRamp(theme.tokens.divNeg, theme.tokens.divMid, theme.tokens.divPos, steps).map((c) => c.hex);
   return {
-    type: "continuous" as const,
+    type: "piecewise" as const,
+    splitNumber: steps,
     min: options.min,
     max: options.max,
     inRange: { color: colors },
     textStyle: { color: theme.tokens.axis.hex },
     left: "right" as const,
     top: "middle" as const,
-    calculable: true,
   };
 }

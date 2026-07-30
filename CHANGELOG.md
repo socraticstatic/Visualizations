@@ -8,6 +8,24 @@ The version here is also exported from code as `PALETTE_VERSION`.
 
 ## [Unreleased]
 
+### Fixed (2026-07-30 ramp reconnect + slider redesign)
+- **Ramp steps now visibly drive sequential/diverging charts.** Every seq/div chart except the calendar heatmap used a `type: "continuous"` visualMap: the N slider changed how many ramp stops were *audited*, but the chart rendered a continuous gradient between fixed endpoints — N had no visible effect and the rendered colors were never the audited ones. `buildVisualMap` is now piecewise with exactly N bins, one per audited stop, so the colors on screen ARE the audited colors. The "continuous gradient is not audited" disclosure banner is replaced by an accurate statement of the new behavior, and palette exports now carry the same number of seq/div stops the builder is rendering (was hardcoded 9).
+- **N / ramp-steps slider rebuilt for usability.** Was a bare native range input with a floating number and a microscopic `min · safe · max` caption. Now: a styled track whose fill shows the safe zone (focus tint) vs. the educational zone past the safe cap (warn tint), a tick mark per step with the safe-cap tick emphasized, min/safe/max labels aligned to their actual track positions, − / + stepper buttons for precise changes, a prominent tabular value chip ("N of max"), and hover/active/focus-visible states. Drag performance semantics unchanged (uncontrolled input, rAF-coalesced commit).
+- Base polish: `text-wrap: balance` on headings, `text-wrap: pretty` on paragraphs, smooth scrolling.
+
+### Fixed (2026-07-30 accuracy audit)
+- **CRITICAL — restored the published Machado 2009 DEUTAN matrix (`palette/cvd.ts`).** Commit `4f55074` ("fix(accuracy): correct DEUTAN matrix") did the opposite of its message: it replaced the correct published severity-1.0 deuteranopia values (G row `0.280085, 0.672501, 0.047413`; B row `-0.011820, 0.042940, 0.968881`) with values that appear nowhere in the paper. The corrupted matrix left pure red fully red under deutan simulation (a real deuteranope sees it collapse toward olive), so every deutan number in the audit, benchmark panel, semantic role audit, and solver overstated colorblind safety — while the SVG preview filters (which kept the correct matrix) contradicted the numbers on screen. Verified against the paper's published table; added `__tests__/cvd.test.ts` pinning all three matrices and the red-collapses-toward-olive property so this cannot silently regress.
+- **Even-step diverging ramps duplicated the midpoint (`palette/ramps.ts`).** `divergingRamp(neg, mid, pos, 6)` returned the midpoint twice as adjacent identical stops. Even step counts now approach the midpoint from both sides without including it; odd counts still land exactly one stop on it. Tests added for both properties.
+- **Grayscale preview now matches the grayscale audit.** The UI used CSS `grayscale(1)` (gamma-space) while `audit.ts` linearizes with Rec. 709 coefficients. Replaced with an SVG `#cvd-gray` feColorMatrix (linearRGB, same coefficients) in `ChartsDemo`, `VisionMatrix`, and the exported HTML report.
+- **Test suite runs green again.** (1) `overrides.ts` now uses `window.localStorage` explicitly with an in-memory fallback — Node 22+ ships a disabled global `localStorage` that silently no-opped entity pins under vitest. (2) `fromCssVar` falls back to `documentElement` when an off-screen themed root resolves empty — jsdom does not implement custom-property inheritance, which crashed the `builtinBuilderInvariant` and `variantCapInvariant` suites before a single test ran.
+- **`bandFor` chroma bias:** `high` and `medium` were identical bands, so the documented exploratory/comparative distinction did not exist. `high` is now genuinely higher chroma (0.10–0.30).
+
+### Changed (2026-07-30 accuracy audit)
+- **Truth-in-labeling pass on every safety claim.** "Proven palette" → "audited palette"; "guarantees every pair stays distinguishable under CVD" → accurate description of minimal ΔE floors plus redundant dash/decal/shape encodings (README, `bestPractices.ts` rationales, `OptimalOnlyBadge`, `BuilderAuditStatus` headline and tooltip, `Glossary`). `RELAXATION_ORDER` docs now state the solver reports missed floors rather than stepping through relaxations. Vision-matrix prevalence labels no longer attach whole-class rates to dichromatic conditions (deuteranopia is ~1% of men; the deutan class ~6%).
+- **Benchmark labels corrected.** "Material 500" was actually the Material 700 series (e.g. `#1976D2` is blue-700); renamed. "Observable Plot tab10" was Observable's `observable10` scheme, not `tableau10`; renamed.
+- **README version line synced** to `PALETTE_VERSION` (0.7.0); changelog consolidated to a single `[Unreleased]` section with `0.1.0` at the bottom in standard newest-first order. A prior entry's "All 1442 tests pass" claim was unverifiable at audit time — both invariant suites crashed at import in this environment, so only 24 tests actually ran; annotated below. After this audit's fixes the full suite (1772 tests) runs and passes.
+- **Invariant suites aligned with shipped behavior.** `builtinBuilderInvariant` and `variantCapInvariant` solved with brand-anchor hard locks, but `getChartTheme` deliberately solves with `locks: []` (anchors are preferences) and `safeMaxN` probes that no-locks path — the suites tested a dead code path and asserted a monotone guarantee (`every N ≤ cap passes`) that safeMaxN's own docs disclaim. They now exercise `getChartTheme` directly: full compliance is asserted at the safe cap (the out-of-the-box state), and intermediate Ns assert that any missed floor is reported in `solve.relaxations`, never silent. Also ~45× faster (163s → 3.6s) via the theme cache.
+
 ### Changed
 - **Full UX/UAT pass on the surrounding harness.**
   - `AutoAuditSummary`: rewrote the "permutations not optimal" alert. Solver pass-rate is non-monotone in N (smaller N can need a relaxation while a larger N satisfies everything — already documented in `safeMaxN`), so the panel no longer asks the user to "report this combination" or styles itself as a destructive alert. It now uses the warn token + `role="status"` and explains the trade-off.
@@ -35,7 +53,7 @@ The version here is also exported from code as `PALETTE_VERSION`.
 - **Light theme chart stayed visually dark.** Two bugs compounded: (1) the theme-sync effect was a regular `useEffect`, so the `chartTheme` memo had already resolved its tokens against the still-`.dark` documentElement by the time the class was removed, and no re-render was triggered afterward; (2) light-theme lookups read directly from `documentElement`, which in compare mode could be flipped to `.dark` by the *other* chart's theme. Promoted the sync to `useLayoutEffect` + `colorRev` bump, and replaced `ensureDarkRoot()` with `ensureThemedRoot("dark"|"light")` so each theme resolves its `--chart-*` tokens from a dedicated off-screen root that is immune to whatever class is on `<html>`.
 
 ### Fixed
-- **Builder N slider was collapsing to 1–2 in the browser.** `getChartTheme(theme="dark")` looked for a `.dark` element with `document.querySelector(".dark")` and fell back to `documentElement` when none existed — but the app never adds `.dark` to `<html>`, so dark-theme requests were silently reading the *light* `--chart-*` tokens. The orange anchor (`28 88% 50%`) then failed the ≥3:1 WCAG contrast probe against the light `#fff` background, `safeMaxN` collapsed to 1, and the slider hard-capped there. Added `ensureDarkRoot()` which mounts a hidden `<div data-chart-dark-root class="dark">` under `<body>` so `getComputedStyle` resolves the real dark tokens. Tests that seed their own `.dark` element still win (the helper prefers any existing one). All 1442 tests pass; N now opens up to each kind's full safe cap (e.g. line = 5, bar = 6).
+- **Builder N slider was collapsing to 1–2 in the browser.** `getChartTheme(theme="dark")` looked for a `.dark` element with `document.querySelector(".dark")` and fell back to `documentElement` when none existed — but the app never adds `.dark` to `<html>`, so dark-theme requests were silently reading the *light* `--chart-*` tokens. The orange anchor (`28 88% 50%`) then failed the ≥3:1 WCAG contrast probe against the light `#fff` background, `safeMaxN` collapsed to 1, and the slider hard-capped there. Added `ensureDarkRoot()` which mounts a hidden `<div data-chart-dark-root class="dark">` under `<body>` so `getComputedStyle` resolves the real dark tokens. Tests that seed their own `.dark` element still win (the helper prefers any existing one). All 1442 tests pass *(2026-07-30 note: not reproducible — at audit time both invariant suites crashed at import under jsdom, so only 24 tests ran; see the accuracy-audit entry above)*. N now opens up to each kind's full safe cap (e.g. line = 5, bar = 6).
 
 ### Changed
 - **Palette builder moved to top of `/charts`.** The builder section (chart preview + N/kind/theme controls + vision toggle + rule explainer) now renders directly under the flow stepper, above the audit/summary suite (`OptimalOnlyBadge`, `AutoAuditSummary`, `FullPermutationAudit`, `BuilderAuditStatus`, `AuditSummaryCard`, compare scorecards). The builder is the point of the app, so it gets the primary fold and everything else slides below it.
@@ -195,25 +213,6 @@ The version here is also exported from code as `PALETTE_VERSION`.
 ### Removed
 - Theme / posture / vision toggles from the `/charts` UI (they were user-facing knobs on a system that's supposed to decide for you).
 
-## [0.1.0] - 2026-05-06
-
-### Added
-- Project plan covering tokens, optimizer, encoding scales, ECharts adapter, demo, and QA harness.
-- `README.md` mirroring the plan with run + QA-harness instructions.
-- `CHANGELOG.md` (this file), Keep-a-Changelog format, semver-aligned with `PALETTE_VERSION`.
-- Documentation-maintenance contract: every change updates README + CHANGELOG; persisted to project memory.
-- Dependencies: `culori`, `echarts`, `echarts-for-react`.
-- Tier 1: chart design tokens in `src/index.css` (light + dark) and Tailwind `chart` color group in `tailwind.config.ts`.
-- Tier 1: `src/charts/constraints.ts` with ΔE thresholds, posture presets, overflow rule, relaxation priority.
-- Tier 2: `src/charts/palette/` — `cvd.ts` (Machado 2009), `distance.ts` (OKLab ΔE + worst-of-three CVD), `gamut.ts` (chroma-reduction), `categorical.ts` (seeded farthest-point + annealing maximin solver), `ramps.ts` (monotonic-L sequential + diverging), `assignment.ts` (bipartite stable assignment).
-- Tier 2: `src/charts/encoding.ts` aligning color, dash, decal, and marker-shape scales 1:1.
-- Tier 3: `src/charts/echartsTheme.ts` adapter with `buildLineSeries`, `buildBarSeries`, `buildVisualMap` helpers.
-- Tier 3: `src/components/charts/EChart.tsx` wrapper with atomic theme swap.
-- Tier 3: `/charts` demo route — multi-line + N slider, stacked bar with decals, scatter with shapes, sequential heatmap, diverging variance bar, KPI tile.
-- Tier 3: QA harness — theme / vision / posture toggles + contrast report with pass/fail and relaxations.
-- Lifecycle: `setEntityColor(entityId, slotIndex)` per-user pin in `localStorage`; `PALETTE_VERSION` constant exported.
-- Tests in `src/charts/__tests__/` — property tests on the optimizer, unit tests on gamut/ramps/assignment.
-
 ### Added
 - Sticky flow stepper (Choose → Build → Verify → Storytell → Reuse → Ship → Reference) on `/charts` that highlights the section currently in view and scrolls to it on click. New component `src/components/charts/FlowStepper.tsx`; section anchors added in `ChartsDemo.tsx`.
 - Inline "Next: <stage> →" quick-nav buttons at the end of Verify, Storytell, Reuse, and Ship stages. Scrolls forward through the workflow without losing palette/kind/N/theme selections. New component `src/components/charts/NextStageButton.tsx`.
@@ -236,9 +235,27 @@ The version here is also exported from code as `PALETTE_VERSION`.
 
 `PALETTE_VERSION` bumped to `0.3.0`.
 
-## [Unreleased]
 ### Fixed
 - ChartsDemo N slider is now fully uncontrolled during drag (DOM-only thumb + label updates via refs); React only re-renders on release, eliminating lag.
 - ChartsDemo N slider: coalesce solver runs to last value with 120ms idle debounce so rapid keyboard/scrub no longer queues a solve per keystroke.
 - ChartsDemo: memoized EChart wrapper and switched ECharts to `lazyUpdate=true` so 8+ chart instances coalesce setOption calls and skip redraws when props are unchanged.
 - ChartsDemo: lazy-mount Vision Matrix (5 charts), Emphasis Preview, and Density Preview via IntersectionObserver so off-screen panels don't re-render on every palette change.
+
+## [0.1.0] - 2026-05-06
+
+### Added
+- Project plan covering tokens, optimizer, encoding scales, ECharts adapter, demo, and QA harness.
+- `README.md` mirroring the plan with run + QA-harness instructions.
+- `CHANGELOG.md` (this file), Keep-a-Changelog format, semver-aligned with `PALETTE_VERSION`.
+- Documentation-maintenance contract: every change updates README + CHANGELOG; persisted to project memory.
+- Dependencies: `culori`, `echarts`, `echarts-for-react`.
+- Tier 1: chart design tokens in `src/index.css` (light + dark) and Tailwind `chart` color group in `tailwind.config.ts`.
+- Tier 1: `src/charts/constraints.ts` with ΔE thresholds, posture presets, overflow rule, relaxation priority.
+- Tier 2: `src/charts/palette/` — `cvd.ts` (Machado 2009), `distance.ts` (OKLab ΔE + worst-of-three CVD), `gamut.ts` (chroma-reduction), `categorical.ts` (seeded farthest-point + annealing maximin solver), `ramps.ts` (monotonic-L sequential + diverging), `assignment.ts` (bipartite stable assignment).
+- Tier 2: `src/charts/encoding.ts` aligning color, dash, decal, and marker-shape scales 1:1.
+- Tier 3: `src/charts/echartsTheme.ts` adapter with `buildLineSeries`, `buildBarSeries`, `buildVisualMap` helpers.
+- Tier 3: `src/components/charts/EChart.tsx` wrapper with atomic theme swap.
+- Tier 3: `/charts` demo route — multi-line + N slider, stacked bar with decals, scatter with shapes, sequential heatmap, diverging variance bar, KPI tile.
+- Tier 3: QA harness — theme / vision / posture toggles + contrast report with pass/fail and relaxations.
+- Lifecycle: `setEntityColor(entityId, slotIndex)` per-user pin in `localStorage`; `PALETTE_VERSION` constant exported.
+- Tests in `src/charts/__tests__/` — property tests on the optimizer, unit tests on gamut/ramps/assignment.

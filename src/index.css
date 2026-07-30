@@ -181,7 +181,76 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+}
+
+@layer components {
+  /* Builder N / ramp-steps slider. The track gradient (safe zone vs.
+     educational zone) is passed from React via the --n-track custom prop. */
+  .n-slider {
+    @apply w-full cursor-pointer appearance-none bg-transparent;
+    height: 24px;
+  }
+  .n-slider:focus {
+    outline: none;
+  }
+  .n-slider::-webkit-slider-runnable-track {
+    height: 8px;
+    border-radius: 9999px;
+    background: var(--n-track, hsl(var(--chart-focus) / 0.35));
+  }
+  .n-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -7px;
+    height: 22px;
+    width: 22px;
+    border-radius: 9999px;
+    background: hsl(var(--chart-focus));
+    border: 3px solid hsl(var(--chart-bg));
+    box-shadow: 0 1px 4px hsl(var(--chart-focus) / 0.45);
+    transition: transform 150ms ease, box-shadow 150ms ease;
+  }
+  .n-slider:hover::-webkit-slider-thumb {
+    transform: scale(1.12);
+  }
+  .n-slider:active::-webkit-slider-thumb {
+    transform: scale(1.02);
+  }
+  .n-slider:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px hsl(var(--chart-focus) / 0.4);
+  }
+  .n-slider::-moz-range-track {
+    height: 8px;
+    border-radius: 9999px;
+    background: var(--n-track, hsl(var(--chart-focus) / 0.35));
+  }
+  .n-slider::-moz-range-thumb {
+    height: 22px;
+    width: 22px;
+    border-radius: 9999px;
+    background: hsl(var(--chart-focus));
+    border: 3px solid hsl(var(--chart-bg));
+    box-shadow: 0 1px 4px hsl(var(--chart-focus) / 0.45);
+    transition: transform 150ms ease, box-shadow 150ms ease;
+  }
+  .n-slider:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 3px hsl(var(--chart-focus) / 0.4);
   }
 }
