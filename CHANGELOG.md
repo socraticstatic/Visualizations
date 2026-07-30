@@ -8,6 +8,12 @@ The version here is also exported from code as `PALETTE_VERSION`.
 
 ## [Unreleased]
 
+### Fixed (2026-07-30 follow-ups)
+- **Theme flip no longer resets the step/series count.** `onApply` fell back to `DEFAULT_N` for changes that didn't carry `n`, and a second effect re-snapped N on `[kind, theme]`. N now survives theme toggles; kind changes still snap to the kind's default.
+- **Sequential ramps are multi-hue (teal → indigo/violet).** Single-hue ramps compressed adjacent steps to ΔE ≈ 3.5 at 9 steps because both endpoints must clear WCAG 3:1; hue travel raises adjacent-step ΔE to ~4.5–6.6 (light) / ~4.6–4.8 (dark) with every stop verified ≥ 3:1 on both themes. Piecewise legend labels are integers and the heatmap grid clears them.
+- **Coach tour matches the UI that exists.** Step 2 describes the real slider; the dead step anchored to the removed ColorPicker is replaced by a vision-preview step. The tour re-measures its anchor on a tick and no longer self-dismisses when the user tries the control a step describes.
+- **Removed the circular "← Home" breadcrumb** ("/" and "/charts" render the same page).
+
 ### Fixed (2026-07-30 ramp reconnect + slider redesign)
 - **Ramp steps now visibly drive sequential/diverging charts.** Every seq/div chart except the calendar heatmap used a `type: "continuous"` visualMap: the N slider changed how many ramp stops were *audited*, but the chart rendered a continuous gradient between fixed endpoints — N had no visible effect and the rendered colors were never the audited ones. `buildVisualMap` is now piecewise with exactly N bins, one per audited stop, so the colors on screen ARE the audited colors. The "continuous gradient is not audited" disclosure banner is replaced by an accurate statement of the new behavior, and palette exports now carry the same number of seq/div stops the builder is rendering (was hardcoded 9).
 - **N / ramp-steps slider rebuilt for usability.** Was a bare native range input with a floating number and a microscopic `min · safe · max` caption. Now: a styled track whose fill shows the safe zone (focus tint) vs. the educational zone past the safe cap (warn tint), a tick mark per step with the safe-cap tick emphasized, min/safe/max labels aligned to their actual track positions, − / + stepper buttons for precise changes, a prominent tabular value chip ("N of max"), and hover/active/focus-visible states. Drag performance semantics unchanged (uncontrolled input, rAF-coalesced commit).
