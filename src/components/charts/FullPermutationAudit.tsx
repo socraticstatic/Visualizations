@@ -9,8 +9,7 @@ import {
 } from "lucide-react";
 import { BEST_PRACTICE } from "@/charts/bestPractices";
 import { CHART_KIND_LABEL, type ChartKind } from "@/charts/chartKinds";
-import { solveCategorical } from "@/charts/palette/categorical";
-import { deltaE, cvdDeltaE, fromHsl, type ColorRecord } from "@/charts/palette/distance";
+import { deltaE, cvdDeltaE, type ColorRecord } from "@/charts/palette/distance";
 import { contrastRatio } from "@/charts/audit";
 import { THRESHOLDS, CVD_SEVERITY } from "@/charts/constraints";
 import { safeMaxN } from "@/charts/builtinBounds";
@@ -38,18 +37,13 @@ interface PermRow {
  */
 function auditPermutation(theme: Theme, kind: ChartKind, n: number): PermRow {
   const rule = BEST_PRACTICE[kind];
-  const tokens = getChartTheme(theme, rule.posture, n).tokens;
-  const bg: ColorRecord = tokens.bg;
-  const grid: ColorRecord = tokens.grid;
-  const anchors: ColorRecord[] = tokens.anchors;
-
-  const { palette, relaxations } = solveCategorical({
-    n,
-    posture: rule.posture,
-    background: bg,
-    grid,
-    locks: anchors.slice(0, Math.min(3, n)),
-  });
+  // Audit the exact palettes the builder renders: getChartTheme (cached,
+  // locks: []). Re-solving here with anchor hard-locks audited palettes the
+  // app never shows, contradicted the live harness, and made the 374-row
+  // sweep re-anneal from scratch instead of hitting the theme cache.
+  const t = getChartTheme(theme, rule.posture, n);
+  const bg: ColorRecord = t.tokens.bg;
+  const { palette, relaxations } = t.solve;
 
   const failures: Failure[] = [];
 
@@ -70,14 +64,14 @@ function auditPermutation(theme: Theme, kind: ChartKind, n: number): PermRow {
       if (de < THRESHOLDS.minDeltaENormal) {
         failures.push({
           tag: "ΔE",
-          detail: `slots ${i + 1}↔${j + 1} ΔE ${de.toFixed(1)} < ${THRESHOLDS.minDeltaENormal}`,
+          detail: `slots ${i + 1}↔${j + 1} ΔE ${de.toFixed(2)} < floor ${THRESHOLDS.minDeltaENormal}`,
         });
       }
       const dec = cvdDeltaE(palette[i], palette[j], CVD_SEVERITY);
       if (dec < THRESHOLDS.minDeltaECvd) {
         failures.push({
           tag: "CVD-ΔE",
-          detail: `slots ${i + 1}↔${j + 1} CVD-ΔE ${dec.toFixed(1)} < ${THRESHOLDS.minDeltaECvd}`,
+          detail: `slots ${i + 1}↔${j + 1} CVD-ΔE ${dec.toFixed(2)} < floor ${THRESHOLDS.minDeltaECvd}`,
         });
       }
     }
@@ -157,12 +151,11 @@ export function FullPermutationAudit({ hasManualOverrides }: FullPermutationAudi
       }
       setProgress({ done: i, total: plan.length });
       if (i < plan.length) {
-        // Yield to the browser so the progress bar paints between chunks.
-        if (typeof requestAnimationFrame !== "undefined") {
-          requestAnimationFrame(tick);
-        } else {
-          setTimeout(tick, 0);
-        }
+        // Yield with setTimeout, NOT requestAnimationFrame: rAF never fires
+        // in a hidden tab, which froze the sweep at the first chunk whenever
+        // the user switched away mid-run. setTimeout still lets the progress
+        // bar paint between chunks when the tab is visible.
+        setTimeout(tick, 0);
       } else {
         setRows(collected);
         setRunning(false);
@@ -285,8 +278,11 @@ export function FullPermutationAudit({ hasManualOverrides }: FullPermutationAudi
           {anyFailures ? (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">
-                The N slider should structurally prevent these — if you see rows here, the
-                runtime cap (`safeMaxN`) is out of sync with the constraint thresholds.
+                These are the specific (theme, kind, N) combinations where the solver could not
+                clear every floor. This is expected: the solver's pass-rate is not monotone in N,
+                so a value below the safe cap can miss a floor the cap itself clears. The default
+                N snap avoids these; if you dial one in by hand, the audit badge beside the chart
+                flags it live.
               </p>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-xs">
@@ -401,7 +397,3 @@ function summarizeByThemeKind(rows: PermRow[]) {
   }
   return Array.from(groups.values());
 }
-
-// Silence unused-import warning when the dev tree-shakes fromHsl (kept for
-// future direct-token paths; currently we read from getChartTheme).
-void fromHsl;

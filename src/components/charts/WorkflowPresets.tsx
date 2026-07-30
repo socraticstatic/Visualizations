@@ -132,7 +132,7 @@ export function WorkflowPresets({ current, onApply }: Props) {
 
   return (
     <details
-      className="rounded-lg border border-chart-grid bg-chart-surface p-4 text-xs"
+      className="panel p-4 text-xs"
       open
     >
       <summary className="cursor-pointer text-sm font-medium text-chart-axis">

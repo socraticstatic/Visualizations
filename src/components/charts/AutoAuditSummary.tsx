@@ -2,12 +2,11 @@ import { useMemo } from "react";
 import { CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
 import { BEST_PRACTICE } from "@/charts/bestPractices";
 import type { ChartKind } from "@/charts/chartKinds";
-import { solveCategorical } from "@/charts/palette/categorical";
-import { fromHsl, deltaE, cvdDeltaE, type ColorRecord } from "@/charts/palette/distance";
+import { deltaE, cvdDeltaE, type ColorRecord } from "@/charts/palette/distance";
 import { contrastRatio } from "@/charts/audit";
 import { THRESHOLDS, CVD_SEVERITY } from "@/charts/constraints";
 import { safeMaxN } from "@/charts/builtinBounds";
-import type { Theme } from "@/charts/echartsTheme";
+import { getChartTheme, type Theme } from "@/charts/echartsTheme";
 import { CHART_KIND_LABEL } from "@/charts/chartKinds";
 
 /**
@@ -54,10 +53,7 @@ interface PermResult {
 
 function auditVariant(
   kind: ChartKind,
-  theme: Theme,
-  anchors: ColorRecord[],
-  background: ColorRecord,
-  grid: ColorRecord
+  theme: Theme
 ): { results: PermResult[]; cap: number; skipped: boolean } {
   const rule = BEST_PRACTICE[kind];
   if (rule.family !== "categorical") {
@@ -66,13 +62,12 @@ function auditVariant(
   const cap = Math.min(rule.recommendedN, safeMaxN(theme, rule.posture));
   const results: PermResult[] = [];
   for (let n = 1; n <= cap; n++) {
-    const { palette, relaxations } = solveCategorical({
-      n,
-      posture: rule.posture,
-      background,
-      grid,
-      locks: anchors.slice(0, Math.min(3, n)),
-    });
+    // Audit the exact palettes the builder renders: getChartTheme (cached,
+    // locks: []). Re-solving here with anchor hard-locks audited palettes
+    // the app never shows and contradicted the live harness.
+    const t = getChartTheme(theme, rule.posture, n);
+    const { palette, relaxations } = t.solve;
+    const background = t.tokens.bg;
     let ok = relaxations.length === 0;
     let reason: string | undefined;
     if (!ok) reason = `solver relaxed ${String(relaxations[0] ?? "constraint")}`;
@@ -106,26 +101,11 @@ export function AutoAuditSummary({
   kind,
   theme,
   hasManualOverrides,
-  anchors,
-  background,
-  grid,
   variantB,
 }: AutoAuditSummaryProps) {
-  const a = useMemo(
-    () => auditVariant(kind, theme, anchors, background, grid),
-    [kind, theme, anchors, background, grid]
-  );
+  const a = useMemo(() => auditVariant(kind, theme), [kind, theme]);
   const b = useMemo(
-    () =>
-      variantB
-        ? auditVariant(
-            variantB.kind,
-            variantB.theme,
-            variantB.anchors,
-            variantB.background,
-            variantB.grid
-          )
-        : null,
+    () => (variantB ? auditVariant(variantB.kind, variantB.theme) : null),
     [variantB]
   );
 

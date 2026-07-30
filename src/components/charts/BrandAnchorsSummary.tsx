@@ -25,7 +25,7 @@ export function BrandAnchorsSummary({ theme, onEdit }: Props) {
   const bg = theme.tokens.bg;
 
   return (
-    <section className="rounded-lg border border-chart-grid bg-chart-surface p-4 space-y-3">
+    <section className="panel p-4 space-y-3">
       <header className="flex items-center justify-between gap-2">
         <div>
           <h2 className="text-sm font-medium uppercase tracking-wide text-chart-axis">
@@ -79,7 +79,7 @@ export function BrandAnchorsSummary({ theme, onEdit }: Props) {
                 ? "text-chart-axis"
                 : safeDe && safeCr
                 ? "text-chart-positive"
-                : "text-chart-warning";
+                : "text-chart-warn";
               return (
                 <tr key={i} className="border-t border-chart-grid/50">
                   <td className="py-1 pr-4 tabular-nums text-chart-axis">{i + 1}</td>

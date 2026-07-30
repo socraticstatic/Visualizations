@@ -58,6 +58,12 @@ export function getEntityColor(entityId: string): number | undefined {
   return read()[entityId];
 }
 
+export function clearEntityColor(entityId: string) {
+  const m = read();
+  delete m[entityId];
+  write(m);
+}
+
 export function clearEntityColors() {
   write({});
 }

@@ -153,7 +153,7 @@ export function ChartRecommender({ onApply }: Props) {
   const rule = BEST_PRACTICE[rec.kind];
 
   return (
-    <section className="rounded-lg border border-chart-grid bg-chart-surface p-4 space-y-3">
+    <section className="panel p-4 space-y-3">
       <header className="space-y-0.5">
         <h2 className="text-sm font-medium uppercase tracking-wide text-chart-axis">
           Don't know which chart? Describe your data

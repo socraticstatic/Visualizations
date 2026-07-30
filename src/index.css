@@ -63,7 +63,9 @@ All colors MUST be HSL.
     --chart-tooltip-fg: 210 40% 98%;
 
     /* Chart system — neutrals */
-    --chart-muted: 215 16% 65%;
+    /* 58% lightness clears WCAG 3:1 on the white chart bg (65% measured 2.55:1
+       and shipped a failing default in the semantic role audit). */
+    --chart-muted: 215 16% 58%;
     --chart-context: 215 20% 80%;
     --chart-null: 215 14% 90%;
     --chart-other: 215 14% 55%;
@@ -189,6 +191,17 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 
+  :root {
+    /* Page chrome background — a cool near-white one step off the chart
+       surface, so cards and the chart canvas separate without heavy borders.
+       Charts still render on --chart-bg; audits are unaffected. */
+    --page-bg: 220 25% 97.5%;
+  }
+
+  .dark {
+    --page-bg: 222 47% 4.5%;
+  }
+
   h1,
   h2,
   h3 {
@@ -201,6 +214,27 @@ All colors MUST be HSL.
 }
 
 @layer components {
+  /* Shared panel recipe: one card treatment for every section on /charts.
+     Border is softened and the shadow is tinted with the ink hue so panels
+     lift off the tinted page background without generic gray shadows. */
+  .panel {
+    @apply rounded-xl border border-chart-grid/70 bg-chart-surface;
+    box-shadow:
+      0 1px 2px hsl(222 47% 11% / 0.04),
+      0 4px 16px hsl(222 47% 11% / 0.04);
+  }
+
+  /* Shared form-field recipe for native selects. */
+  .field-select {
+    @apply h-9 rounded-md border border-chart-grid bg-chart-bg px-3 text-sm text-foreground transition-colors duration-150;
+  }
+  .field-select:hover {
+    @apply border-chart-axis/50;
+  }
+  .field-select:focus-visible {
+    @apply outline-none ring-2 ring-chart-focus;
+  }
+
   /* Builder N / ramp-steps slider. The track gradient (safe zone vs.
      educational zone) is passed from React via the --n-track custom prop. */
   .n-slider {

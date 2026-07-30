@@ -117,7 +117,7 @@ export function EmphasisPreview({ theme, kind }: Props) {
 
   if (!supported) {
     return (
-      <section className="rounded-lg border border-chart-grid bg-chart-surface p-4 space-y-2">
+      <section className="panel p-4 space-y-2">
         <header>
           <h2 className="text-sm font-medium uppercase tracking-wide text-chart-axis">
             Emphasis preview
@@ -132,7 +132,7 @@ export function EmphasisPreview({ theme, kind }: Props) {
   }
 
   return (
-    <section className="rounded-lg border border-chart-grid bg-chart-surface p-4 space-y-3">
+    <section className="panel p-4 space-y-3">
       <header className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-medium uppercase tracking-wide text-chart-axis">

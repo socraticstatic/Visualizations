@@ -38,7 +38,7 @@ export function VisionMatrix({ option, height = 320 }: Props) {
   const active = MODES.find((m) => m.id === mode) ?? MODES[0];
 
   return (
-    <section className="rounded-lg border border-chart-grid bg-chart-surface p-4 space-y-3">
+    <section className="panel p-4 space-y-3">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-medium uppercase tracking-wide text-chart-axis">

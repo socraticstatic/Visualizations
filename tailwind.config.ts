@@ -13,6 +13,9 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        display: ['"Space Grotesk"', "ui-sans-serif", "system-ui", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -72,6 +75,7 @@ export default {
           info: "hsl(var(--chart-info))",
           target: "hsl(var(--chart-target))",
           forecast: "hsl(var(--chart-forecast))",
+          focus: "hsl(var(--chart-focus))",
           "anchor-1": "hsl(var(--chart-cat-anchor-1))",
           "anchor-2": "hsl(var(--chart-cat-anchor-2))",
           "anchor-3": "hsl(var(--chart-cat-anchor-3))",

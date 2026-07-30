@@ -144,7 +144,7 @@ export function InsightCallouts({ colors, background }: Props) {
   if (insights.length === 0) return null;
 
   return (
-    <section className="rounded-lg border border-chart-grid bg-chart-surface p-4 space-y-2">
+    <section className="panel p-4 space-y-2">
       <header>
         <h2 className="text-sm font-medium uppercase tracking-wide text-chart-axis">
           Insight callouts
@@ -160,7 +160,7 @@ export function InsightCallouts({ colors, background }: Props) {
             key={idx}
             className={`flex gap-2 ${
               it.tone === "warn"
-                ? "text-chart-warning"
+                ? "text-chart-warn"
                 : it.tone === "good"
                 ? "text-chart-positive"
                 : "text-foreground/85"

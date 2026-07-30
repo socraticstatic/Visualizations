@@ -46,7 +46,7 @@ export function FlowStepper() {
   return (
     <nav
       aria-label="Workflow stepper"
-      className="sticky top-0 z-30 -mx-6 px-6 py-2 backdrop-blur bg-chart-bg/85 border-b border-chart-grid"
+      className="sticky top-0 z-30 -mx-6 border-b border-chart-grid/70 bg-[hsl(var(--page-bg)/0.85)] px-6 py-2 backdrop-blur"
     >
       <ol className="flex flex-wrap items-center gap-1 text-xs">
         {FLOW_STEPS.map((s, i) => {

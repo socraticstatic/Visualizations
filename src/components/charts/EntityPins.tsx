@@ -9,7 +9,7 @@
  * surfaced in the "Collisions" line.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { setEntityColor, getEntityColor, clearEntityColors } from "@/charts/overrides";
+import { setEntityColor, getEntityColor, clearEntityColor, clearEntityColors } from "@/charts/overrides";
 import { buildPinPermutation } from "@/charts/entityPins";
 
 interface Props {
@@ -54,7 +54,7 @@ export function EntityPins({ entities, n, colorHexes, onChange }: Props) {
   }
 
   return (
-    <details className="rounded-lg border border-chart-grid bg-chart-surface p-4 text-xs">
+    <details className="panel p-4 text-xs">
       <summary className="cursor-pointer text-sm font-medium text-chart-axis">
         Entity pins
         <span className="ml-2 text-[11px] opacity-70 font-normal">
@@ -79,7 +79,7 @@ export function EntityPins({ entities, n, colorHexes, onChange }: Props) {
                 const swatch = colorHexes[i] ?? "transparent";
                 const isCollision = collisions.includes(id);
                 return (
-                  <tr key={id} className={isCollision ? "bg-chart-warning/10" : ""}>
+                  <tr key={id} className={isCollision ? "bg-chart-warn/10" : ""}>
                     <td className="py-1 pr-3 text-foreground">{id}</td>
                     <td className="py-1 pr-3">
                       <select
@@ -87,18 +87,7 @@ export function EntityPins({ entities, n, colorHexes, onChange }: Props) {
                         onChange={(e) => {
                           const v = e.target.value;
                           if (v === "") {
-                            // "Auto" — clear this entity by writing -1 then
-                            // removing. Simplest: setEntityColor to a sentinel
-                            // outside [0,n) so it's ignored. Use n (always
-                            // outside) — but cleaner: just remove the key.
-                            const map = JSON.parse(
-                              localStorage.getItem("chart-entity-color-pins-v1") ?? "{}"
-                            );
-                            delete map[id];
-                            localStorage.setItem(
-                              "chart-entity-color-pins-v1",
-                              JSON.stringify(map)
-                            );
+                            clearEntityColor(id);
                             bump();
                             onChange();
                           } else {
@@ -110,12 +99,13 @@ export function EntityPins({ entities, n, colorHexes, onChange }: Props) {
                         <option value="">Auto</option>
                         {Array.from({ length: n }, (_, s) => (
                           <option key={s} value={s}>
-                            Slot {s}
+                            {/* 1-based to match every audit panel ("#1", "slot 2"). */}
+                            Slot {s + 1}
                           </option>
                         ))}
                       </select>
                     </td>
-                    <td className="py-1 pr-3 tabular-nums text-chart-axis">{active}</td>
+                    <td className="py-1 pr-3 tabular-nums text-chart-axis">{active + 1}</td>
                     <td className="py-1">
                       <span
                         className="inline-block w-5 h-3 rounded-sm border border-chart-grid align-middle"
@@ -130,7 +120,7 @@ export function EntityPins({ entities, n, colorHexes, onChange }: Props) {
           </table>
         </div>
         {collisions.length > 0 && (
-          <p className="text-[11px] text-chart-warning">
+          <p className="text-[11px] text-chart-warn">
             Collisions ({collisions.length}): {collisions.join(", ")} requested a slot already
             taken by an earlier series. They were bumped to the next free slot.
           </p>

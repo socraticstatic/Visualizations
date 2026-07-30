@@ -20,7 +20,7 @@ const ENTRIES: Entry[] = [
     term: "ΔE (Delta-E)",
     short: "Perceptual color distance.",
     detail:
-      "Roughly: how different two colors look to a human eye. We compute Euclidean distance in OKLab × 100, so values are intuitively comparable to ΔE2000. Categorical slots target ΔE ≥ 18 under normal vision; ≥ 10 under simulated colorblindness.",
+      "Roughly: how different two colors look to a human eye. We compute Euclidean distance in OKLab × 100, so values are intuitively comparable to ΔE2000. The solver maximizes the minimum pairwise ΔE; the configured pass floors in constraints.ts are deliberately minimal (1 normal, 0.1 CVD) because at high N the dash / decal / shape encodings, not color, carry identity.",
     source: "src/charts/palette/distance.ts",
   },
   {
@@ -34,7 +34,7 @@ const ENTRIES: Entry[] = [
     term: "CVD (Color Vision Deficiency)",
     short: "Colorblindness, simulated.",
     detail:
-      "We simulate three CVD types with the Machado 2009 matrices: deuteranopia (~6% of men, green-weak), protanopia (~2% of men, red-weak), and tritanopia (rare, blue-weak). The optimizer maximizes the worst-case ΔE across all three so palettes degrade gracefully.",
+      "We simulate three dichromacies with the Machado 2009 severity-1.0 matrices: deuteranopia (~1% of men; the broader deutan class is ~6%), protanopia (~1% of men; protan class ~2%), and tritanopia (very rare). The optimizer maximizes the worst-case ΔE across all three so palettes degrade gracefully.",
     source: "src/charts/palette/cvd.ts",
   },
   {
@@ -48,14 +48,14 @@ const ENTRIES: Entry[] = [
     term: "Posture",
     short: "What this chart is for.",
     detail:
-      "Drives default behavior. `kpi` = one bold highlight + grey context (max 1 categorical slot). `comparative` = balanced, distinct colors (max 6). `exploratory` = rich palette, more chroma (max 12). Posture is picked from the chart kind via best-practice rules, not by the user directly.",
+      "Drives default behavior. `kpi` = muted, low-chroma palette for callouts and part-to-whole charts (max 8 slots). `comparative` = balanced, medium chroma (max 12). `exploratory` = highest chroma (max 12). Posture is picked from the chart kind via best-practice rules, not by the user directly.",
     source: "src/charts/constraints.ts",
   },
   {
     term: "Anchor",
     short: "A brand color locked into a slot.",
     detail:
-      "Anchors (`--chart-cat-anchor-1/2/3`) are inserted verbatim into the categorical palette. The optimizer fills the remaining slots around them and never moves an anchor. The only failure mode is an anchor that itself fails contrast against the background.",
+      "Anchors (`--chart-cat-anchor-1/2/3`) are brand-color preferences. The built-in builder solves with no hard locks — forcing anchors verbatim collapsed the safe cap when one collided under CVD simulation — so the solver is free to pick the most compliant palette and anchors act as seeds, not guarantees.",
     source: "src/charts/echartsTheme.ts",
   },
   {
@@ -105,7 +105,7 @@ const ENTRIES: Entry[] = [
 export function Glossary() {
   const [open, setOpen] = useState(false);
   return (
-    <section className="rounded-lg border border-chart-grid bg-chart-surface">
+    <section className="panel">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

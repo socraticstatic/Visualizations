@@ -153,7 +153,7 @@ export function CoachTour({ open, onClose }: Props) {
       <div
         ref={tipRef}
         style={tipStyle}
-        className="z-[70] rounded-lg border border-chart-grid bg-chart-surface shadow-2xl p-3 space-y-2"
+        className="z-[70] panel shadow-2xl p-3 space-y-2"
         role="dialog"
         aria-label={tip.title}
       >

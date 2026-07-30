@@ -1278,35 +1278,53 @@ const ChartsDemo = () => {
   const optionB = useMemo(() => buildOption(kindB, nB, chartThemeB, dataMode), [kindB, nB, chartThemeB, dataMode]);
 
   return (
-    <div className="min-h-screen bg-chart-bg text-foreground">
+    <div className="min-h-dvh bg-[hsl(var(--page-bg))] text-foreground">
       <VisionFilters />
       <div className="mx-auto max-w-[1600px] px-6 py-8 space-y-6">
-        <header className="space-y-1">
+        <header className="space-y-3">
           <div className="flex items-center justify-between gap-2">
             <Link
               to="/"
-              className="inline-flex items-center gap-1 text-xs text-chart-axis hover:text-foreground"
+              className="inline-flex items-center gap-1 text-xs text-chart-axis transition-colors hover:text-foreground"
             >
               ← Home
             </Link>
             <button
               type="button"
               onClick={() => setTourOpen(true)}
-              className="text-xs px-2 py-1 rounded border border-chart-grid bg-chart-bg text-foreground hover:bg-chart-grid/30"
+              className="rounded-md border border-chart-grid bg-chart-surface px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-chart-grid/30 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chart-focus"
               title="Replay the 4-step coach tour"
             >
               Take the tour
             </button>
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight">Micah's Chart System for Sane and Useful Color Strategies</h1>
-          <p className="text-sm text-chart-axis">
-            Pick a chart type and the number of data points — get an audited palette with matched dash, decal, and
-            shape encodings. <span className="opacity-80">v{PALETTE_VERSION}</span>
-          </p>
+          <div className="flex items-start gap-4">
+            <div
+              className="flex h-11 w-11 shrink-0 items-end justify-center gap-1 rounded-xl bg-primary p-2.5 shadow-sm"
+              aria-hidden
+            >
+              <span className="w-1.5 rounded-sm" style={{ height: "45%", background: "hsl(var(--chart-cat-anchor-1))" }} />
+              <span className="w-1.5 rounded-sm" style={{ height: "100%", background: "hsl(var(--chart-cat-anchor-2))" }} />
+              <span className="w-1.5 rounded-sm" style={{ height: "70%", background: "hsl(var(--chart-cat-anchor-3))" }} />
+            </div>
+            <div className="min-w-0">
+              <h1 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">
+                Micah's Chart System{" "}
+                <span className="text-chart-axis">for Sane and Useful Color Strategies</span>
+              </h1>
+              <p className="mt-1.5 max-w-[72ch] text-sm text-chart-axis">
+                Pick a chart type and the number of data points — get an audited palette with matched dash, decal, and
+                shape encodings.
+                <span className="ml-2 inline-flex items-center rounded-full border border-chart-grid bg-chart-surface px-2 py-0.5 align-middle text-[11px] tabular-nums text-chart-axis">
+                  v{PALETTE_VERSION}
+                </span>
+              </p>
+            </div>
+          </div>
         </header>
 
         <FlowStepper />
-        <section id="flow-build" className="scroll-mt-20 rounded-lg border border-chart-grid bg-chart-surface p-4 space-y-4">
+        <section id="flow-build" className="scroll-mt-20 panel p-4 space-y-4">
           <div id="flow-choose" className="scroll-mt-20 flex items-center justify-between gap-3">
             <h2 className="text-sm font-medium uppercase tracking-wide text-chart-axis">Palette builder</h2>
             {family === "categorical" ? (
@@ -1350,7 +1368,7 @@ const ChartsDemo = () => {
               <select
                 value={kind}
                 onChange={(e) => applyPrimaryBuilder({ kind: e.target.value as ChartKind })}
-                className="bg-chart-bg border border-chart-grid rounded px-2 py-1 text-foreground min-w-[220px]"
+                className="field-select min-w-[220px]"
               >
                 {(Object.keys(CHART_KIND_LABEL) as ChartKind[]).map((k) => (
                   <option key={k} value={k}>
@@ -1446,7 +1464,7 @@ const ChartsDemo = () => {
                   <select
                     value={kindB}
                     onChange={(e) => applyVariantB({ kind: e.target.value as ChartKind })}
-                    className="bg-chart-surface border border-chart-grid rounded px-2 py-1 text-foreground min-w-[220px]"
+                    className="field-select min-w-[220px]"
                   >
                     {(Object.keys(CHART_KIND_LABEL) as ChartKind[]).map((k) => (
                       <option key={k} value={k}>
@@ -1838,7 +1856,7 @@ function DiffSummary({ a, b }: { a: DiffVariant; b: DiffVariant }) {
     },
   ];
   return (
-    <section className="rounded-lg border border-chart-grid bg-chart-surface p-4 space-y-2">
+    <section className="panel p-4 space-y-2">
       <h2 className="text-sm font-medium uppercase tracking-wide text-chart-axis">
         Diff summary — Variant A vs. Variant B
       </h2>
@@ -1898,7 +1916,7 @@ function Toggle<T extends string>({
               type="button"
               aria-pressed={selected}
               onClick={() => onChange(o)}
-              className={`px-3 py-1 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chart-focus ${
+              className={`px-3 py-1 text-xs transition-colors duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chart-focus ${
                 selected
                   ? "bg-chart-info text-chart-bg font-medium"
                   : "text-chart-axis hover:bg-chart-grid hover:text-foreground"
@@ -2131,7 +2149,7 @@ function SeriesScorecard({
     pass ? "text-chart-positive" : "text-chart-negative font-medium";
 
   return (
-    <div className="rounded-lg border border-chart-grid bg-chart-surface p-4 text-xs">
+    <div className="panel p-4 text-xs">
       <div className="flex items-baseline justify-between mb-3">
         <h3 className="text-sm font-medium text-chart-axis">
           Per-series readability — normal vs. {vision}
@@ -2305,7 +2323,7 @@ function VariantScorecard({ a, b }: { a: VariantInput; b: VariantInput }) {
   );
 
   return (
-    <div className="rounded-lg border border-chart-grid bg-chart-surface p-4">
+    <div className="panel p-4">
       <div className="flex items-baseline justify-between mb-3">
         <h3 className="text-sm font-medium text-chart-axis">
           Per-series readability — Variant A vs. Variant B
@@ -2357,7 +2375,7 @@ function DiffOverlayBadge({
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-chart-grid bg-chart-surface p-4">
+    <div className="panel p-4">
       <h3 className="text-sm font-medium text-chart-axis mb-2">{title}</h3>
       {children}
     </div>
@@ -2489,7 +2507,7 @@ function KpiTile({ theme }: { theme: ReturnType<typeof getChartTheme> }) {
   const delta = 12.4;
   const positive = delta >= 0;
   return (
-    <div className="rounded-lg border border-chart-grid bg-chart-surface p-6 flex flex-col justify-between min-h-[200px]">
+    <div className="panel p-6 flex flex-col justify-between min-h-[200px]">
       <div className="text-xs uppercase tracking-wide text-chart-axis">Monthly active users</div>
       <div className="text-5xl font-semibold tabular-nums" style={{ color: theme.tokens.target.hex }}>
         {value.toLocaleString()}
@@ -2577,25 +2595,57 @@ function AccessibilityHarness({
       ? "text-chart-target"
       : "text-chart-negative";
 
+  // Translate a measured minimum pairwise ΔE into words a human can act on.
+  // JND in OKLab ×100 is ≈ 2; the configured pass floors are far below that
+  // on purpose (patterns carry identity at high N), so the floor alone reads
+  // as nonsense. Lead with the interpretation, keep the floor as fine print.
+  const interpret = (v: number, pass: boolean) => {
+    if (!pass) return { label: "collision", cls: "text-chart-negative" };
+    if (v >= 10) return { label: "clearly distinct", cls: "text-chart-positive" };
+    if (v >= 2) return { label: "distinguishable", cls: "text-chart-positive" };
+    return { label: "colors nearly identical — dash/decal/shape carry identity", cls: "text-chart-target" };
+  };
+
+  const MODE_LABEL: Record<string, string> = {
+    normal: "Normal",
+    deutan: "Deutan · red-green",
+    protan: "Protan · red-green",
+    tritan: "Tritan · blue-yellow",
+    achromatopsia: "Grayscale",
+  };
+
   return (
     <div className="space-y-3 rounded border border-chart-grid p-3">
       <div className="flex items-baseline justify-between">
         <div className="text-xs uppercase tracking-wide text-chart-axis">Accessibility harness</div>
         <div className={`text-xs font-semibold ${overallClass}`}>{overallLabel}</div>
       </div>
+      <p className="text-[11px] text-chart-axis">
+        Closest pair of palette colors under each vision simulation. ΔE is perceptual distance
+        (× 100 in OKLab); about 2 is the edge of what an eye can tell apart.
+      </p>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
         {audit.perVision.map((v) => {
           const isNa = v.minDeltaE === Infinity;
+          const meaning = isNa ? null : interpret(v.minDeltaE, v.pass);
           return (
-            <div key={v.mode} className="rounded border border-chart-grid p-2">
-              <div className="text-[10px] uppercase tracking-wide opacity-70">{v.mode}</div>
-              <div className={`tabular-nums ${isNa ? "text-chart-axis" : badgeFor(v.pass)}`}>
+            <div
+              key={v.mode}
+              className="rounded border border-chart-grid p-2"
+              title={
+                isNa
+                  ? "Pairwise separation is not meaningful for gradient ramps."
+                  : `Minimum pairwise ${v.mode === "achromatopsia" ? "lightness difference" : "ΔE"} across all slot pairs under ${MODE_LABEL[v.mode]}. Pass floor: ${v.threshold} (deliberately minimal — dash, decal, and shape are the primary identity channels at high N).`
+              }
+            >
+              <div className="text-[10px] uppercase tracking-wide opacity-70">{MODE_LABEL[v.mode] ?? v.mode}</div>
+              <div className={`tabular-nums text-sm font-medium ${isNa ? "text-chart-axis" : badgeFor(v.pass)}`}>
                 {isNa
                   ? "n/a"
                   : `${v.mode === "achromatopsia" ? "ΔL" : "ΔE"} ${v.minDeltaE.toFixed(1)}`}
               </div>
-              <div className="text-[10px] opacity-80">
-                {isNa ? "not applicable" : `≥ ${v.threshold < 1 ? v.threshold.toFixed(1) : v.threshold.toFixed(0)}`}
+              <div className={`text-[10px] leading-tight ${meaning ? meaning.cls : "opacity-80"}`}>
+                {isNa ? "ramps: see contrast below" : meaning!.label}
               </div>
             </div>
           );

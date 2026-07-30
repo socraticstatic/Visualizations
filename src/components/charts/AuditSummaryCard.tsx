@@ -1,6 +1,15 @@
 import type { AuditReport } from "@/charts/audit";
 import { THRESHOLDS } from "@/charts/constraints";
 
+/** Human reading of a min pairwise ΔE — shown instead of the raw pass floor,
+ *  which is deliberately minimal and reads as nonsense ("≥ 0.1") on its own. */
+function deltaEWords(v: number): string {
+  if (!Number.isFinite(v)) return "not applicable";
+  if (v >= 10) return "clearly distinct";
+  if (v >= 2) return "distinguishable";
+  return "patterns carry identity";
+}
+
 type Warning = { severity: "error" | "warn" | "info"; title: string; detail: string };
 
 type SolveInfo = {
@@ -147,13 +156,13 @@ export function AuditSummaryCard({
           label="min ΔE (normal vision)"
           value={solve.minPairDeltaE === Infinity ? "n/a" : solve.minPairDeltaE.toFixed(1)}
           ok={passNormal}
-          help={`≥ ${THRESHOLDS.minDeltaENormal}`}
+          help={deltaEWords(solve.minPairDeltaE)}
         />
         <Stat
           label="min ΔE (worst CVD)"
           value={solve.minCvdDeltaE === Infinity ? "n/a" : solve.minCvdDeltaE.toFixed(1)}
           ok={passCvd}
-          help={`≥ ${THRESHOLDS.minDeltaECvd}`}
+          help={deltaEWords(solve.minCvdDeltaE)}
         />
         <Stat
           label="Constraint relaxations"

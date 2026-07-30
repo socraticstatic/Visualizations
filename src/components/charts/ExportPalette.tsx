@@ -55,7 +55,7 @@ export function ExportPalette({ open, onClose, snapshot }: Props) {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-lg border border-chart-grid bg-chart-surface shadow-2xl">
+      <div className="w-full max-w-4xl max-h-[90vh] flex flex-col panel shadow-2xl">
         <header className="flex items-center justify-between px-4 py-3 border-b border-chart-grid">
           <div>
             <h2 className="text-sm font-medium text-foreground">Export palette</h2>

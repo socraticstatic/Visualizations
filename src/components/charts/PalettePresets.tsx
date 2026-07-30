@@ -116,7 +116,7 @@ export function PalettePresets({ current, onApply }: Props) {
   );
 
   return (
-    <details className="rounded-lg border border-chart-grid bg-chart-surface p-4 text-xs" open>
+    <details className="panel p-4 text-xs" open>
       <summary className="cursor-pointer text-sm font-medium text-chart-axis">
         Presets
         <span className="ml-2 text-[11px] opacity-70 font-normal">
@@ -224,7 +224,7 @@ function PresetDiff({ current, all }: DiffProps) {
   }) => {
     const same = String(av) === String(bv);
     return (
-      <tr className={same ? "" : "bg-chart-warning/10"}>
+      <tr className={same ? "" : "bg-chart-warn/10"}>
         <td className="py-1 pr-3 text-chart-axis text-[11px] uppercase tracking-wide">{label}</td>
         <td className={`py-1 pr-3 tabular-nums ${same ? "" : "font-medium text-foreground"}`}>{av}</td>
         <td className={`py-1 tabular-nums ${same ? "" : "font-medium text-foreground"}`}>{bv}</td>

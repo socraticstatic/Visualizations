@@ -68,32 +68,43 @@ const TONE: Record<Status, { ring: string; text: string; bg: string }> = {
   },
 };
 
+/** Words a human can act on, instead of "≥ 0.1" floor fine print. */
+function deltaEWords(v: number): string {
+  if (!Number.isFinite(v)) return "";
+  if (v >= 10) return "clearly distinct";
+  if (v >= 2) return "distinguishable";
+  return "patterns carry it";
+}
+
 function Metric({
   label,
   value,
   threshold,
   unit,
   status,
+  context,
 }: {
   label: string;
   value: number;
   threshold: number;
   unit: string;
   status: Status;
+  /** Short human reading of the value, shown instead of the raw floor. */
+  context?: string;
 }) {
   const tone = TONE[status];
   const display = !Number.isFinite(value) ? "—" : value.toFixed(unit === ":1" ? 2 : 1);
   return (
     <div
       className={`flex items-center gap-1.5 rounded border ${tone.ring} ${tone.bg} px-2 py-1`}
-      title={`${label} — current ${display}${unit}, threshold ≥ ${threshold}${unit}`}
+      title={`${label} — current ${display}${unit}, pass floor ≥ ${threshold}${unit}`}
     >
       <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</span>
       <span className={`font-mono text-xs font-semibold ${tone.text}`}>
         {display}
         <span className="opacity-80">{unit}</span>
       </span>
-      <span className="text-[10px] text-muted-foreground">/ {threshold}</span>
+      <span className="text-[10px] text-muted-foreground">{context ?? `/ ${threshold}`}</span>
     </div>
   );
 }
@@ -120,7 +131,7 @@ function CvdChip({
   return (
     <div
       className={`flex items-center gap-1 rounded border ${tone.ring} ${tone.bg} px-1.5 py-0.5`}
-      title={`${label} — min ΔE ${dE}, threshold ≥ ${result?.threshold ?? "?"}`}
+      title={`${label} — closest pair ΔE ${dE} (${deltaEWords(result?.minDeltaE ?? NaN) || "n/a"}; ΔE ≈ 2 is the edge of human perception). Pass floor ${result?.threshold ?? "?"} is deliberately minimal — dash/decal/shape carry identity at high N.`}
     >
       <Icon className={`h-3 w-3 ${tone.text}`} aria-hidden />
       <span className={`text-[10px] font-semibold uppercase tracking-wide ${tone.text}`}>{short}</span>
@@ -231,8 +242,9 @@ function VariantRow({ info }: { info: BuilderVariantInfo }) {
           threshold={THRESHOLDS.minDeltaENormal}
           unit=""
           status={dEStatus}
+          context={deltaEWords(dE)}
         />
-        <Metric label="WCAG" value={wcag} threshold={3} unit=":1" status={wcagStatus} />
+        <Metric label="WCAG" value={wcag} threshold={3} unit=":1" status={wcagStatus} context="needs ≥ 3:1" />
       </div>
     </div>
   );

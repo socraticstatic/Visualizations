@@ -20,7 +20,7 @@ export function DensityPreview({ theme }: Props) {
     Array.from({ length: 18 }, (_, j) => 14 - 10 * Math.sin((j + seed) / 3) - (j % 3 === 0 ? 2 : 0));
 
   return (
-    <details className="rounded-lg border border-chart-grid bg-chart-surface p-4 text-xs" open>
+    <details className="panel p-4 text-xs" open>
       <summary className="cursor-pointer text-sm font-medium text-chart-axis">
         Density preview — realistic sizes
         <span className="ml-2 text-[11px] opacity-70 font-normal">

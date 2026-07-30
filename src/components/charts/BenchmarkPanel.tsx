@@ -9,7 +9,6 @@
 import { useMemo } from "react";
 import type { ColorRecord } from "@/charts/palette/distance";
 import { scoreBenchmarks, scoreColors } from "@/charts/benchmarks";
-import { THRESHOLDS } from "@/charts/constraints";
 
 interface Props {
   ours: ColorRecord[];
@@ -41,7 +40,7 @@ export function BenchmarkPanel({ ours, background }: Props) {
     Math.max(...rows.map((r) => r[key]));
 
   return (
-    <details className="rounded-lg border border-chart-grid bg-chart-surface p-4 text-xs" open>
+    <details className="panel p-4 text-xs" open>
       <summary className="cursor-pointer text-sm font-medium text-chart-axis">
         Benchmark vs. published systems
         <span className="ml-2 text-[11px] opacity-70 font-normal">
@@ -62,9 +61,9 @@ export function BenchmarkPanel({ ours, background }: Props) {
             <tr className="text-[10px] text-chart-axis">
               <th></th>
               <th></th>
-              <th>≥ {THRESHOLDS.minDeltaENormal}</th>
-              <th>≥ {THRESHOLDS.minDeltaECvd}</th>
-              <th>≥ 3:1</th>
+              <th>higher = more distinct</th>
+              <th>worst of 3 simulations</th>
+              <th>needs ≥ 3:1</th>
               <th></th>
             </tr>
           </thead>
