@@ -25,21 +25,21 @@ const STEPS: Step[] = [
   },
   {
     target: "n-slider",
-    title: "2 · Set the data count",
+    title: "2 · Set the series or step count",
     body:
-      "The slider is hard-bounded to the kind's [min, max]. The 'use recommended' link snaps you to the legibility sweet spot. Above the recommended value the number turns warning-colored.",
+      "Drag the slider or use the − / + steppers. The blue zone is safe by construction; each tick is one step. Past the safe cap the track turns amber — you can still go there, and the audit panel shows exactly which floor breaks.",
+  },
+  {
+    target: "vision-preview",
+    title: "3 · Preview other eyes",
+    body:
+      "Flip the live chart through deutan, protan, tritan, and grayscale simulation. Dash, decal, and marker patterns stay on in every mode — they are what keep series identifiable when color collapses.",
   },
   {
     target: "export-palette",
-    title: "3 · Export the system",
+    title: "4 · Export the system",
     body:
-      "When the palette looks right, export it as CSS variables, Tailwind config, an ECharts theme, Figma Tokens, or a printable SVG swatch sheet.",
-  },
-  {
-    target: "color-picker",
-    title: "4 · Override with brand colors (optional)",
-    body:
-      "Lock 1–3 brand hexes into the categorical solver here. The solver fills the remaining slots to stay CVD-safe. Audit warnings only fire for overrides you make manually.",
+      "When the palette looks right, export it as CSS variables, Tailwind config, an ECharts theme, Figma Tokens, or a printable SVG swatch sheet. The audit report and share link live next to it.",
   },
 ];
 
@@ -97,9 +97,16 @@ export function CoachTour({ open, onClose }: Props) {
     measure();
     window.addEventListener("resize", measure);
     window.addEventListener("scroll", measure, true);
+    // Layout can shift without a scroll/resize event (builder changes
+    // re-render the panel the tour points at). Re-measure on a slow tick so
+    // the highlight tracks its anchor instead of floating over stale space —
+    // this is what lets the tour stay open while the user tries the control
+    // it is describing.
+    const tick = window.setInterval(measure, 400);
     return () => {
       window.removeEventListener("resize", measure);
       window.removeEventListener("scroll", measure, true);
+      window.clearInterval(tick);
     };
   }, [open, step]);
 

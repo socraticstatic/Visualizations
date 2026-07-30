@@ -1,5 +1,4 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Link } from "react-router-dom";
 import { EChart } from "@/components/charts/EChart";
 import {
   buildBase,
@@ -368,9 +367,15 @@ const ChartsDemo = () => {
     const isA = variant === "A";
     const curKind = isA ? kind : kindB;
     const curTheme = isA ? theme : themeB;
+    const curN = isA ? requestedN : requestedNB;
     const nextKind = next.kind ?? curKind;
     const nextTheme = next.theme ?? curTheme;
-    const nextN = clampBuiltInN(nextKind, nextTheme, next.n ?? DEFAULT_N);
+    // Preserve the user's N unless the KIND changes (a new kind snaps to its
+    // default). A theme flip must never reset a dialed-in step count — it
+    // only re-clamps if the new theme's safe range is narrower.
+    const kindChanged = next.kind !== undefined && next.kind !== curKind;
+    const fallbackN = kindChanged ? DEFAULT_N : curN;
+    const nextN = clampBuiltInN(nextKind, nextTheme, next.n ?? fallbackN);
     if (isA) {
       skipNextKindSnap.current = true;
       if (next.kind && next.kind !== kind) setKind(next.kind);
@@ -381,13 +386,9 @@ const ChartsDemo = () => {
       if (next.theme && next.theme !== themeB) setThemeB(next.theme);
       setRequestedNB(nextN);
     }
-    // Dismiss the coach tour the first time the user touches a builder
-    // control — the popover otherwise floats over stale anchors as the
-    // dropdown / slider re-renders.
-    if (tourManualOpen || tourAutoOpen) {
-      setTourManualOpen(false);
-      dismissTour();
-    }
+    // The tour stays open across builder changes — it re-measures its anchor
+    // on a tick, so users can try the control a step describes without the
+    // tour vanishing mid-sentence.
   }
 
   // Back-compat shims — the rest of the file (and any future caller) MUST
@@ -498,17 +499,19 @@ const ChartsDemo = () => {
   // Always snap to the new kind's recommended N — built-in controls must
   // auto-enforce best practices. Skip the very first render so a shared URL
   // with a non-recommended N (?n=…) survives hydration.
+  // Kind changes only — a theme flip keeps the user's dialed-in N (onApply
+  // re-clamps it against the new theme's range).
   useEffect(() => {
     if (firstKindRender.current) { firstKindRender.current = false; return; }
     if (skipNextKindSnap.current) { skipNextKindSnap.current = false; return; }
     setRequestedN(Math.min(DEFAULT_N, safeBuiltinMaxA));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kind, theme]);
+  }, [kind]);
   useEffect(() => {
     if (firstKindBRender.current) { firstKindBRender.current = false; return; }
     setRequestedNB(Math.min(DEFAULT_N, safeBuiltinMaxB));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [kindB, themeB]);
+  }, [kindB]);
 
 
   const themeNB = ruleB.family === "categorical" ? nB : 1;
@@ -734,7 +737,8 @@ const ChartsDemo = () => {
         return {
           ...base,
           tooltip: { ...base.tooltip, position: "top" },
-          grid: { ...base.grid, right: 80 },
+          // Room for the piecewise legend labels on the right.
+          grid: { ...base.grid, right: 150 },
           xAxis: { ...base.xAxis, type: "category", data: hours },
           yAxis: { ...base.yAxis, type: "category", data: days },
           visualMap: buildVisualMap(chartTheme, "sequential", { min: 0, max: 110, steps: n }),
@@ -1282,13 +1286,7 @@ const ChartsDemo = () => {
       <VisionFilters />
       <div className="mx-auto max-w-[1600px] px-6 py-8 space-y-6">
         <header className="space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-1 text-xs text-chart-axis transition-colors hover:text-foreground"
-            >
-              ← Home
-            </Link>
+          <div className="flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={() => setTourOpen(true)}
@@ -1356,7 +1354,9 @@ const ChartsDemo = () => {
                     <EChart option={option} height={560} />
                   </div>
                 </ChartCard>
-                <VisionPreviewToggle value={vision} onChange={setVision} />
+                <div data-tour="vision-preview">
+                  <VisionPreviewToggle value={vision} onChange={setVision} />
+                </div>
                 <PaletteRuleExplainer kind={kind} n={n} requestedN={requestedN} />
               </div>
             )}

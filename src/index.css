@@ -90,9 +90,11 @@ All colors MUST be HSL.
     --chart-disabled: 215 14% 80%;
 
     /* Chart system — sequential / diverging endpoints */
-    /* seq-low / div-mid are the "faded" ramp stops; kept at ≥3:1 vs white bg (WCAG SC 1.4.11) */
-    --chart-seq-low: 210 45% 56%;
-    --chart-seq-high: 222 80% 30%;
+    /* Sequential ramp is multi-hue (teal → indigo): hue travel adds adjacent-
+       step ΔE (~4.5–6.6 at 9 steps vs 3.5 for the old single-hue ramp) while
+       every stop stays ≥3:1 vs the white bg (WCAG SC 1.4.11, verified). */
+    --chart-seq-low: 170 65% 38%;
+    --chart-seq-high: 265 90% 28%;
     --chart-div-neg: 0 72% 45%;
     --chart-div-mid: 210 10% 56%;
     --chart-div-pos: 152 60% 36%;
@@ -169,9 +171,10 @@ All colors MUST be HSL.
     --chart-disabled: 215 16% 30%;
 
     /* Chart system — sequential / diverging endpoints */
-    /* seq-low / div-mid kept at ≥3:1 vs dark bg (WCAG SC 1.4.11) */
-    --chart-seq-low: 222 50% 48%;
-    --chart-seq-high: 210 90% 75%;
+    /* Multi-hue sequential ramp (deep teal → light violet): adjacent-step ΔE
+       ~4.6–4.8 at 9 steps (was 3.5); every stop ≥3:1 vs the dark bg. */
+    --chart-seq-low: 184 60% 29%;
+    --chart-seq-high: 266 100% 87%;
     --chart-div-neg: 0 75% 60%;
     --chart-div-mid: 222 15% 50%;
     --chart-div-pos: 152 65% 50%;

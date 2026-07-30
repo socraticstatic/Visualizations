@@ -265,6 +265,9 @@ export function buildVisualMap(
     max: options.max,
     inRange: { color: colors },
     textStyle: { color: theme.tokens.axis.hex },
+    // Integer bin labels — raw split values print as "15.71429 - 31.42858"
+    // (ECharts' auto precision ignores `precision: 0` for fractional splits).
+    formatter: (a: number, b: number) => `${Math.round(a)} – ${Math.round(b)}`,
     left: "right" as const,
     top: "middle" as const,
   };
