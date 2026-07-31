@@ -1342,7 +1342,7 @@ const ChartsDemo = () => {
       {/* One 48px bar carries global actions AND section nav. Two stacked
           sticky rows would eat 100px of every screen forever. */}
       <div className="sticky top-0 z-40 border-b border-chart-grid bg-[hsl(var(--page-bg)/0.92)] backdrop-blur">
-        <div className="mx-auto flex h-12 max-w-[1600px] items-center gap-3 px-6">
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-3 gap-y-1 px-6 py-1.5 sm:h-12 sm:flex-nowrap sm:py-0">
           <div
             className="flex h-6 w-6 shrink-0 items-end justify-center gap-0.5 rounded bg-primary p-1"
             aria-hidden
@@ -1351,7 +1351,9 @@ const ChartsDemo = () => {
             <span className="w-1 rounded-sm" style={{ height: "100%", background: "hsl(var(--chart-cat-anchor-2))" }} />
             <span className="w-1 rounded-sm" style={{ height: "70%", background: "hsl(var(--chart-cat-anchor-3))" }} />
           </div>
-          <SectionNav onNavigate={goToSection} />
+          <div className="order-last w-full min-w-0 sm:order-none sm:w-auto sm:flex-1">
+            <SectionNav onNavigate={goToSection} />
+          </div>
           <div className="ml-auto flex shrink-0 items-center gap-2">
             <button
               type="button"
@@ -1370,7 +1372,8 @@ const ChartsDemo = () => {
               className="tap-target rounded-md border border-chart-grid bg-chart-surface px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-chart-grid/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chart-focus"
               title="Replay the 4-step coach tour"
             >
-              Take the tour
+              <span className="sm:hidden">Tour</span>
+              <span className="hidden sm:inline">Take the tour</span>
             </button>
           </div>
         </div>
@@ -1937,12 +1940,12 @@ function Toggle<T extends string>({
 }) {
   void value;
   return (
-    <div className="flex items-center gap-2">
-      <span id={`toggle-label-${label}`} className="text-chart-axis">{label}</span>
+    <div className="flex min-w-0 items-center gap-2">
+      <span id={`toggle-label-${label}`} className="shrink-0 text-chart-axis">{label}</span>
       <div
         role="group"
         aria-labelledby={`toggle-label-${label}`}
-        className="inline-flex rounded-md border border-chart-grid overflow-hidden"
+        className="inline-flex max-w-full overflow-x-auto rounded-md border border-chart-grid [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {options.map((o) => {
           const selected = value === o;

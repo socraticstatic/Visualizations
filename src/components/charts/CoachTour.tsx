@@ -180,7 +180,7 @@ export function CoachTour({ open, onClose }: Props) {
           <button
             type="button"
             onClick={onClose}
-            className="text-[11px] text-chart-axis hover:text-foreground"
+            className="tap-target text-[11px] text-chart-muted-text hover:text-foreground"
             aria-label="Close tour"
           >
             Skip ✕
