@@ -16,6 +16,7 @@
  */
 import { useState } from "react";
 import type { AuditReport, VisionMode } from "@/charts/audit";
+import { Term } from "./Term";
 
 /**
  * Translate a measured minimum pairwise ΔE into words a human can act on.
@@ -87,12 +88,12 @@ export function PaletteVerdict({
         <span className={`font-semibold uppercase tracking-wide ${tone}`}>{audit.overall}</span>
 
         <span data-testid="verdict-contrast" className="tabular-nums text-chart-muted-text">
-          WCAG {audit.worstContrastVsBg.toFixed(2)}:1
+          <Term id="WCAG 2.2 SC 1.4.11">WCAG</Term> {audit.worstContrastVsBg.toFixed(2)}:1
           <span className="ml-1 opacity-70">{audit.bgPass ? "" : "needs ≥ 3:1"}</span>
         </span>
 
         <span data-testid="verdict-min-delta-e" className="tabular-nums text-chart-muted-text">
-          ΔE {num(normal?.minDeltaE ?? NaN)}
+          <Term id="ΔE (Delta-E)">ΔE</Term> {num(normal?.minDeltaE ?? NaN)}
           <span className="ml-1 opacity-70">{deltaEWords(normal?.minDeltaE ?? NaN)}</span>
           <span className="ml-1">· worst CVD {num(worstCvd.minDeltaE)}</span>
         </span>
@@ -102,7 +103,7 @@ export function PaletteVerdict({
           className="tabular-nums text-chart-muted-text"
           title={noRelax ? "all constraints satisfied" : relaxations.join(", ")}
         >
-          relaxations {noRelax ? "none" : relaxations.join(", ")}
+          <Term id="Relaxation">relaxations</Term> {noRelax ? "none" : relaxations.join(", ")}
         </span>
 
         {!dense && (

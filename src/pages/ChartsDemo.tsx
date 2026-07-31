@@ -27,7 +27,6 @@ import { SemanticRoleAudit } from "@/components/charts/SemanticRoleAudit";
 import { ShareLink, useUrlStateSync } from "@/components/charts/ShareLink";
 import { VisionMatrix } from "@/components/charts/VisionMatrix";
 import { LazyMount } from "@/components/charts/LazyMount";
-import { Glossary } from "@/components/charts/Glossary";
 import { EmphasisPreview } from "@/components/charts/EmphasisPreview";
 import { InsightCallouts } from "@/components/charts/InsightCallouts";
 import type { UrlState } from "@/charts/urlState";
@@ -1799,7 +1798,6 @@ const ChartsDemo = () => {
             audit={audit}
             relaxations={chartTheme.solve.relaxations}
           />
-          <Glossary />
         </section>
 
       </div>

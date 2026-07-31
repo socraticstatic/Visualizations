@@ -1,13 +1,16 @@
 /**
- * Glossary — plain-language definitions for every technical term the tool
- * surfaces. Collapsible so it stays out of the way until a designer needs it.
+ * Plain-language definitions for every technical term the tool surfaces.
+ *
+ * Single source of truth for both the ReferenceDrawer list and the inline
+ * <Term> popovers, so the two cannot drift apart. Moved out of the old
+ * Glossary.tsx panel, which sat collapsed at the bottom of an 8-screen page
+ * where nobody found it -- while "ΔE" alone appeared 61 times above it.
  *
  * Each entry links back to the concept's home in the codebase so engineers
  * can verify the math.
  */
-import { useState } from "react";
 
-interface Entry {
+export interface GlossaryEntry {
   term: string;
   short: string;
   detail: string;
@@ -15,7 +18,7 @@ interface Entry {
   source?: string;
 }
 
-const ENTRIES: Entry[] = [
+export const GLOSSARY: GlossaryEntry[] = [
   {
     term: "ΔE (Delta-E)",
     short: "Perceptual color distance.",
@@ -102,45 +105,7 @@ const ENTRIES: Entry[] = [
   },
 ];
 
-export function Glossary() {
-  const [open, setOpen] = useState(false);
-  return (
-    <section className="panel">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2 p-4 text-left"
-        aria-expanded={open}
-      >
-        <div>
-          <h2 className="text-sm font-medium uppercase tracking-wide text-chart-axis">
-            Glossary
-          </h2>
-          <p className="text-[11px] text-chart-axis mt-0.5">
-            Plain-language definitions for every term in the audit and reports.
-          </p>
-        </div>
-        <span className="text-xs text-chart-axis font-mono">{open ? "−" : "+"}</span>
-      </button>
-      {open && (
-        <div className="px-4 pb-4">
-          <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-            {ENTRIES.map((e) => (
-              <div key={e.term} className="space-y-1">
-                <dt className="text-sm font-medium text-foreground">{e.term}</dt>
-                <dd className="text-xs text-chart-axis">
-                  <span className="text-foreground/80">{e.short}</span> {e.detail}
-                  {e.source && (
-                    <span className="block mt-0.5 font-mono text-[10px] text-chart-muted-text">
-                      {e.source}
-                    </span>
-                  )}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </div>
-      )}
-    </section>
-  );
+/** Exact-match lookup. Used by <Term id="..."> to resolve its definition. */
+export function lookup(term: string): GlossaryEntry | undefined {
+  return GLOSSARY.find((e) => e.term === term);
 }
