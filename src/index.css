@@ -291,7 +291,10 @@ All colors MUST be HSL.
   /* Builder N / ramp-steps slider. The track gradient (safe zone vs.
      educational zone) is passed from React via the --n-track custom prop. */
   .n-slider {
-    @apply w-full cursor-pointer appearance-none bg-transparent;
+    /* block, not inline: the inline baseline gap added ~2.5px of dead space
+       under the input, pushing its wrapper's centerline off the track and
+       leaving the ± steppers visibly low against the slider line. */
+    @apply block w-full cursor-pointer appearance-none bg-transparent;
     height: 24px;
   }
   .n-slider:focus {

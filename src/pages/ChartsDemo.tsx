@@ -237,7 +237,12 @@ function NSlider({
 
   return (
     <div className="space-y-0.5">
-      <div className="flex items-center gap-3">
+      {/* The min/safe/max labels are position:absolute below the track so
+          they do not count toward this row's flex height -- with them in flow
+          the row's centerline sat below the track and the ± buttons (and the
+          N box) rendered visibly low against the slider line. mb-4 reserves
+          the space the hanging labels occupy. */}
+      <div className="mb-4 flex items-center gap-3">
         <button type="button" aria-label={`Decrease to ${clamped - 1}`} className={stepBtn} onClick={() => stepBy(-1)} disabled={clamped <= min}>
           −
         </button>
@@ -278,7 +283,7 @@ function NSlider({
             })}
           </div>
           {/* min / safe / max labels aligned to their track positions. */}
-          <div className="relative mx-[11px] h-4 text-[10px] leading-4 text-chart-axis" aria-hidden>
+          <div className="pointer-events-none absolute inset-x-[11px] top-full h-4 text-[10px] leading-4 text-chart-axis" aria-hidden>
             <span className="absolute left-0">{min}</span>
             {safeClamped > min && safeClamped < max && (
               <span className="absolute -translate-x-1/2 font-medium text-foreground" style={{ left: `${safePct}%` }}>
