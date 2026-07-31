@@ -58,7 +58,18 @@ function relativeLuminance(c: { r: number; g: number; b: number }) {
   return 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
 }
 
-export function contrastRatio(a: ColorRecord, b: ColorRecord): number {
+/**
+ * WCAG relative-luminance contrast ratio.
+ *
+ * Takes only the `rgb` channel because that is all the formula reads. Callers
+ * such as the swatch label picker hold `{hex, rgb}` pairs that were never run
+ * through OKLab, and requiring a full ColorRecord forced a cast that hid the
+ * mismatch rather than describing it.
+ */
+export function contrastRatio(
+  a: Pick<ColorRecord, "rgb">,
+  b: Pick<ColorRecord, "rgb">
+): number {
   const la = relativeLuminance(a.rgb);
   const lb = relativeLuminance(b.rgb);
   const [hi, lo] = la > lb ? [la, lb] : [lb, la];

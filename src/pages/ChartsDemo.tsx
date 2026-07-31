@@ -2661,10 +2661,8 @@ function AccessibilityHarness({
         <summary className="cursor-pointer hover:text-foreground">Per-color contrast vs. background</summary>
         <div className="mt-2 grid grid-cols-3 md:grid-cols-6 gap-1">
           {colors.map((c, i) => {
-            const ratio = contrastRatio(
-              { hex: c, rgb: hexToRgb(c), oklab: { l: 0, a: 0, b: 0 } },
-              { hex: bgHex, rgb: hexToRgb(bgHex), oklab: { l: 0, a: 0, b: 0 } }
-            );
+            // No fabricated oklab: contrastRatio reads rgb only.
+            const ratio = contrastRatio({ rgb: hexToRgb(c) }, { rgb: hexToRgb(bgHex) });
             return (
               <div key={i} className="flex items-center gap-1">
                 <span className="w-4 h-4 rounded border border-chart-grid" style={{ backgroundColor: c }} />
@@ -2934,7 +2932,7 @@ function WarningList({
 const LABEL_DARK = fromCss("#000000");
 const LABEL_LIGHT = fromCss("#ffffff");
 
-function labelOn(swatch: ColorRecord): string {
+function labelOn(swatch: Pick<ColorRecord, "rgb">): string {
   return contrastRatio(swatch, LABEL_DARK) >= contrastRatio(swatch, LABEL_LIGHT)
     ? LABEL_DARK.hex
     : LABEL_LIGHT.hex;
