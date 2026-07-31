@@ -84,14 +84,14 @@ export function PaletteRuleExplainer({
 const FAMILY_META = {
   categorical: {
     label: "Categorical",
-    tone: "border-chart-info/40 bg-chart-info/10 text-chart-info",
-    text: "text-chart-info",
+    tone: "border-chart-info/40 bg-chart-info/10 text-chart-info-text",
+    text: "text-chart-info-text",
     why: "Discrete slots, no inherent order. The solver maximizes pairwise separation against the configured ΔE / CVD floors and WCAG contrast, and slots are paired 1:1 with dash, decal, and marker shape — the redundant channels that carry identity at high N.",
   },
   sequential: {
     label: "Sequential",
-    tone: "border-chart-positive/40 bg-chart-positive/10 text-chart-positive",
-    text: "text-chart-positive",
+    tone: "border-chart-positive/40 bg-chart-positive/10 text-chart-positive-text",
+    text: "text-chart-positive-text",
     why: "Single-hue ramp encoding magnitude. Picked to keep ΔE between adjacent bins roughly equal so readers can compare values along the lightness axis without hue confounds.",
   },
   diverging: {

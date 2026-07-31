@@ -40,7 +40,7 @@ export function OptimalOnlyBadge({
   if (optimal) {
     return (
       <div
-        className="inline-flex items-center gap-2 rounded-full border border-chart-positive/40 bg-chart-positive/10 px-3 py-1 text-xs font-medium text-chart-positive"
+        className="inline-flex items-center gap-2 rounded-full border border-chart-positive/40 bg-chart-positive/10 px-3 py-1 text-xs font-medium text-chart-positive-text"
         role="status"
         aria-live="polite"
         title={

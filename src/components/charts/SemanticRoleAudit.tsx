@@ -115,10 +115,10 @@ export function SemanticRoleAudit({ theme }: SemanticRoleAuditProps) {
         </h3>
         <div className="text-[11px] text-chart-axis">
           {fails === 0 && warns === 0 ? (
-            <span className="text-chart-positive">All roles safe</span>
+            <span className="text-chart-positive-text">All roles safe</span>
           ) : (
             <>
-              {fails > 0 && <span className="text-chart-negative">{fails} fail</span>}
+              {fails > 0 && <span className="text-chart-negative-text">{fails} fail</span>}
               {fails > 0 && warns > 0 && <span> · </span>}
               {warns > 0 && <span className="text-chart-warn">{warns} warn</span>}
             </>
@@ -154,7 +154,7 @@ export function SemanticRoleAudit({ theme }: SemanticRoleAuditProps) {
                   />
                 </td>
                 <td className="py-1 pr-2 tabular-nums text-foreground/80">{r.color.hex.toUpperCase()}</td>
-                <td className={`py-1 pr-2 tabular-nums ${r.contrastPass ? "text-chart-positive" : "text-chart-negative"}`}>
+                <td className={`py-1 pr-2 tabular-nums ${r.contrastPass ? "text-chart-positive-text" : "text-chart-negative-text"}`}>
                   {r.contrast.toFixed(2)}:1
                 </td>
                 <td className="py-1 pr-2 tabular-nums text-foreground/80">
@@ -166,10 +166,10 @@ export function SemanticRoleAudit({ theme }: SemanticRoleAuditProps) {
                 <td
                   className={`py-1 ${
                     r.pass === "ok"
-                      ? "text-chart-positive"
+                      ? "text-chart-positive-text"
                       : r.pass === "warn"
                       ? "text-chart-warn"
-                      : "text-chart-negative"
+                      : "text-chart-negative-text"
                   }`}
                   title={r.reason}
                 >

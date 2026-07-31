@@ -78,7 +78,7 @@ export function BrandAnchorsSummary({ theme, onEdit }: Props) {
               const statusClass = !used
                 ? "text-chart-axis"
                 : safeDe && safeCr
-                ? "text-chart-positive"
+                ? "text-chart-positive-text"
                 : "text-chart-warn";
               return (
                 <tr key={i} className="border-t border-chart-grid/50">

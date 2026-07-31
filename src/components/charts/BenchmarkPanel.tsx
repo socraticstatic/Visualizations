@@ -35,7 +35,7 @@ export function BenchmarkPanel({ ours, background }: Props) {
     );
   }
 
-  const cell = (pass: boolean) => (pass ? "text-chart-positive" : "text-chart-negative font-medium");
+  const cell = (pass: boolean) => (pass ? "text-chart-positive-text" : "text-chart-negative-text font-medium");
   const best = (key: "minDeltaE" | "worstCvdDeltaE" | "worstContrast") =>
     Math.max(...rows.map((r) => r[key]));
 
@@ -101,9 +101,9 @@ export function BenchmarkPanel({ ours, background }: Props) {
                   <td className={`py-1 pr-2 ${cell(r.passContrast)}`}>{r.worstContrast.toFixed(2)}:1</td>
                   <td className="py-1 pr-2">
                     {allPass ? (
-                      <span className="text-chart-positive">✓ pass</span>
+                      <span className="text-chart-positive-text">✓ pass</span>
                     ) : (
-                      <span className="text-chart-negative">✗ fails</span>
+                      <span className="text-chart-negative-text">✗ fails</span>
                     )}
                   </td>
                 </tr>

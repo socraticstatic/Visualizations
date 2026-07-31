@@ -24,7 +24,7 @@ All colors MUST be HSL.
     --secondary-foreground: 222.2 47.4% 11.2%;
 
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted-foreground: 215.4 16.3% 45%;
 
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
@@ -91,6 +91,7 @@ All colors MUST be HSL.
     --chart-muted-text: 215 19% 35%;
     /* Fill for selected controls, which paint --chart-bg text on top. */
     --chart-info-strong: 210 90% 42%;
+    --chart-positive-strong: 152 60% 27%;
 
     /* Chart system — categorical anchors (brand-locked seeds for the solver) */
     --chart-cat-anchor-1: 210 85% 45%;
@@ -182,6 +183,7 @@ All colors MUST be HSL.
     --chart-info-text: 210 95% 65%;
     --chart-muted-text: 215 20% 65%;
     --chart-info-strong: 210 95% 65%;
+    --chart-positive-strong: 152 65% 50%;
 
     /* Chart system — categorical anchors (brand-locked seeds for the solver) */
     --chart-cat-anchor-1: 210 90% 65%;

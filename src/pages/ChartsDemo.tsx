@@ -15,7 +15,7 @@ import { sequentialRamp, divergingRamp } from "@/charts/palette/ramps";
 import { CHART_KIND_LABEL, type ChartKind } from "@/charts/chartKinds";
 import { BEST_PRACTICE } from "@/charts/bestPractices";
 import { auditPalette, contrastRatio, simulateColor, type AuditReport, type VisionMode } from "@/charts/audit";
-import { deltaE, type ColorRecord } from "@/charts/palette/distance";
+import { deltaE, fromCss, type ColorRecord } from "@/charts/palette/distance";
 import { exportComparisonReport } from "@/charts/exportReport";
 import { ExportPalette } from "@/components/charts/ExportPalette";
 import { CoachTour, useShouldAutoOpenTour } from "@/components/charts/CoachTour";
@@ -296,7 +296,7 @@ function NSlider({
         </div>
       </div>
       {overflowLabel && (
-        <p className="text-[11px] text-chart-negative" title={overflowLabel}>
+        <p className="text-[11px] text-chart-negative-text" title={overflowLabel}>
           ⚠ above the safe cap ({safeClamped}) — the audit panel shows which floors break
         </p>
       )}
@@ -1326,7 +1326,7 @@ const ChartsDemo = () => {
           <div id="flow-choose" className="scroll-mt-20 flex items-center justify-between gap-3">
             <h2 className="text-sm font-medium uppercase tracking-wide text-chart-axis">Palette builder</h2>
             {family === "categorical" ? (
-              <span className="text-[11px] text-chart-positive">
+              <span className="text-[11px] text-chart-positive-text">
                 Constrained mode · default N clears every configured floor; the audit flags any N that doesn't
               </span>
             ) : !audit.bgPass ? (
@@ -1338,7 +1338,7 @@ const ChartsDemo = () => {
                 Ramp · marginal at current N — see Verify panel
               </span>
             ) : (
-              <span className="text-[11px] text-chart-positive">
+              <span className="text-[11px] text-chart-positive-text">
                 Ramp · passes WCAG contrast at current N
               </span>
             )}
@@ -1506,11 +1506,11 @@ const ChartsDemo = () => {
               <span className="text-foreground">{family}</span> · rendering{" "}
               <span className="text-foreground">N={n}</span>
               {overflow && (
-                <span className="text-chart-negative"> (capped from {requestedN} — collapsed into Top-{n} + Other)</span>
+                <span className="text-chart-negative-text"> (capped from {requestedN} — collapsed into Top-{n} + Other)</span>
               )}
             </div>
             <div className="text-foreground/80">{rule.rationale}</div>
-            {warning && <div className="text-chart-negative">⚠ {warning}</div>}
+            {warning && <div className="text-chart-negative-text">⚠ {warning}</div>}
           </div>
           <TokenPreview tokens={chartTheme.tokens} theme={theme} />
           <PaletteSwatches theme={chartTheme} family={family} steps={n} />
@@ -1601,7 +1601,7 @@ const ChartsDemo = () => {
               type="button"
               data-tour="export-palette"
               onClick={() => setExportOpen(true)}
-              className="rounded-md border border-chart-grid bg-chart-positive text-chart-bg px-3 py-1 text-xs font-medium hover:opacity-90"
+              className="rounded-md border border-chart-grid bg-chart-positive-strong text-chart-bg px-3 py-1 text-xs font-medium hover:opacity-90"
               title="Export the current palette as CSS variables, Tailwind config, ECharts theme, Figma Tokens, or an SVG swatch sheet."
             >
               Export palette
@@ -1643,7 +1643,7 @@ const ChartsDemo = () => {
                       : undefined,
                 })
               }
-              className="rounded-md border border-chart-grid bg-chart-info text-chart-bg px-3 py-1 text-xs font-medium hover:opacity-90"
+              className="rounded-md border border-chart-grid bg-chart-info-strong text-chart-bg px-3 py-1 text-xs font-medium hover:opacity-90"
               title="Open a self-contained HTML audit report (both charts, warnings, accessibility metrics). Use your browser's Print → Save as PDF to export."
             >
               Export audit report
@@ -1918,7 +1918,7 @@ function Toggle<T extends string>({
               onClick={() => onChange(o)}
               className={`px-3 py-1 text-xs transition-colors duration-150 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chart-focus ${
                 selected
-                  ? "bg-chart-info text-chart-bg font-medium"
+                  ? "bg-chart-info-strong text-chart-bg font-medium"
                   : "text-chart-axis hover:bg-chart-grid hover:text-foreground"
               }`}
             >
@@ -2070,7 +2070,7 @@ function DiffOverlay({
               {collisions.slice(0, 10).map((c, idx) => (
                 <li
                   key={idx}
-                  className="flex items-center gap-2 text-chart-negative"
+                  className="flex items-center gap-2 text-chart-negative-text"
                 >
                   <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: sim[c.a].hex }} />
                   <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: sim[c.b].hex }} />
@@ -2146,7 +2146,7 @@ function SeriesScorecard({
   }, [colors, vision, background]);
 
   const cell = (pass: boolean) =>
-    pass ? "text-chart-positive" : "text-chart-negative font-medium";
+    pass ? "text-chart-positive-text" : "text-chart-negative-text font-medium";
 
   return (
     <div className="panel p-4 text-xs">
@@ -2218,11 +2218,11 @@ function SeriesScorecard({
                   </td>
                   <td className="py-1 pr-2">
                     {allPass ? (
-                      <span className="text-chart-positive">✓ pass</span>
+                      <span className="text-chart-positive-text">✓ pass</span>
                     ) : degraded ? (
-                      <span className="text-chart-negative">⚠ degrades under {vision}</span>
+                      <span className="text-chart-negative-text">⚠ degrades under {vision}</span>
                     ) : (
-                      <span className="text-chart-negative">✗ fails</span>
+                      <span className="text-chart-negative-text">✗ fails</span>
                     )}
                   </td>
                 </tr>
@@ -2269,7 +2269,7 @@ function VariantScorecard({ a, b }: { a: VariantInput; b: VariantInput }) {
   const rowsA = useMemo(() => variantRows(a.colors, a.background), [a.colors, a.background]);
   const rowsB = useMemo(() => variantRows(b.colors, b.background), [b.colors, b.background]);
   const cell = (pass: boolean) =>
-    pass ? "text-chart-positive" : "text-chart-negative font-medium";
+    pass ? "text-chart-positive-text" : "text-chart-negative-text font-medium";
 
   const renderTable = (label: string, rows: ReturnType<typeof variantRows>) => (
     <div className="min-w-0">
@@ -2308,9 +2308,9 @@ function VariantScorecard({ a, b }: { a: VariantInput; b: VariantInput }) {
                   </td>
                   <td className="py-1 pr-2">
                     {pass ? (
-                      <span className="text-chart-positive">✓ pass</span>
+                      <span className="text-chart-positive-text">✓ pass</span>
                     ) : (
-                      <span className="text-chart-negative">✗ fails</span>
+                      <span className="text-chart-negative-text">✗ fails</span>
                     )}
                   </td>
                 </tr>
@@ -2356,13 +2356,13 @@ function DiffOverlayBadge({
   void family;
   if (collisions.length === 0) {
     return (
-      <div className="absolute top-2 right-2 rounded-md bg-chart-surface/90 border border-chart-grid px-2 py-1 text-[10px] text-chart-positive">
+      <div className="absolute top-2 right-2 rounded-md bg-chart-surface/90 border border-chart-grid px-2 py-1 text-[10px] text-chart-positive-text">
         ✓ No collisions under {vision}
       </div>
     );
   }
   return (
-    <div className="absolute top-2 right-2 max-w-[60%] rounded-md bg-chart-surface/95 border border-chart-negative px-2 py-1 text-[10px] text-chart-negative">
+    <div className="absolute top-2 right-2 max-w-[60%] rounded-md bg-chart-surface/95 border border-chart-negative px-2 py-1 text-[10px] text-chart-negative-text">
       <div className="font-medium">⚠ {collisions.length} unreadable pair{collisions.length === 1 ? "" : "s"} (ΔE &lt; {threshold.toFixed(0)})</div>
       <div className="mt-0.5 text-chart-axis">
         {collisions.slice(0, 3).map((c) => `#${c.a}↔#${c.b}`).join(" · ")}
@@ -2568,7 +2568,7 @@ function Metric({ label, value, ok }: { label: string; value: string; ok?: boole
   return (
     <div className="rounded border border-chart-grid p-2">
       <div className="text-[10px] uppercase tracking-wide opacity-70">{label}</div>
-      <div className={`tabular-nums ${ok === false ? "text-chart-negative" : ok ? "text-chart-positive" : ""}`}>
+      <div className={`tabular-nums ${ok === false ? "text-chart-negative-text" : ok ? "text-chart-positive-text" : ""}`}>
         {value}
       </div>
     </div>
@@ -2585,24 +2585,24 @@ function AccessibilityHarness({
   bgHex: string;
 }) {
   const badgeFor = (pass: boolean) =>
-    pass ? "text-chart-positive" : "text-chart-negative";
+    pass ? "text-chart-positive-text" : "text-chart-negative-text";
   const overallLabel =
     audit.overall === "pass" ? "PASS" : audit.overall === "warn" ? "WARN" : "FAIL";
   const overallClass =
     audit.overall === "pass"
-      ? "text-chart-positive"
+      ? "text-chart-positive-text"
       : audit.overall === "warn"
       ? "text-chart-target"
-      : "text-chart-negative";
+      : "text-chart-negative-text";
 
   // Translate a measured minimum pairwise ΔE into words a human can act on.
   // JND in OKLab ×100 is ≈ 2; the configured pass floors are far below that
   // on purpose (patterns carry identity at high N), so the floor alone reads
   // as nonsense. Lead with the interpretation, keep the floor as fine print.
   const interpret = (v: number, pass: boolean) => {
-    if (!pass) return { label: "collision", cls: "text-chart-negative" };
-    if (v >= 10) return { label: "clearly distinct", cls: "text-chart-positive" };
-    if (v >= 2) return { label: "distinguishable", cls: "text-chart-positive" };
+    if (!pass) return { label: "collision", cls: "text-chart-negative-text" };
+    if (v >= 10) return { label: "clearly distinct", cls: "text-chart-positive-text" };
+    if (v >= 2) return { label: "distinguishable", cls: "text-chart-positive-text" };
     return { label: "colors nearly identical — dash/decal/shape carry identity", cls: "text-chart-target" };
   };
 
@@ -2668,7 +2668,7 @@ function AccessibilityHarness({
             return (
               <div key={i} className="flex items-center gap-1">
                 <span className="w-4 h-4 rounded border border-chart-grid" style={{ backgroundColor: c }} />
-                <span className={`tabular-nums ${ratio >= 3 ? "text-chart-positive" : "text-chart-negative"}`}>
+                <span className={`tabular-nums ${ratio >= 3 ? "text-chart-positive-text" : "text-chart-negative-text"}`}>
                   {ratio.toFixed(2)}
                 </span>
               </div>
@@ -2825,10 +2825,10 @@ function ExplainPanel({
           <span
             className={
               audit.overall === "pass"
-                ? "text-chart-positive"
+                ? "text-chart-positive-text"
                 : audit.overall === "warn"
                 ? "text-chart-target"
-                : "text-chart-negative"
+                : "text-chart-negative-text"
             }
           >
             {audit.overall.toUpperCase()}
@@ -2864,7 +2864,7 @@ function WarningList({
 }) {
   if (warnings.length === 0) {
     return (
-      <div className="rounded border border-chart-positive/40 bg-chart-positive/5 p-3 text-xs text-chart-positive flex items-center gap-2">
+      <div className="rounded border border-chart-positive/40 bg-chart-positive/5 p-3 text-xs text-chart-positive-text flex items-center gap-2">
         <span aria-hidden>✓</span>
         <span>No warnings — palette satisfies every best-practice and accessibility check.</span>
       </div>
@@ -2878,7 +2878,7 @@ function WarningList({
   );
   const tone = (s: "error" | "warn" | "info") =>
     s === "error"
-      ? { border: "border-chart-negative/50", bg: "bg-chart-negative/10", text: "text-chart-negative", icon: "✕" }
+      ? { border: "border-chart-negative/50", bg: "bg-chart-negative/10", text: "text-chart-negative-text", icon: "✕" }
       : s === "warn"
       ? { border: "border-chart-target/50", bg: "bg-chart-target/10", text: "text-chart-target", icon: "⚠" }
       : { border: "border-chart-grid", bg: "bg-chart-surface", text: "text-chart-axis", icon: "ℹ" };
@@ -2888,7 +2888,7 @@ function WarningList({
       <div className="flex items-baseline justify-between">
         <div className="text-xs uppercase tracking-wide text-chart-axis">Warnings</div>
         <div className="text-[10px] text-chart-axis">
-          {counts.error ? <span className="text-chart-negative">{counts.error} error </span> : null}
+          {counts.error ? <span className="text-chart-negative-text">{counts.error} error </span> : null}
           {counts.warn ? <span className="text-chart-target">{counts.warn} warn </span> : null}
           {counts.info ? <span>{counts.info} info</span> : null}
         </div>
@@ -2917,6 +2917,29 @@ function WarningList({
  * status, anchors, ramps), with a live WCAG contrast ratio for each chrome
  * token vs. the chart background.
  */
+/**
+ * Pick a readable label color to print on top of a swatch.
+ *
+ * Swatch colors are *mark* colors, tuned to clear WCAG 2.2 SC 1.4.11 (3:1)
+ * against the chart background. Printing a 10px hex label on them is text, so
+ * it needs SC 1.4.3 (4.5:1). Hardcoding the theme background as the label
+ * color failed on mid-tone swatches: white on #25935f is 3.88:1.
+ *
+ * Candidates are pure black and white, not theme tokens. The label sits on the
+ * swatch, not on a themed surface, so it is not bound to the theme -- and the
+ * pure extremes are the only pair that maximizes reachable contrast. Using
+ * --chart-tooltip-fg (222 47% 11%) instead left the diverging mid-gray at
+ * 4.09:1, where pure black reaches 4.74:1.
+ */
+const LABEL_DARK = fromCss("#000000");
+const LABEL_LIGHT = fromCss("#ffffff");
+
+function labelOn(swatch: ColorRecord): string {
+  return contrastRatio(swatch, LABEL_DARK) >= contrastRatio(swatch, LABEL_LIGHT)
+    ? LABEL_DARK.hex
+    : LABEL_LIGHT.hex;
+}
+
 function TokenPreview({
   tokens,
   theme,
@@ -3007,7 +3030,7 @@ function TokenPreview({
                 <div
                   key={i}
                   className="flex-1 h-8 flex items-end justify-center text-[10px] font-mono pb-0.5"
-                  style={{ backgroundColor: c.hex, color: tokens.bg.hex }}
+                  style={{ backgroundColor: c.hex, color: labelOn(c) }}
                   title={`${r.vars[i]} · ${c.hex}`}
                 >
                   {c.hex}
@@ -3060,7 +3083,7 @@ function TokenGroup({
               <div className="text-right">
                 <div
                   className={`text-xs tabular-nums ${
-                    passes ? "text-chart-positive" : "text-chart-negative"
+                    passes ? "text-chart-positive-text" : "text-chart-negative-text"
                   }`}
                 >
                   {cr.toFixed(2)}:1

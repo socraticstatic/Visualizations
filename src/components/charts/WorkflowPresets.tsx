@@ -169,7 +169,7 @@ export function WorkflowPresets({ current, onApply }: Props) {
                   <button
                     type="button"
                     onClick={() => remove(p.id)}
-                    className="text-chart-negative opacity-0 group-hover:opacity-100 text-xs"
+                    className="text-chart-negative-text opacity-0 group-hover:opacity-100 text-xs"
                     title="Delete workflow"
                     aria-label={`Delete ${p.name}`}
                   >
@@ -195,7 +195,7 @@ export function WorkflowPresets({ current, onApply }: Props) {
               type="button"
               onClick={add}
               disabled={!name.trim()}
-              className="rounded border border-chart-grid bg-chart-info text-chart-bg px-2 py-1 font-medium disabled:opacity-40"
+              className="rounded border border-chart-grid bg-chart-info-strong text-chart-bg px-2 py-1 font-medium disabled:opacity-40"
             >
               Save workflow
             </button>

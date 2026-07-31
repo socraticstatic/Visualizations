@@ -114,7 +114,7 @@ export function ExportPalette({ open, onClose, snapshot }: Props) {
               <button
                 type="button"
                 onClick={download}
-                className="text-xs px-3 py-1 rounded border border-chart-grid bg-chart-info text-chart-bg font-medium hover:opacity-90"
+                className="text-xs px-3 py-1 rounded border border-chart-grid bg-chart-info-strong text-chart-bg font-medium hover:opacity-90"
               >
                 Download
               </button>

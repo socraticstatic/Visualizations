@@ -162,7 +162,7 @@ export function InsightCallouts({ colors, background }: Props) {
               it.tone === "warn"
                 ? "text-chart-warn"
                 : it.tone === "good"
-                ? "text-chart-positive"
+                ? "text-chart-positive-text"
                 : "text-foreground/85"
             }`}
           >

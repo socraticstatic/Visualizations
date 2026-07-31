@@ -211,7 +211,7 @@ export function ChartRecommender({ onApply }: Props) {
           <button
             type="button"
             onClick={() => onApply(rec.kind, rec.n)}
-            className="ml-auto text-xs px-3 py-1 rounded border border-chart-grid bg-chart-info text-chart-bg font-medium hover:opacity-90"
+            className="ml-auto text-xs px-3 py-1 rounded border border-chart-grid bg-chart-info-strong text-chart-bg font-medium hover:opacity-90"
           >
             Apply to builder
           </button>

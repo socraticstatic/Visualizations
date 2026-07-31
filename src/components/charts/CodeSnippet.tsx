@@ -53,7 +53,7 @@ export function CodeSnippet({ kind, n, theme }: CodeSnippetProps) {
           <button
             type="button"
             onClick={copy}
-            className="text-xs px-2 py-1 rounded border border-chart-grid bg-chart-info text-chart-bg hover:opacity-90"
+            className="text-xs px-2 py-1 rounded border border-chart-grid bg-chart-info-strong text-chart-bg hover:opacity-90"
           >
             Copy
           </button>

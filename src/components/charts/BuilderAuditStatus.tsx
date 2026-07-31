@@ -53,7 +53,7 @@ function statusOfMetric(value: number, threshold: number): Status {
 const TONE: Record<Status, { ring: string; text: string; bg: string }> = {
   pass: {
     ring: "border-chart-positive/40",
-    text: "text-chart-positive",
+    text: "text-chart-positive-text",
     bg: "bg-chart-positive/10",
   },
   warn: {

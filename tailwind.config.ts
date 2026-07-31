@@ -75,6 +75,7 @@ export default {
           info: "hsl(var(--chart-info))",
           // Text-safe variants — use these for UI text, never for marks.
           "positive-text": "hsl(var(--chart-positive-text))",
+          "positive-strong": "hsl(var(--chart-positive-strong))",
           "negative-text": "hsl(var(--chart-negative-text))",
           "info-text": "hsl(var(--chart-info-text))",
           "muted-text": "hsl(var(--chart-muted-text))",

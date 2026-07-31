@@ -192,7 +192,7 @@ export function CoachTour({ open, onClose }: Props) {
             <button
               type="button"
               onClick={next}
-              className="text-xs px-3 py-1 rounded border border-chart-grid bg-chart-info text-chart-bg font-medium hover:opacity-90"
+              className="text-xs px-3 py-1 rounded border border-chart-grid bg-chart-info-strong text-chart-bg font-medium hover:opacity-90"
             >
               {step === STEPS.length - 1 ? "Done" : "Next"}
             </button>

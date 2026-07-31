@@ -39,7 +39,7 @@ export function VisionPreviewToggle({
           {isSim ? (
             <EyeOff className="h-3 w-3 text-chart-target" aria-hidden />
           ) : (
-            <Eye className="h-3 w-3 text-chart-positive" aria-hidden />
+            <Eye className="h-3 w-3 text-chart-positive-text" aria-hidden />
           )}
           Preview mode
         </div>
@@ -62,7 +62,7 @@ export function VisionPreviewToggle({
                 "rounded border px-1.5 py-1 text-center transition-colors " +
                 (active
                   ? m.value === "normal"
-                    ? "border-chart-positive/60 bg-chart-positive/15 text-chart-positive"
+                    ? "border-chart-positive/60 bg-chart-positive/15 text-chart-positive-text"
                     : "border-chart-target/60 bg-chart-target/15 text-chart-target"
                   : "border-border bg-background/40 text-foreground/80 hover:border-foreground/40")
               }

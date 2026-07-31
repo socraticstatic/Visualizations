@@ -106,7 +106,7 @@ export function PalettePresets({ current, onApply }: Props) {
         <button
           type="button"
           onClick={() => remove(p.id)}
-          className="text-chart-negative opacity-0 group-hover:opacity-100 text-[10px]"
+          className="text-chart-negative-text opacity-0 group-hover:opacity-100 text-[10px]"
           title="Delete preset"
         >
           ×
@@ -162,7 +162,7 @@ export function PalettePresets({ current, onApply }: Props) {
               type="button"
               onClick={add}
               disabled={!name.trim()}
-              className="rounded border border-chart-info bg-chart-info text-chart-bg px-3 py-1 font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chart-focus"
+              className="rounded border border-chart-info bg-chart-info-strong text-chart-bg px-3 py-1 font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chart-focus"
             >
               Save preset
             </button>

@@ -41,7 +41,13 @@ const TEXT_TOKENS = [
   "chart-negative-text",
   "chart-info-text",
   "chart-muted-text",
+  // shadcn's base muted token. Its stock light value is 46.9% lightness, which
+  // measured 4.48:1 and failed by 0.02 across 9 rendered labels.
+  "muted-foreground",
 ] as const;
+
+/** Fills that carry --chart-bg text on top, so the fill itself must clear 4.5:1. */
+const STRONG_FILLS = ["chart-info-strong", "chart-positive-strong"] as const;
 
 describe("text-safe tokens clear WCAG 1.4.3 on every surface", () => {
   for (const theme of ["light", "dark"] as const) {
@@ -55,14 +61,15 @@ describe("text-safe tokens clear WCAG 1.4.3 on every surface", () => {
   }
 });
 
-describe("selected-control fill carries readable text", () => {
+describe("selected-control fills carry readable text", () => {
   for (const theme of ["light", "dark"] as const) {
-    it(`${theme}: --chart-info-strong against --chart-bg >= 4.5:1`, () => {
-      // Selected pills paint --chart-bg text on a --chart-info-strong fill.
-      expect(
-        contrastRatio(rec("chart-info-strong", theme), rec("chart-bg", theme))
-      ).toBeGreaterThanOrEqual(4.5);
-    });
+    for (const fill of STRONG_FILLS) {
+      it(`${theme}: --${fill} against --chart-bg >= 4.5:1`, () => {
+        expect(contrastRatio(rec(fill, theme), rec("chart-bg", theme))).toBeGreaterThanOrEqual(
+          4.5
+        );
+      });
+    }
   }
 });
 

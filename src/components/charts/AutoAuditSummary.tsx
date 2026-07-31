@@ -146,7 +146,7 @@ export function AutoAuditSummary({
     }
     return (
       <div
-        className="flex items-center gap-2 rounded-md border border-chart-positive/30 bg-chart-positive/5 px-3 py-2 text-xs text-chart-positive"
+        className="flex items-center gap-2 rounded-md border border-chart-positive/30 bg-chart-positive/5 px-3 py-2 text-xs text-chart-positive-text"
         role="status"
         aria-live="polite"
       >

@@ -84,7 +84,7 @@ const TAG_STYLES: Record<ConstraintTag, string> = {
   ΔE: "bg-chart-warn/15 text-chart-warn border-chart-warn/40",
   "CVD-ΔE": "bg-chart-target/15 text-chart-target border-chart-target/40",
   WCAG: "bg-destructive/15 text-destructive border-destructive/40",
-  solver: "bg-chart-info/15 text-chart-info border-chart-info/40",
+  solver: "bg-chart-info/15 text-chart-info-text border-chart-info/40",
 };
 
 /**
@@ -202,17 +202,17 @@ export function FullPermutationAudit({ hasManualOverrides }: FullPermutationAudi
           aria-controls="full-permutation-audit-body"
         >
           {running ? (
-            <Loader2 className="h-4 w-4 animate-spin text-chart-info" aria-hidden />
+            <Loader2 className="h-4 w-4 animate-spin text-chart-info-text" aria-hidden />
           ) : anyFailures ? (
             <AlertTriangle className="h-4 w-4 text-destructive" aria-hidden />
           ) : totalChecked > 0 ? (
-            <CheckCircle2 className="h-4 w-4 text-chart-positive" aria-hidden />
+            <CheckCircle2 className="h-4 w-4 text-chart-positive-text" aria-hidden />
           ) : (
             <PlayCircle className="h-4 w-4 text-muted-foreground" aria-hidden />
           )}
           <strong className="font-semibold">Full sweep:</strong>
           {running ? (
-            <span className="text-chart-info">
+            <span className="text-chart-info-text">
               auditing… {progress.done}/{progress.total} ({pct}%)
             </span>
           ) : totalChecked === 0 ? (
@@ -224,7 +224,7 @@ export function FullPermutationAudit({ hasManualOverrides }: FullPermutationAudi
               {anyFailures ? (
                 <span className="text-destructive">{failingRows.length} non-optimal</span>
               ) : (
-                <span className="text-chart-positive">all optimal</span>
+                <span className="text-chart-positive-text">all optimal</span>
               )}
               {lastRunAt && (
                 <span className="ml-2 text-muted-foreground">
@@ -243,7 +243,7 @@ export function FullPermutationAudit({ hasManualOverrides }: FullPermutationAudi
           type="button"
           onClick={runAudit}
           disabled={running}
-          className="inline-flex items-center gap-1.5 rounded border border-chart-info/40 bg-chart-info/10 px-2 py-1 text-xs font-medium text-chart-info hover:bg-chart-info/20 disabled:cursor-not-allowed disabled:opacity-80"
+          className="inline-flex items-center gap-1.5 rounded border border-chart-info/40 bg-chart-info/10 px-2 py-1 text-xs font-medium text-chart-info-text hover:bg-chart-info/20 disabled:cursor-not-allowed disabled:opacity-80"
           title="Re-run the full (theme × kind × N) accessibility sweep"
         >
           {running ? (
@@ -367,7 +367,7 @@ export function FullPermutationAudit({ hasManualOverrides }: FullPermutationAudi
                         <td className="py-1 pr-3 font-mono">
                           N={g.minN}..{g.maxN}
                         </td>
-                        <td className="py-1 text-chart-positive">
+                        <td className="py-1 text-chart-positive-text">
                           all {g.maxN - g.minN + 1} optimal
                         </td>
                       </tr>

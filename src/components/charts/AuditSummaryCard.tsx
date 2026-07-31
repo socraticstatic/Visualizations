@@ -80,7 +80,7 @@ export function AuditSummaryCard({
       label: hasManualOverrides
         ? "All checks pass"
         : "Built-in palette · constraints enforced by solver",
-      tone: "text-chart-positive",
+      tone: "text-chart-positive-text",
       bg: "bg-chart-positive/10 border-chart-positive/40",
       icon: "✓",
     },
@@ -92,7 +92,7 @@ export function AuditSummaryCard({
     },
     fail: {
       label: hasManualOverrides ? "Accessibility failure" : "WCAG contrast fails · ramp token needs adjustment",
-      tone: "text-chart-negative",
+      tone: "text-chart-negative-text",
       bg: "bg-chart-negative/10 border-chart-negative/40",
       icon: "✕",
     },
@@ -194,7 +194,7 @@ function Pill({
 }) {
   const toneClass =
     tone === "neg"
-      ? "border-chart-negative/50 text-chart-negative"
+      ? "border-chart-negative/50 text-chart-negative-text"
       : tone === "warn"
       ? "border-chart-target/50 text-chart-target"
       : "border-chart-grid text-chart-axis";
@@ -224,7 +224,7 @@ function Stat({
       <div className="text-[10px] uppercase tracking-wide text-chart-axis">{label}</div>
       <div
         className={`tabular-nums text-sm font-medium ${
-          ok ? "text-chart-positive" : "text-chart-negative"
+          ok ? "text-chart-positive-text" : "text-chart-negative-text"
         }`}
       >
         {value}
