@@ -1553,21 +1553,14 @@ const ChartsDemo = () => {
               onChange={(v) => applyPrimaryBuilder({ theme: v })}
             />
             <Toggle
-              label="Preview as"
-              value={vision}
-              options={["normal", "deutan", "protan", "tritan", "achromatopsia"] as const}
-              onChange={(v) => setVision(v)}
-            />
-            <Toggle
               label="Fixtures"
               value={dataMode}
               options={["synthetic", "messy"] as const}
               onChange={(v) => setDataMode(v)}
             />
-            <label className="flex items-center gap-2">
+            <label className="flex min-h-6 cursor-pointer items-center gap-2 py-1">
               <input
                 type="checkbox"
-                className="tap-target"
                 checked={compare}
                 onChange={(e) => setCompare(e.target.checked)}
               />
@@ -1579,10 +1572,9 @@ const ChartsDemo = () => {
                 </span>
               </span>
             </label>
-            <label className="ml-auto flex items-center gap-2">
+            <label className="ml-auto flex min-h-6 cursor-pointer items-center gap-2 py-1">
               <input
                 type="checkbox"
-                className="tap-target"
                 checked={diffOverlay}
                 onChange={(e) => setDiffOverlay(e.target.checked)}
                 disabled={vision === "normal" || !compare}
@@ -1670,8 +1662,11 @@ const ChartsDemo = () => {
           {compare && vision !== "normal" && (
             <DiffOverlay colors={auditedColors} vision={vision} family={family} />
           )}
+          </div>
+          </div>
+        </section>
 
-          {/* EVIDENCE — proof for a reviewer. The person actively building is
+        {/* EVIDENCE — proof for a reviewer. The person actively building is
               served by the pinned PaletteVerdict, not by this section. */}
           <Evidence>
             {family !== "categorical" && (
@@ -1830,10 +1825,7 @@ const ChartsDemo = () => {
             <ShareLink state={urlState} />
           </div>
           <NextStageButton current="ship" />
-          </Ship>
-          </div>
-        </div>
-        </section>
+        </Ship>
 
 
         <div className="flex flex-wrap items-center gap-2">
