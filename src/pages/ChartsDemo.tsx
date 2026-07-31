@@ -33,14 +33,19 @@ import type { UrlState } from "@/charts/urlState";
 import { buildPinPermutation, applyPinsToTheme } from "@/charts/entityPins";
 import { EntityPins } from "@/components/charts/EntityPins";
 import { toast } from "@/hooks/use-toast";
-import { FlowStepper } from "@/components/charts/FlowStepper";
 import { NextStageButton } from "@/components/charts/NextStageButton";
-import { AuditSummaryCard } from "@/components/charts/AuditSummaryCard";
 import { OptimalOnlyBadge } from "@/components/charts/OptimalOnlyBadge";
-import { AutoAuditSummary } from "@/components/charts/AutoAuditSummary";
-import { FullPermutationAudit } from "@/components/charts/FullPermutationAudit";
-import { BuilderAuditStatus } from "@/components/charts/BuilderAuditStatus";
 import { PaletteRuleExplainer } from "@/components/charts/PaletteRuleExplainer";
+import { PaletteVerdict } from "@/components/charts/PaletteVerdict";
+import { SystemAudit } from "@/components/charts/SystemAudit";
+import { SectionNav } from "@/components/charts/SectionNav";
+import { ReferenceDrawer } from "@/components/charts/ReferenceDrawer";
+import { OPEN_REFERENCE_EVENT } from "@/components/charts/Term";
+import { Evidence } from "@/components/charts/sections/Evidence";
+import { Storytell } from "@/components/charts/sections/Storytell";
+import { Reuse } from "@/components/charts/sections/Reuse";
+import { Ship } from "@/components/charts/sections/Ship";
+import { type SectionId } from "@/charts/urlState";
 import { VisionPreviewToggle } from "@/components/charts/VisionPreviewToggle";
 import { WorkflowPresets, type WorkflowState } from "@/components/charts/WorkflowPresets";
 import { clearManualColorOverrides, hasManualColorOverrides } from "@/charts/manualOverrides";
@@ -342,6 +347,48 @@ const ChartsDemo = () => {
       dismissTour();
     }
   }
+  const [referenceOpen, setReferenceOpen] = useState(false);
+  const [referenceTerm, setReferenceTerm] = useState<string | undefined>(undefined);
+  const [section, setSection] = useState<SectionId | undefined>(undefined);
+
+  /**
+   * Navigate to a section.
+   *
+   * Only an explicit click writes `s` into the hash. The scrollspy inside
+   * SectionNav never does: rewriting the hash on every scroll event fills the
+   * history stack and destroys the back button.
+   */
+  function goToSection(id: SectionId) {
+    setSection(id);
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document
+      .getElementById(`section-${id}`)
+      ?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  }
+
+  // "?" opens the glossary from anywhere, and <Term> asks for a specific entry.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const t = e.target as HTMLElement | null;
+      // Never steal "?" from a field the user is typing in.
+      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+      if (e.key === "?") {
+        setReferenceTerm(undefined);
+        setReferenceOpen(true);
+      }
+    }
+    function onOpenRef(e: Event) {
+      setReferenceTerm((e as CustomEvent<string>).detail);
+      setReferenceOpen(true);
+    }
+    window.addEventListener("keydown", onKey);
+    window.addEventListener(OPEN_REFERENCE_EVENT, onOpenRef);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener(OPEN_REFERENCE_EVENT, onOpenRef);
+    };
+  }, []);
+
   const firstKindRender = useRef(true);
   const skipNextKindSnap = useRef(false);
   const firstKindBRender = useRef(true);
@@ -451,8 +498,16 @@ const ChartsDemo = () => {
     kindB,
     nB: requestedNB,
     themeB,
+    section,
   };
   useUrlStateSync(urlState, (s) => {
+    if (s.section) {
+      setSection(s.section);
+      // Anchors only exist after the first paint, so defer the scroll.
+      requestAnimationFrame(() =>
+        document.getElementById(`section-${s.section}`)?.scrollIntoView({ block: "start" })
+      );
+    }
     if (s.kind || s.theme || typeof s.n === "number") {
       applyPrimaryBuilder({ kind: s.kind, theme: s.theme, n: s.n });
     }
@@ -1283,44 +1338,78 @@ const ChartsDemo = () => {
   return (
     <div className="min-h-dvh bg-[hsl(var(--page-bg))] text-foreground">
       <VisionFilters />
-      <div className="mx-auto max-w-[1600px] px-6 py-8 space-y-6">
-        <header className="space-y-3">
-          <div className="flex items-center justify-end gap-2">
+      {/* One 48px bar carries global actions AND section nav. Two stacked
+          sticky rows would eat 100px of every screen forever. */}
+      <div className="sticky top-0 z-40 border-b border-chart-grid bg-[hsl(var(--page-bg)/0.92)] backdrop-blur">
+        <div className="mx-auto flex h-12 max-w-[1600px] items-center gap-3 px-6">
+          <div
+            className="flex h-6 w-6 shrink-0 items-end justify-center gap-0.5 rounded bg-primary p-1"
+            aria-hidden
+          >
+            <span className="w-1 rounded-sm" style={{ height: "45%", background: "hsl(var(--chart-cat-anchor-1))" }} />
+            <span className="w-1 rounded-sm" style={{ height: "100%", background: "hsl(var(--chart-cat-anchor-2))" }} />
+            <span className="w-1 rounded-sm" style={{ height: "70%", background: "hsl(var(--chart-cat-anchor-3))" }} />
+          </div>
+          <SectionNav onNavigate={goToSection} />
+          <div className="ml-auto flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setReferenceTerm(undefined);
+                setReferenceOpen(true);
+              }}
+              className="tap-target rounded-md border border-chart-grid bg-chart-surface px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-chart-grid/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chart-focus"
+              title="Open the glossary (? from anywhere)"
+            >
+              Glossary
+            </button>
             <button
               type="button"
               onClick={() => setTourOpen(true)}
-              className="rounded-md border border-chart-grid bg-chart-surface px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-chart-grid/30 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chart-focus"
+              className="tap-target rounded-md border border-chart-grid bg-chart-surface px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-chart-grid/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chart-focus"
               title="Replay the 4-step coach tour"
             >
               Take the tour
             </button>
           </div>
-          <div className="flex items-start gap-4">
-            <div
-              className="flex h-11 w-11 shrink-0 items-end justify-center gap-1 rounded-xl bg-primary p-2.5 shadow-sm"
-              aria-hidden
-            >
-              <span className="w-1.5 rounded-sm" style={{ height: "45%", background: "hsl(var(--chart-cat-anchor-1))" }} />
-              <span className="w-1.5 rounded-sm" style={{ height: "100%", background: "hsl(var(--chart-cat-anchor-2))" }} />
-              <span className="w-1.5 rounded-sm" style={{ height: "70%", background: "hsl(var(--chart-cat-anchor-3))" }} />
-            </div>
-            <div className="min-w-0">
-              <h1 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">
-                Micah's Chart System{" "}
-                <span className="text-chart-axis">for Sane and Useful Color Strategies</span>
-              </h1>
-              <p className="mt-1.5 max-w-[72ch] text-sm text-chart-axis">
-                Pick a chart type and the number of data points — get an audited palette with matched dash, decal, and
-                shape encodings.
-                <span className="ml-2 inline-flex items-center rounded-full border border-chart-grid bg-chart-surface px-2 py-0.5 align-middle text-[11px] tabular-nums text-chart-axis">
-                  v{PALETTE_VERSION}
-                </span>
-              </p>
-            </div>
-          </div>
+        </div>
+        {/* The verdict lives with the nav, not beside the chart. Pinned inside
+            the chart column it sat at 863px on a 720px viewport at scroll 0 --
+            visible everywhere except the one place everybody starts. */}
+        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-2 px-6 pb-2">
+          <PaletteVerdict
+            audit={audit}
+            relaxations={chartTheme.solve.relaxations}
+            label={compare ? "A" : undefined}
+            dense={compare}
+          />
+          {compare && (
+            <PaletteVerdict
+              audit={auditB}
+              relaxations={chartThemeB.solve.relaxations}
+              label="B"
+              dense
+            />
+          )}
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-[1600px] px-6 py-6 space-y-6">
+        {/* Title scrolls away. It earns its space once, not on every screen. */}
+        <header className="min-w-0">
+          <h1 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">
+            Micah's Chart System{" "}
+            <span className="text-chart-muted-text">for Sane and Useful Color Strategies</span>
+          </h1>
+          <p className="mt-1.5 max-w-[72ch] text-sm text-chart-muted-text">
+            Pick a chart type and the number of data points — get an audited palette with matched dash, decal, and
+            shape encodings.
+            <span className="ml-2 inline-flex items-center rounded-full border border-chart-grid bg-chart-surface px-2 py-0.5 align-middle text-[11px] tabular-nums text-chart-muted-text">
+              v{PALETTE_VERSION}
+            </span>
+          </p>
         </header>
 
-        <FlowStepper />
         <section id="flow-build" className="scroll-mt-20 panel p-4 space-y-4">
           <div id="flow-choose" className="scroll-mt-20 flex items-center justify-between gap-3">
             <h2 className="text-sm font-medium uppercase tracking-wide text-chart-axis">Palette builder</h2>
@@ -1345,12 +1434,17 @@ const ChartsDemo = () => {
 
           <div className={!compare ? "grid gap-6 lg:grid-cols-[minmax(560px,1.6fr)_minmax(320px,1fr)] lg:items-start" : ""}>
             {!compare && (
-              <div className="lg:sticky lg:top-[52px] space-y-3">
+              <div className="lg:sticky lg:top-14 space-y-3">
                 <ChartCard
                   title={`${CHART_KIND_LABEL[kind]} — ${family} palette${vision !== "normal" ? ` · preview as ${vision}` : ""}`}
                 >
                   <div style={{ filter: VISION_FILTER[vision] }}>
-                    <EChart option={option} height={560} />
+                    {/* The chart flexes so the verdict below it is always on
+                        screen. At a 720px viewport the budget after the 48px
+                        bar and padding is 656px; a fixed 560px chart plus the
+                        toggle plus the verdict came to ~740px and pushed the
+                        verdict out of view, which defeats pinning it at all. */}
+                    <EChart option={option} height="clamp(300px, calc(100dvh - 260px), 560px)" />
                   </div>
                 </ChartCard>
                 <div data-tour="vision-preview">
@@ -1518,15 +1612,15 @@ const ChartsDemo = () => {
             <DiffOverlay colors={auditedColors} vision={vision} family={family} />
           )}
 
-          {/* VERIFY — accessibility, contrast, semantic role checks grouped together. */}
-          <div id="flow-verify" className="scroll-mt-20 space-y-4">
+          {/* EVIDENCE — proof for a reviewer. The person actively building is
+              served by the pinned PaletteVerdict, not by this section. */}
+          <Evidence>
             {family !== "categorical" && (
               <div className="rounded border border-chart-grid/50 bg-chart-grid/5 px-3 py-2 text-[11px] text-chart-axis">
                 <span className="font-medium text-foreground">Ramp audit scope:</span> the chart renders {n} discrete piecewise bins,
                 one per audited ramp stop — every color on screen is a color the metrics below cover.
               </div>
             )}
-            <AccessibilityHarness audit={audit} colors={auditedColors.map((c) => c.hex)} bgHex={chartTheme.tokens.bg.hex} />
             <LazyMount minHeight={260}>
               <VisionMatrix option={option as Record<string, unknown>} />
             </LazyMount>
@@ -1539,23 +1633,24 @@ const ChartsDemo = () => {
                 </LazyMount>
               </>
             )}
-            <NextStageButton current="verify" />
-          </div>
+            <SystemAudit hasManualOverrides={manualOverrides} kind={kind} theme={theme} />
+            {family === "categorical" && (
+              <BenchmarkPanel ours={auditedColors} background={chartTheme.tokens.bg} />
+            )}
+            <NextStageButton current="evidence" />
+          </Evidence>
 
-          {/* STORYTELL — insights, emphasis, benchmarks. */}
           {family === "categorical" && (
-            <div id="flow-storytell" className="scroll-mt-20 space-y-4">
+            <Storytell>
               <InsightCallouts colors={auditedColors} background={chartTheme.tokens.bg} />
               <LazyMount minHeight={340}>
                 <EmphasisPreview theme={chartTheme} kind={kind} />
               </LazyMount>
-              <BenchmarkPanel ours={auditedColors} background={chartTheme.tokens.bg} />
               <NextStageButton current="storytell" />
-            </div>
+            </Storytell>
           )}
 
-          {/* REUSE — save, load, diff, pin entities to slots. */}
-          <div id="flow-reuse" className="scroll-mt-20 space-y-4">
+          <Reuse>
             <PalettePresets
               current={{ kind, n, theme }}
               onApply={(p) => applyPrimaryBuilder({ kind: p.kind, n: p.n, theme: p.theme })}
@@ -1589,10 +1684,9 @@ const ChartsDemo = () => {
               />
             )}
             <NextStageButton current="reuse" />
-          </div>
+          </Reuse>
 
-          {/* SHIP — terminal actions: copy code, export, share. */}
-          <div id="flow-ship" className="scroll-mt-20 space-y-4">
+          <Ship>
           {family === "categorical" && <CodeSnippet kind={kind} n={n} theme={chartTheme} />}
           <div className="flex flex-wrap items-center gap-2 rounded-md border border-chart-grid bg-chart-bg p-3">
             <span className="text-[10px] uppercase tracking-wide text-chart-axis mr-2">Ship</span>
@@ -1650,7 +1744,7 @@ const ChartsDemo = () => {
             <ShareLink state={urlState} />
           </div>
           <NextStageButton current="ship" />
-          </div>
+          </Ship>
           </div>
         </div>
         </section>
@@ -1666,68 +1760,6 @@ const ChartsDemo = () => {
             compare={compare}
           />
         </div>
-
-        <AutoAuditSummary
-          kind={kind}
-          theme={theme}
-          hasManualOverrides={manualOverrides}
-          anchors={chartTheme.tokens.anchors}
-          background={chartTheme.tokens.bg}
-          grid={chartTheme.tokens.grid}
-          variantB={
-            compare && vision === "normal"
-              ? {
-                  kind: kindB,
-                  theme: themeB,
-                  anchors: chartThemeB.tokens.anchors,
-                  background: chartThemeB.tokens.bg,
-                  grid: chartThemeB.tokens.grid,
-                }
-              : undefined
-          }
-        />
-
-        <FullPermutationAudit hasManualOverrides={manualOverrides} />
-
-        <BuilderAuditStatus
-          a={{
-            label: `A · ${CHART_KIND_LABEL[kind]}`,
-            audit,
-            kindLabel: CHART_KIND_LABEL[kind],
-            family: rule.family,
-            n,
-            recommendedN: rule.recommendedN,
-            maxN: rule.maxN,
-          }}
-          b={
-            compare && vision === "normal"
-              ? {
-                  label: `B · ${CHART_KIND_LABEL[kindB]}`,
-                  audit: auditB,
-                  kindLabel: CHART_KIND_LABEL[kindB],
-                  family: ruleB.family,
-                  n: nB,
-                  recommendedN: ruleB.recommendedN,
-                  maxN: ruleB.maxN,
-                }
-              : undefined
-          }
-        />
-
-        <AuditSummaryCard
-          audit={audit}
-          solve={chartTheme.solve}
-          warnings={warnings}
-          n={n}
-          requestedN={requestedN}
-          overflow={overflow}
-          hasManualOverrides={manualOverrides}
-          onJumpToVerify={() =>
-            document
-              .getElementById("flow-verify")
-              ?.scrollIntoView({ behavior: "smooth", block: "start" })
-          }
-        />
 
         {compare && vision !== "normal" ? (
           <>
@@ -1814,6 +1846,11 @@ const ChartsDemo = () => {
           // of stops the builder is showing; categorical kinds default to 9.
           rampSteps: family === "sequential" ? n : family === "diverging" ? Math.max(3, n) : 9,
         }}
+      />
+      <ReferenceDrawer
+        open={referenceOpen}
+        onClose={() => setReferenceOpen(false)}
+        focusTerm={referenceTerm}
       />
       <CoachTour open={tourOpen} onClose={() => setTourOpen(false)} />
     </div>
@@ -2573,108 +2610,6 @@ function Metric({ label, value, ok }: { label: string; value: string; ok?: boole
   );
 }
 
-function AccessibilityHarness({
-  audit,
-  colors,
-  bgHex,
-}: {
-  audit: AuditReport;
-  colors: string[];
-  bgHex: string;
-}) {
-  const badgeFor = (pass: boolean) =>
-    pass ? "text-chart-positive-text" : "text-chart-negative-text";
-  const overallLabel =
-    audit.overall === "pass" ? "PASS" : audit.overall === "warn" ? "WARN" : "FAIL";
-  const overallClass =
-    audit.overall === "pass"
-      ? "text-chart-positive-text"
-      : audit.overall === "warn"
-      ? "text-chart-target"
-      : "text-chart-negative-text";
-
-  // Translate a measured minimum pairwise ΔE into words a human can act on.
-  // JND in OKLab ×100 is ≈ 2; the configured pass floors are far below that
-  // on purpose (patterns carry identity at high N), so the floor alone reads
-  // as nonsense. Lead with the interpretation, keep the floor as fine print.
-  const interpret = (v: number, pass: boolean) => {
-    if (!pass) return { label: "collision", cls: "text-chart-negative-text" };
-    if (v >= 10) return { label: "clearly distinct", cls: "text-chart-positive-text" };
-    if (v >= 2) return { label: "distinguishable", cls: "text-chart-positive-text" };
-    return { label: "colors nearly identical — dash/decal/shape carry identity", cls: "text-chart-target" };
-  };
-
-  const MODE_LABEL: Record<string, string> = {
-    normal: "Normal",
-    deutan: "Deutan · red-green",
-    protan: "Protan · red-green",
-    tritan: "Tritan · blue-yellow",
-    achromatopsia: "Grayscale",
-  };
-
-  return (
-    <div className="space-y-3 rounded border border-chart-grid p-3">
-      <div className="flex items-baseline justify-between">
-        <div className="text-xs uppercase tracking-wide text-chart-axis">Accessibility harness</div>
-        <div className={`text-xs font-semibold ${overallClass}`}>{overallLabel}</div>
-      </div>
-      <p className="text-[11px] text-chart-axis">
-        Closest pair of palette colors under each vision simulation. ΔE is perceptual distance
-        (× 100 in OKLab); about 2 is the edge of what an eye can tell apart.
-      </p>
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
-        {audit.perVision.map((v) => {
-          const isNa = v.minDeltaE === Infinity;
-          const meaning = isNa ? null : interpret(v.minDeltaE, v.pass);
-          return (
-            <div
-              key={v.mode}
-              className="rounded border border-chart-grid p-2"
-              title={
-                isNa
-                  ? "Pairwise separation is not meaningful for gradient ramps."
-                  : `Minimum pairwise ${v.mode === "achromatopsia" ? "lightness difference" : "ΔE"} across all slot pairs under ${MODE_LABEL[v.mode]}. Pass floor: ${v.threshold} (deliberately minimal — dash, decal, and shape are the primary identity channels at high N).`
-              }
-            >
-              <div className="text-[10px] uppercase tracking-wide opacity-70">{MODE_LABEL[v.mode] ?? v.mode}</div>
-              <div className={`tabular-nums text-sm font-medium ${isNa ? "text-chart-axis" : badgeFor(v.pass)}`}>
-                {isNa
-                  ? "n/a"
-                  : `${v.mode === "achromatopsia" ? "ΔL" : "ΔE"} ${v.minDeltaE.toFixed(1)}`}
-              </div>
-              <div className={`text-[10px] leading-tight ${meaning ? meaning.cls : "opacity-80"}`}>
-                {isNa ? "ramps: see contrast below" : meaning!.label}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="text-xs text-chart-axis">
-        Worst contrast vs. background:{" "}
-        <span className={badgeFor(audit.bgPass)}>{audit.worstContrastVsBg.toFixed(2)}:1</span>{" "}
-        <span className="opacity-80">(WCAG 2.2 SC 1.4.11 needs ≥ 3:1 for non-text marks)</span>
-        <span className="ml-2 inline-block w-3 h-3 align-middle rounded border border-chart-grid" style={{ backgroundColor: bgHex }} />
-      </div>
-      <details className="text-xs text-chart-axis">
-        <summary className="cursor-pointer hover:text-foreground">Per-color contrast vs. background</summary>
-        <div className="mt-2 grid grid-cols-3 md:grid-cols-6 gap-1">
-          {colors.map((c, i) => {
-            // No fabricated oklab: contrastRatio reads rgb only.
-            const ratio = contrastRatio({ rgb: hexToRgb(c) }, { rgb: hexToRgb(bgHex) });
-            return (
-              <div key={i} className="flex items-center gap-1">
-                <span className="w-4 h-4 rounded border border-chart-grid" style={{ backgroundColor: c }} />
-                <span className={`tabular-nums ${ratio >= 3 ? "text-chart-positive-text" : "text-chart-negative-text"}`}>
-                  {ratio.toFixed(2)}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </details>
-    </div>
-  );
-}
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const h = hex.replace("#", "");
