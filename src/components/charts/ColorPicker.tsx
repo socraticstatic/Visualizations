@@ -30,11 +30,37 @@ const TOKENS: TokenDef[] = [
   { var: "--chart-bg", label: "Background", group: "Surface" },
 ];
 
-function getRoot(theme: Theme): HTMLElement {
+/**
+ * Every root a token edit must reach.
+ *
+ * The solver does NOT read tokens off documentElement: getChartTheme resolves
+ * them from a detached per-theme div ([data-chart-themed-root]) so compare
+ * mode can hold both themes at once. In dark theme that div carries the .dark
+ * class, so its stylesheet declarations beat anything inherited from an
+ * inline edit on <html> — writing to documentElement alone lit the override
+ * banner while the solver, audit, and chart kept the old color (verified
+ * live: verdict pinned at 3.77:1 through an edit that should have failed it).
+ * Light only worked by cascade luck. Write to every root, explicitly.
+ */
+function getRoots(theme: Theme): HTMLElement[] {
+  const roots = new Set<HTMLElement>([document.documentElement]);
+  const themed = document.querySelectorAll<HTMLElement>(
+    `[data-chart-themed-root="${theme === "dark" ? "dark" : "light"}"]`
+  );
+  themed.forEach((el) => roots.add(el));
   if (theme === "dark") {
-    return (document.querySelector(".dark") as HTMLElement | null) ?? document.documentElement;
+    document.querySelectorAll<HTMLElement>(".dark").forEach((el) => roots.add(el));
   }
-  return document.documentElement;
+  return Array.from(roots);
+}
+
+/** Read from the same root the solver reads, falling back to documentElement. */
+function getReadRoot(theme: Theme): HTMLElement {
+  return (
+    document.querySelector<HTMLElement>(
+      `[data-chart-themed-root="${theme === "dark" ? "dark" : "light"}"]`
+    ) ?? document.documentElement
+  );
 }
 
 function hslTripleToHex(triple: string): string {
@@ -52,8 +78,7 @@ function hexToHslTriple(hex: string): string {
 }
 
 function readToken(theme: Theme, name: string): string {
-  const root = getRoot(theme);
-  const raw = getComputedStyle(root).getPropertyValue(name).trim();
+  const raw = getComputedStyle(getReadRoot(theme)).getPropertyValue(name).trim();
   return raw || "0 0% 0%";
 }
 
@@ -75,15 +100,15 @@ export function ColorPicker({ theme, onChange }: ColorPickerProps) {
 
   function update(varName: string, hex: string) {
     const triple = hexToHslTriple(hex);
-    const root = getRoot(theme);
-    root.style.setProperty(varName, triple);
+    for (const root of getRoots(theme)) root.style.setProperty(varName, triple);
     setValues((v) => ({ ...v, [varName]: hex }));
     onChange();
   }
 
   function reset() {
-    const root = getRoot(theme);
-    for (const t of TOKENS) root.style.removeProperty(t.var);
+    for (const root of getRoots(theme)) {
+      for (const t of TOKENS) root.style.removeProperty(t.var);
+    }
     const next: Record<string, string> = {};
     for (const t of TOKENS) next[t.var] = hslTripleToHex(readToken(theme, t.var));
     setValues(next);

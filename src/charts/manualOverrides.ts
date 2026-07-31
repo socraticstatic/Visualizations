@@ -18,19 +18,28 @@ const TOKEN_VARS = [
   "--chart-bg",
 ] as const;
 
-function getRoot(theme: Theme): HTMLElement | null {
-  if (typeof document === "undefined") return null;
+/** Every root the ColorPicker writes to for a theme. Must stay in sync with
+ *  ColorPicker.getRoots -- the solver reads the [data-chart-themed-root]
+ *  divs, not documentElement, so those are the ones that matter. */
+function getRoots(theme: Theme): HTMLElement[] {
+  if (typeof document === "undefined") return [];
+  const roots = new Set<HTMLElement>([document.documentElement]);
+  document
+    .querySelectorAll<HTMLElement>(
+      `[data-chart-themed-root="${theme === "dark" ? "dark" : "light"}"]`
+    )
+    .forEach((el) => roots.add(el));
   if (theme === "dark") {
-    return (document.querySelector(".dark") as HTMLElement | null) ?? document.documentElement;
+    document.querySelectorAll<HTMLElement>(".dark").forEach((el) => roots.add(el));
   }
-  return document.documentElement;
+  return Array.from(roots);
 }
 
 export function hasManualColorOverrides(theme: Theme): boolean {
-  const root = getRoot(theme);
-  if (!root) return false;
-  for (const v of TOKEN_VARS) {
-    if (root.style.getPropertyValue(v).trim() !== "") return true;
+  for (const root of getRoots(theme)) {
+    for (const v of TOKEN_VARS) {
+      if (root.style.getPropertyValue(v).trim() !== "") return true;
+    }
   }
   return false;
 }
@@ -39,7 +48,8 @@ export function clearManualColorOverrides(): void {
   if (typeof document === "undefined") return;
   const roots = new Set<HTMLElement>([
     document.documentElement,
-    ...(Array.from(document.querySelectorAll<HTMLElement>(".dark"))),
+    ...Array.from(document.querySelectorAll<HTMLElement>(".dark")),
+    ...Array.from(document.querySelectorAll<HTMLElement>("[data-chart-themed-root]")),
   ]);
   for (const root of roots) {
     for (const v of TOKEN_VARS) root.style.removeProperty(v);
