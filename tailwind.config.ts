@@ -73,6 +73,12 @@ export default {
           negative: "hsl(var(--chart-negative))",
           warn: "hsl(var(--chart-warn))",
           info: "hsl(var(--chart-info))",
+          // Text-safe variants — use these for UI text, never for marks.
+          "positive-text": "hsl(var(--chart-positive-text))",
+          "negative-text": "hsl(var(--chart-negative-text))",
+          "info-text": "hsl(var(--chart-info-text))",
+          "muted-text": "hsl(var(--chart-muted-text))",
+          "info-strong": "hsl(var(--chart-info-strong))",
           target: "hsl(var(--chart-target))",
           forecast: "hsl(var(--chart-forecast))",
           focus: "hsl(var(--chart-focus))",

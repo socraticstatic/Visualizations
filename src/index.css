@@ -78,6 +78,20 @@ All colors MUST be HSL.
     --chart-target: 222 47% 25%;
     --chart-forecast: 215 20% 60%;
 
+    /* Chart system — text-safe variants.
+       The tokens above are tuned for WCAG 2.2 SC 1.4.11 (non-text, 3:1)
+       because they paint chart marks. Small UI text needs SC 1.4.3 (4.5:1),
+       and reusing the mark tokens as text produced 111 measured failures.
+       These clear 4.5:1 against --chart-bg, --chart-surface, and --page-bg.
+       Do not merge the two sets: darkening a mark token changes every chart.
+       Guarded by src/charts/__tests__/tokenContrast.test.ts. */
+    --chart-positive-text: 152 60% 30%;
+    --chart-negative-text: 0 72% 40%;
+    --chart-info-text: 210 90% 38%;
+    --chart-muted-text: 215 19% 35%;
+    /* Fill for selected controls, which paint --chart-bg text on top. */
+    --chart-info-strong: 210 90% 42%;
+
     /* Chart system — categorical anchors (brand-locked seeds for the solver) */
     --chart-cat-anchor-1: 210 85% 45%;
     --chart-cat-anchor-2: 28 88% 50%;
@@ -158,6 +172,16 @@ All colors MUST be HSL.
     --chart-info: 210 95% 65%;
     --chart-target: 210 40% 90%;
     --chart-forecast: 215 20% 55%;
+
+    /* Chart system — text-safe variants.
+       Dark theme already clears 4.5:1 for these hues (measured 7.63:1 and
+       8.19:1), so the values match the mark tokens. They exist as separate
+       names so call sites reference one token across both themes. */
+    --chart-positive-text: 152 65% 50%;
+    --chart-negative-text: 0 75% 60%;
+    --chart-info-text: 210 95% 65%;
+    --chart-muted-text: 215 20% 65%;
+    --chart-info-strong: 210 95% 65%;
 
     /* Chart system — categorical anchors (brand-locked seeds for the solver) */
     --chart-cat-anchor-1: 210 90% 65%;
