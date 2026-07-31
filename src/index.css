@@ -243,6 +243,28 @@ All colors MUST be HSL.
 }
 
 @layer components {
+  /**
+   * WCAG 2.2 SC 2.5.8 Target Size (Minimum): 24x24 CSS px.
+   *
+   * Coarse pointers get the AAA 44px from SC 2.5.5, because 24px is the legal
+   * floor rather than a comfortable thumb target.
+   *
+   * NOT applied to targets that sit inline inside a sentence -- <Term> is a
+   * word in running text, and SC 2.5.8 exempts inline targets precisely
+   * because padding them out would wreck the line box they live in.
+   */
+  .tap-target {
+    min-height: 1.5rem;
+    min-width: 1.5rem;
+  }
+
+  @media (pointer: coarse) {
+    .tap-target {
+      min-height: 2.75rem;
+      min-width: 2.75rem;
+    }
+  }
+
   /* Shared panel recipe: one card treatment for every section on /charts.
      Border is softened and the shadow is tinted with the ink hue so panels
      lift off the tinted page background without generic gray shadows. */

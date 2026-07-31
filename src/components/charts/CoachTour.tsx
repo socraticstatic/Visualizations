@@ -80,24 +80,36 @@ export function CoachTour({ open, onClose }: Props) {
 
   useLayoutEffect(() => {
     if (!open) return;
+
+    const target = () =>
+      document.querySelector<HTMLElement>(`[data-tour="${STEPS[step].target}"]`);
+
+    /**
+     * Read-only. Safe to run on every scroll event.
+     *
+     * This used to also call scrollIntoView, while being bound to `scroll`.
+     * Each smooth scroll fires scroll events, each of which restarted the
+     * animation from the current position, so the page never reached the
+     * anchor. It looked fine only because step 1's anchor is usually already
+     * near the top; open the tour from further down the page and the
+     * highlight sat over empty space forever.
+     */
     function measure() {
-      const t = STEPS[step];
-      const el = document.querySelector<HTMLElement>(`[data-tour="${t.target}"]`);
-      if (!el) {
-        setRect(null);
-        return;
-      }
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      // measure after scroll has a chance to settle
-      requestAnimationFrame(() => {
-        const r = el.getBoundingClientRect();
-        setRect(r);
-      });
+      const el = target();
+      setRect(el ? el.getBoundingClientRect() : null);
     }
+
+    /** Scrolling happens once per step, never in response to scrolling. */
+    const el = target();
+    if (el) {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+    }
+
     measure();
     window.addEventListener("resize", measure);
     window.addEventListener("scroll", measure, true);
-    // Layout can shift without a scroll/resize event (builder changes
+    // Layout can shift without a scroll or resize event (builder changes
     // re-render the panel the tour points at). Re-measure on a slow tick so
     // the highlight tracks its anchor instead of floating over stale space —
     // this is what lets the tour stay open while the user tries the control

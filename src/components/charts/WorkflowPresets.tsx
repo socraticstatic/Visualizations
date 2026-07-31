@@ -158,7 +158,7 @@ export function WorkflowPresets({ current, onApply }: Props) {
                   <button
                     type="button"
                     onClick={() => onApply(p)}
-                    className="flex-1 text-left text-foreground hover:underline"
+                    className="tap-target flex-1 text-left text-foreground hover:underline"
                     title={`Saved ${new Date(p.savedAt).toLocaleString()}`}
                   >
                     <span className="font-medium">{p.name}</span>

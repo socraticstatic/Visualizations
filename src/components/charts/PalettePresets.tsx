@@ -94,7 +94,7 @@ export function PalettePresets({ current, onApply }: Props) {
       <button
         type="button"
         onClick={() => onApply(p)}
-        className="text-foreground hover:underline"
+        className="tap-target text-left text-foreground hover:underline"
         title={`${p.kind} · N=${p.n} · ${p.theme}`}
       >
         {p.name}

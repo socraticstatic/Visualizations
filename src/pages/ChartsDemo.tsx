@@ -1509,6 +1509,7 @@ const ChartsDemo = () => {
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
+                className="tap-target"
                 checked={compare}
                 onChange={(e) => setCompare(e.target.checked)}
               />
@@ -1523,6 +1524,7 @@ const ChartsDemo = () => {
             <label className="ml-auto flex items-center gap-2">
               <input
                 type="checkbox"
+                className="tap-target"
                 checked={diffOverlay}
                 onChange={(e) => setDiffOverlay(e.target.checked)}
                 disabled={vision === "normal" || !compare}
@@ -2720,7 +2722,7 @@ function ExplainPanel({
               () => toast({ title: "Copy failed", description: "Clipboard access was denied." })
             );
           }}
-          className="text-[10px] normal-case tracking-normal rounded border border-chart-grid bg-chart-bg px-2 py-0.5 text-foreground hover:bg-chart-grid/30"
+          className="tap-target text-[10px] normal-case tracking-normal rounded border border-chart-grid bg-chart-bg px-2 py-0.5 text-foreground hover:bg-chart-grid/30"
           title="Copy a paragraph-formatted decision rationale to the clipboard"
         >
           Copy rationale

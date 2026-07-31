@@ -94,7 +94,7 @@ export function EntityPins({ entities, n, colorHexes, onChange }: Props) {
                             handlePick(id, Number(v));
                           }
                         }}
-                        className="bg-chart-bg border border-chart-grid rounded px-1 py-0.5 text-foreground"
+                        className="tap-target bg-chart-bg border border-chart-grid rounded px-1 py-0.5 text-foreground"
                       >
                         <option value="">Auto</option>
                         {Array.from({ length: n }, (_, s) => (
