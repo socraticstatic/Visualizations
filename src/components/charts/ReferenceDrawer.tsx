@@ -17,11 +17,14 @@ export function ReferenceDrawer({
   open,
   onClose,
   focusTerm,
+  children,
 }: {
   open: boolean;
   onClose: () => void;
   /** Scroll to this entry on open, set when arriving from a <Term> popover. */
   focusTerm?: string;
+  /** Decision rationale for the current configuration, rendered below the list. */
+  children?: React.ReactNode;
 }) {
   const listRef = useRef<HTMLDListElement>(null);
 
@@ -72,6 +75,7 @@ export function ReferenceDrawer({
               </div>
             ))}
           </dl>
+          {children && <div className="border-t border-chart-grid p-4">{children}</div>}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

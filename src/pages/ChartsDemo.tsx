@@ -655,12 +655,16 @@ const ChartsDemo = () => {
       });
     }
     if (w) {
-      ws.push({ severity: "warn", title: w, detail: r.rationale });
+      ws.push({
+        severity: "warn",
+        title: w,
+        detail: `${CHART_KIND_LABEL[k]} recommends N ≤ ${r.recommendedN}; rendering ${rendered}.`,
+      });
     } else if (rendered > r.recommendedN && !capped) {
       ws.push({
         severity: "warn",
         title: `N=${rendered} is above the recommended ${r.recommendedN} for ${CHART_KIND_LABEL[k]}`,
-        detail: r.rationale,
+        detail: `Past ${r.recommendedN} slots, dash / decal / shape carry identity rather than color.`,
       });
     }
     for (const v of a.perVision) {
@@ -1601,7 +1605,6 @@ const ChartsDemo = () => {
                 <span className="text-chart-negative-text"> (capped from {requestedN} — collapsed into Top-{n} + Other)</span>
               )}
             </div>
-            <div className="text-foreground/80">{rule.rationale}</div>
             {warning && <div className="text-chart-negative-text">⚠ {warning}</div>}
           </div>
           <TokenPreview tokens={chartTheme.tokens} theme={theme} />
@@ -1815,21 +1818,6 @@ const ChartsDemo = () => {
 
 
         {/* REFERENCE — collapsed footer: glossary + decision rationale. */}
-        <section id="flow-reference" className="scroll-mt-20 space-y-4">
-          <ExplainPanel
-            kind={kind}
-            rule={rule}
-            n={n}
-            requestedN={requestedN}
-            overflow={overflow}
-            theme={theme}
-            posture={posture}
-            family={family}
-            chartTheme={chartTheme}
-            audit={audit}
-            relaxations={chartTheme.solve.relaxations}
-          />
-        </section>
 
       </div>
 
@@ -1850,7 +1838,21 @@ const ChartsDemo = () => {
         open={referenceOpen}
         onClose={() => setReferenceOpen(false)}
         focusTerm={referenceTerm}
-      />
+      >
+        <ExplainPanel
+          kind={kind}
+          rule={rule}
+          n={n}
+          requestedN={requestedN}
+          overflow={overflow}
+          theme={theme}
+          posture={posture}
+          family={family}
+          chartTheme={chartTheme}
+          audit={audit}
+          relaxations={chartTheme.solve.relaxations}
+        />
+      </ReferenceDrawer>
       <CoachTour open={tourOpen} onClose={() => setTourOpen(false)} />
     </div>
   );
