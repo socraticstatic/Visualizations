@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { encodeUrlState, decodeUrlState } from "@/charts/urlState";
+import { encodeUrlState, decodeUrlState, SECTION_IDS } from "@/charts/urlState";
 
 describe("urlState", () => {
   it("round-trips a full state", () => {
@@ -36,5 +36,38 @@ describe("urlState", () => {
   it("returns empty object for empty hash", () => {
     expect(decodeUrlState("")).toEqual({});
     expect(decodeUrlState("#")).toEqual({});
+  });
+});
+
+describe("section deep-link", () => {
+  const BASE = {
+    kind: "line" as const,
+    n: 2,
+    theme: "light" as const,
+    vision: "normal" as const,
+    compare: false,
+    kindB: "bar" as const,
+    nB: 2,
+    themeB: "dark" as const,
+  };
+
+  it("round-trips a section", () => {
+    const decoded = decodeUrlState("#" + encodeUrlState({ ...BASE, section: "evidence" }));
+    expect(decoded.section).toBe("evidence");
+  });
+
+  it("omits the key when no section is set", () => {
+    expect(encodeUrlState(BASE)).not.toContain("s=");
+  });
+
+  it("ignores an unknown section value", () => {
+    // A hand-edited or stale link must not put the nav in an impossible state.
+    expect(decodeUrlState("#k=line&n=2&t=light&v=normal&s=bogus").section).toBeUndefined();
+  });
+
+  it("decodes every real section id", () => {
+    for (const id of SECTION_IDS) {
+      expect(decodeUrlState(`#s=${id}`).section).toBe(id);
+    }
   });
 });

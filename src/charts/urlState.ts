@@ -13,6 +13,17 @@ import type { ChartKind } from "./chartKinds";
 import type { Theme } from "./echartsTheme";
 import type { VisionMode } from "./audit";
 
+/**
+ * The four scroll-anchored sections, in reading order.
+ *
+ * Section position is part of the shareable link so a reviewer can be pointed
+ * at the Evidence for a palette, not just the palette. The nav writes this on
+ * an explicit click only — scrollspy must never write it, or ordinary
+ * scrolling fills the history stack and destroys the back button.
+ */
+export const SECTION_IDS = ["evidence", "storytell", "reuse", "ship"] as const;
+export type SectionId = (typeof SECTION_IDS)[number];
+
 export interface UrlState {
   kind: ChartKind;
   n: number;
@@ -22,6 +33,8 @@ export interface UrlState {
   kindB: ChartKind;
   nB: number;
   themeB: Theme;
+  /** Deep-linked section. Absent means "top of page". */
+  section?: SectionId;
 }
 
 export function encodeUrlState(s: UrlState): string {
@@ -34,6 +47,7 @@ export function encodeUrlState(s: UrlState): string {
   p.set("kb", s.kindB);
   p.set("nb", String(s.nB));
   p.set("tb", s.themeB);
+  if (s.section) p.set("s", s.section);
   return p.toString();
 }
 
@@ -57,5 +71,7 @@ export function decodeUrlState(hash: string): Partial<UrlState> {
   if (nb) out.nB = Number(nb);
   const tb = p.get("tb");
   if (tb === "light" || tb === "dark") out.themeB = tb;
+  const sec = p.get("s");
+  if (sec && (SECTION_IDS as readonly string[]).includes(sec)) out.section = sec as SectionId;
   return out;
 }
