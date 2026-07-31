@@ -79,7 +79,12 @@ export function BenchmarkPanel({ ours, background }: Props) {
                     <div className="text-[10px] text-chart-axis">{r.source}</div>
                   </td>
                   <td className="py-1 pr-2">
-                    <div className="flex gap-0.5">
+                    {/* Wraps. A non-wrapping row of N 16px chips gave this cell
+                        a ~216px min-content width at N=12, which the table
+                        could not shrink past -- making this the one panel in
+                        the app that grew a horizontal scrollbar, and only at
+                        some combinations of N and container width. */}
+                    <div className="flex max-w-[7.5rem] flex-wrap gap-0.5">
                       {r.colors.map((c, i) => (
                         <span
                           key={i}

@@ -195,11 +195,19 @@ export function buildBase(theme: ChartTheme) {
   };
 }
 
-/** Build a categorical line series with matched dash + symbol per slot. */
+/**
+ * Build a categorical line series with matched dash + symbol per slot.
+ *
+ * `markers: false` drops the per-point symbols for a cleaner line. Dash
+ * patterns stay on regardless — they, not the markers, are what keep series
+ * identifiable under CVD simulation and in grayscale.
+ */
 export function buildLineSeries(
   theme: ChartTheme,
-  series: Array<{ name: string; data: Array<[number | string, number]> | number[] }>
+  series: Array<{ name: string; data: Array<[number | string, number]> | number[] }>,
+  opts: { markers?: boolean } = {}
 ) {
+  const markers = opts.markers !== false;
   return series.map((s, i) => {
     const slot = i % theme.effectiveN;
     const dash = theme.dashes[slot];
@@ -208,7 +216,7 @@ export function buildLineSeries(
       type: "line" as const,
       data: s.data,
       color: theme.colorHexes[slot],
-      symbol: theme.shapes[slot],
+      symbol: markers ? theme.shapes[slot] : "none",
       symbolSize: 8,
       lineStyle: { width: 2, type: dash === "solid" ? "solid" : (dash as number[]) },
       itemStyle: { color: theme.colorHexes[slot] },

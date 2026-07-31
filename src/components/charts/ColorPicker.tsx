@@ -131,8 +131,9 @@ export function ColorPicker({ theme, onChange }: ColorPickerProps) {
         ))}
       </div>
       <p className="text-[11px] text-chart-axis">
-        Pick base colors here — the solver will re-derive the full categorical palette and ramps to
-        keep ΔE, CVD distance, and contrast within thresholds.
+        Background and ramp edits re-solve immediately. Categorical anchors are
+        preferences, not locks — the solver still picks the most compliant
+        palette, and the audit flags anything your edits break.
       </p>
     </div>
   );

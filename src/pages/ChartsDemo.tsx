@@ -37,6 +37,7 @@ import { NextStageButton } from "@/components/charts/NextStageButton";
 import { OptimalOnlyBadge } from "@/components/charts/OptimalOnlyBadge";
 import { PaletteRuleExplainer } from "@/components/charts/PaletteRuleExplainer";
 import { PaletteVerdict } from "@/components/charts/PaletteVerdict";
+import { ColorPicker } from "@/components/charts/ColorPicker";
 import { SystemAudit } from "@/components/charts/SystemAudit";
 import { SectionNav } from "@/components/charts/SectionNav";
 import { ReferenceDrawer } from "@/components/charts/ReferenceDrawer";
@@ -347,6 +348,8 @@ const ChartsDemo = () => {
       dismissTour();
     }
   }
+  /** Line/area marker symbols. Dash patterns stay on either way. */
+  const [markers, setMarkers] = useState(true);
   const [referenceOpen, setReferenceOpen] = useState(false);
   const [referenceTerm, setReferenceTerm] = useState<string | undefined>(undefined);
   const [section, setSection] = useState<SectionId | undefined>(undefined);
@@ -739,7 +742,7 @@ const ChartsDemo = () => {
           legend: { ...base.legend, top: 0 },
           xAxis: { ...base.xAxis, type: "value" },
           yAxis: { ...base.yAxis, type: "value" },
-          series: buildLineSeries(chartTheme, genLineData(chartTheme.effectiveN, dm)),
+          series: buildLineSeries(chartTheme, genLineData(chartTheme.effectiveN, dm), { markers }),
         };
       case "bar": {
         const { categories, series } = genStackedData(chartTheme.effectiveN, dm);
@@ -850,7 +853,7 @@ const ChartsDemo = () => {
 
       // --- New categorical kinds ---
       case "area": {
-        const series = buildLineSeries(chartTheme, genLineData(chartTheme.effectiveN, dm)).map((s) => ({
+        const series = buildLineSeries(chartTheme, genLineData(chartTheme.effectiveN, dm), { markers }).map((s) => ({
           ...s,
           areaStyle: { color: s.color, opacity: 0.35 },
         }));
@@ -863,7 +866,7 @@ const ChartsDemo = () => {
         };
       }
       case "stacked-area": {
-        const series = buildLineSeries(chartTheme, genLineData(chartTheme.effectiveN, dm)).map((s) => ({
+        const series = buildLineSeries(chartTheme, genLineData(chartTheme.effectiveN, dm), { markers }).map((s) => ({
           ...s,
           stack: "total",
           areaStyle: { color: s.color, opacity: 0.7 },
@@ -1184,7 +1187,7 @@ const ChartsDemo = () => {
 
       // --- Additional kinds ---
       case "step-line": {
-        const series = buildLineSeries(chartTheme, genLineData(chartTheme.effectiveN, dm)).map((s) => ({
+        const series = buildLineSeries(chartTheme, genLineData(chartTheme.effectiveN, dm), { markers }).map((s) => ({
           ...s,
           step: "end" as const,
         }));
@@ -1351,8 +1354,8 @@ const ChartsDemo = () => {
       }
     }
   }
-  const option = useMemo(() => buildOption(kind, n, chartTheme, dataMode), [kind, n, chartTheme, dataMode]);
-  const optionB = useMemo(() => buildOption(kindB, nB, chartThemeB, dataMode), [kindB, nB, chartThemeB, dataMode]);
+  const option = useMemo(() => buildOption(kind, n, chartTheme, dataMode), [kind, n, chartTheme, dataMode, markers]);
+  const optionB = useMemo(() => buildOption(kindB, nB, chartThemeB, dataMode), [kindB, nB, chartThemeB, dataMode, markers]);
 
   return (
     <div className="min-h-dvh bg-[hsl(var(--page-bg))] text-foreground">
@@ -1558,6 +1561,12 @@ const ChartsDemo = () => {
               options={["synthetic", "messy"] as const}
               onChange={(v) => setDataMode(v)}
             />
+            <Toggle
+              label="Markers"
+              value={markers ? "on" : "off"}
+              options={["on", "off"] as const}
+              onChange={(v) => setMarkers(v === "on")}
+            />
             <label className="flex min-h-6 cursor-pointer items-center gap-2 py-1">
               <input
                 type="checkbox"
@@ -1658,6 +1667,25 @@ const ChartsDemo = () => {
           </div>
           <TokenPreview tokens={chartTheme.tokens} theme={theme} />
           <PaletteSwatches theme={chartTheme} family={family} steps={n} />
+
+          <details className="rounded-md border border-chart-grid">
+            <summary className="tap-target cursor-pointer px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-chart-muted-text hover:text-foreground">
+              Test your own colors
+            </summary>
+            <div className="border-t border-chart-grid p-3">
+              <ColorPicker
+                theme={theme}
+                onChange={() => {
+                  // getChartTheme memoizes by theme|posture|N internally, so a
+                  // colorRev bump alone re-renders with a stale solve. Both
+                  // caches must go, same as the theme-flip effect above.
+                  clearChartThemeCache();
+                  clearSafeMaxNCache();
+                  setColorRev((r) => r + 1);
+                }}
+              />
+            </div>
+          </details>
 
           {compare && vision !== "normal" && (
             <DiffOverlay colors={auditedColors} vision={vision} family={family} />
