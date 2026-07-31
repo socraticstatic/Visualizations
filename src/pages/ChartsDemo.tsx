@@ -1455,7 +1455,7 @@ const ChartsDemo = () => {
           </div>
 
           <div className={!compare ? "grid gap-6 lg:grid-cols-[minmax(560px,1.6fr)_minmax(320px,1fr)] lg:items-start" : ""}>
-            {!compare && (
+            {!compare ? (
               <div className="lg:sticky lg:top-14 space-y-3">
                 <ChartCard
                   title={`${CHART_KIND_LABEL[kind]} — ${family} palette${vision !== "normal" ? ` · preview as ${vision}` : ""}`}
@@ -1473,6 +1473,42 @@ const ChartsDemo = () => {
                   <VisionPreviewToggle value={vision} onChange={setVision} />
                 </div>
                 <PaletteRuleExplainer kind={kind} n={n} requestedN={requestedN} />
+              </div>
+            ) : (
+              /* Compare mode renders the two charts HERE, in the same slot the
+                 single chart occupies. They previously rendered after all four
+                 sections at docTop 4367 -- you ticked "compare side-by-side"
+                 and the two charts being compared were five screens below the
+                 controls, with nothing at the top of the page at all. */
+              <div className="space-y-3">
+                {vision !== "normal" ? (
+                  <LinkedCompareCharts
+                    option={option}
+                    kind={kind}
+                    vision={vision}
+                    visionFilter={VISION_FILTER[vision]}
+                    auditedColors={auditedColors}
+                    family={family}
+                    diffOverlay={diffOverlay}
+                  />
+                ) : (
+                  <LinkedCompareCharts
+                    option={option}
+                    optionB={optionB}
+                    kind={kind}
+                    kindB={kindB}
+                    nB={nB}
+                    themeB={themeB}
+                    vision="normal"
+                    visionFilter="none"
+                    auditedColors={auditedColors}
+                    family={family}
+                    diffOverlay={false}
+                  />
+                )}
+                <div data-tour="vision-preview">
+                  <VisionPreviewToggle value={vision} onChange={setVision} />
+                </div>
               </div>
             )}
           <div className="space-y-4 min-w-0">
@@ -1656,6 +1692,33 @@ const ChartsDemo = () => {
                 </LazyMount>
               </>
             )}
+            {compare && vision !== "normal" && (
+              <SeriesScorecard
+                colors={auditedColors}
+                vision={vision}
+                background={chartTheme.tokens.bg}
+              />
+            )}
+            {compare && vision === "normal" && (
+              <>
+                <DiffSummary
+                  a={{ kind, n, requestedN, overflow, theme, recommendedN: rule.recommendedN, maxN: rule.maxN }}
+                  b={{ kind: kindB, n: nB, requestedN: requestedNB, overflow: overflowB, theme: themeB, recommendedN: ruleB.recommendedN, maxN: ruleB.maxN }}
+                />
+                <VariantScorecard
+                  a={{
+                    label: `A · ${CHART_KIND_LABEL[kind]}`,
+                    colors: auditedColors,
+                    background: chartTheme.tokens.bg,
+                  }}
+                  b={{
+                    label: `B · ${CHART_KIND_LABEL[kindB]}`,
+                    colors: auditedColorsB,
+                    background: chartThemeB.tokens.bg,
+                  }}
+                />
+              </>
+            )}
             <SystemAudit hasManualOverrides={manualOverrides} kind={kind} theme={theme} />
             {family === "categorical" && (
               <BenchmarkPanel ours={auditedColors} background={chartTheme.tokens.bg} />
@@ -1784,56 +1847,6 @@ const ChartsDemo = () => {
           />
         </div>
 
-        {compare && vision !== "normal" ? (
-          <>
-            <LinkedCompareCharts
-              option={option}
-              kind={kind}
-              vision={vision}
-              visionFilter={VISION_FILTER[vision]}
-              auditedColors={auditedColors}
-              family={family}
-              diffOverlay={diffOverlay}
-            />
-            <SeriesScorecard
-              colors={auditedColors}
-              vision={vision}
-              background={chartTheme.tokens.bg}
-            />
-          </>
-        ) : compare ? (
-          <>
-            <LinkedCompareCharts
-              option={option}
-              optionB={optionB}
-              kind={kind}
-              kindB={kindB}
-              nB={nB}
-              themeB={themeB}
-              vision="normal"
-              visionFilter="none"
-              auditedColors={auditedColors}
-              family={family}
-              diffOverlay={false}
-            />
-            <DiffSummary
-              a={{ kind, n, requestedN, overflow, theme, recommendedN: rule.recommendedN, maxN: rule.maxN }}
-              b={{ kind: kindB, n: nB, requestedN: requestedNB, overflow: overflowB, theme: themeB, recommendedN: ruleB.recommendedN, maxN: ruleB.maxN }}
-            />
-            <VariantScorecard
-              a={{
-                label: `A · ${CHART_KIND_LABEL[kind]}`,
-                colors: auditedColors,
-                background: chartTheme.tokens.bg,
-              }}
-              b={{
-                label: `B · ${CHART_KIND_LABEL[kindB]}`,
-                colors: auditedColorsB,
-                background: chartThemeB.tokens.bg,
-              }}
-            />
-          </>
-        ) : null}
 
 
 
