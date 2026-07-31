@@ -26,3 +26,6 @@ extracted
 *.njsproj
 *.sln
 *.sw?
+
+# Private business plan - untracked on purpose, public repo
+docs/PLAN-chart-color-audit.md
