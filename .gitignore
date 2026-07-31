@@ -13,7 +13,6 @@ dist-ssr
 *.local
 
 # Scaffolding / tooling artifacts (not part of this project)
-.scaffold
 .claude
 extracted
 
