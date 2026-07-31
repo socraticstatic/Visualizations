@@ -83,7 +83,7 @@ export function FlowStepper() {
                 {s.label}
               </a>
               {i < FLOW_STEPS.length - 1 && (
-                <span className="text-chart-axis/60" aria-hidden>
+                <span className="text-chart-muted-text" aria-hidden>
                   →
                 </span>
               )}

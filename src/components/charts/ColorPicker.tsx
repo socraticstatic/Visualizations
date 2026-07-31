@@ -109,7 +109,7 @@ export function ColorPicker({ theme, onChange }: ColorPickerProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {groups.map((g) => (
           <div key={g} className="space-y-2">
-            <div className="text-[10px] uppercase tracking-wide text-chart-axis/70">{g}</div>
+            <div className="text-[10px] uppercase tracking-wide text-chart-muted-text">{g}</div>
             <div className="space-y-1.5">
               {TOKENS.filter((t) => t.group === g).map((t) => (
                 <label key={t.var} className="flex items-center gap-2 text-xs">

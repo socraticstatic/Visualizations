@@ -131,7 +131,7 @@ export function Glossary() {
                 <dd className="text-xs text-chart-axis">
                   <span className="text-foreground/80">{e.short}</span> {e.detail}
                   {e.source && (
-                    <span className="block mt-0.5 font-mono text-[10px] text-chart-axis/70">
+                    <span className="block mt-0.5 font-mono text-[10px] text-chart-muted-text">
                       {e.source}
                     </span>
                   )}
