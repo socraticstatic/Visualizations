@@ -1418,7 +1418,25 @@ Nothing here is done until these pass. "It should work" is not verification.
 
 Run the Task 2 Step 4 probe at 1280x800 in light theme. Reload, switch to dark, reload again, re-run. Reloading matters: `transition-colors` plus CSS-variable theming leaves computed colors stale after a theme flip, and a sweep without the transition-killing style reports phantom failures.
 
-Expected: `fails: 0` in both.
+**Expand every disclosure first, in a separate call from the sweep.** A sweep only
+sees rendered content. Collapsed `<details>` and the closed glossary panel hid 12
+real failures during Task 2, and opening them in the same synchronous call does not
+flush layout in time — the element count stays at its collapsed value and the sweep
+silently under-reports.
+
+```js
+// Call 1: expand.
+(() => {
+  let n = 0;
+  document.querySelectorAll('[aria-expanded="false"]').forEach(b => { try { b.click(); n++; } catch (e) {} });
+  document.querySelectorAll('details').forEach(d => d.open = true);
+  return JSON.stringify({ expanded: n, details: document.querySelectorAll('details[open]').length });
+})()
+// Call 2: sweep. Element count must be higher than the collapsed run, or the
+// expansion did not take and the result is not trustworthy.
+```
+
+Expected: `fails: 0` in both themes, with `checked` above 460 rather than ~414.
 
 - [ ] **Step 2: Target sizes**
 
