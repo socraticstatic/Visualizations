@@ -88,6 +88,7 @@ All colors MUST be HSL.
     --chart-positive-text: 152 60% 30%;
     --chart-negative-text: 0 72% 40%;
     --chart-info-text: 210 90% 38%;
+    --chart-warn-text: 38 92% 30%;
     --chart-muted-text: 215 19% 35%;
     /* Fill for selected controls, which paint --chart-bg text on top. */
     --chart-info-strong: 210 90% 42%;
@@ -181,6 +182,7 @@ All colors MUST be HSL.
     --chart-positive-text: 152 65% 50%;
     --chart-negative-text: 0 75% 60%;
     --chart-info-text: 210 95% 65%;
+    --chart-warn-text: 38 95% 60%;
     --chart-muted-text: 215 20% 65%;
     --chart-info-strong: 210 95% 65%;
     --chart-positive-strong: 152 65% 50%;

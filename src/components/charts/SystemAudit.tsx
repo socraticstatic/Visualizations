@@ -81,9 +81,9 @@ function auditPermutation(theme: Theme, kind: ChartKind, n: number): PermRow {
 }
 
 const TAG_STYLES: Record<ConstraintTag, string> = {
-  ΔE: "bg-chart-warn/15 text-chart-warn border-chart-warn/40",
+  ΔE: "bg-chart-warn/15 text-chart-warn-text border-chart-warn/40",
   "CVD-ΔE": "bg-chart-target/15 text-chart-target border-chart-target/40",
-  WCAG: "bg-destructive/15 text-destructive border-destructive/40",
+  WCAG: "bg-destructive/15 text-chart-negative-text border-destructive/40",
   solver: "bg-chart-info/15 text-chart-info-text border-chart-info/40",
 };
 
@@ -244,7 +244,7 @@ export function SystemAudit({ hasManualOverrides, kind, theme }: SystemAuditProp
           {running ? (
             <Loader2 className="h-4 w-4 animate-spin text-chart-info-text" aria-hidden />
           ) : anyFailures ? (
-            <AlertTriangle className="h-4 w-4 text-destructive" aria-hidden />
+            <AlertTriangle className="h-4 w-4 text-chart-negative-text" aria-hidden />
           ) : totalChecked > 0 ? (
             <CheckCircle2 className="h-4 w-4 text-chart-positive-text" aria-hidden />
           ) : (
@@ -267,7 +267,7 @@ export function SystemAudit({ hasManualOverrides, kind, theme }: SystemAuditProp
                 : "(theme × kind × N)"}{" "}
               permutation{totalChecked === 1 ? "" : "s"} ·{" "}
               {anyFailures ? (
-                <span className="text-destructive">{failingRows.length} non-optimal</span>
+                <span className="text-chart-negative-text">{failingRows.length} non-optimal</span>
               ) : (
                 <span className="text-chart-positive-text">all optimal</span>
               )}

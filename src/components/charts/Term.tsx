@@ -68,7 +68,7 @@ export function Term({ id, children }: { id: string; children: React.ReactNode }
                 new CustomEvent(OPEN_REFERENCE_EVENT, { detail: entry.term })
               );
             }}
-            className="mt-1 block text-chart-info-text underline"
+            className="tap-target mt-1 block text-left text-chart-info-text underline"
           >
             Full definition
           </button>

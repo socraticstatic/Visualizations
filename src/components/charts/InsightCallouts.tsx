@@ -160,7 +160,7 @@ export function InsightCallouts({ colors, background }: Props) {
             key={idx}
             className={`flex gap-2 ${
               it.tone === "warn"
-                ? "text-chart-warn"
+                ? "text-chart-warn-text"
                 : it.tone === "good"
                 ? "text-chart-positive-text"
                 : "text-foreground/85"

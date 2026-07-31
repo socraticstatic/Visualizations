@@ -120,7 +120,7 @@ export function EntityPins({ entities, n, colorHexes, onChange }: Props) {
           </table>
         </div>
         {collisions.length > 0 && (
-          <p className="text-[11px] text-chart-warn">
+          <p className="text-[11px] text-chart-warn-text">
             Collisions ({collisions.length}): {collisions.join(", ")} requested a slot already
             taken by an earlier series. They were bumped to the next free slot.
           </p>

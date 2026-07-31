@@ -58,7 +58,7 @@ export function OptimalOnlyBadge({
 
   return (
     <div
-      className="inline-flex items-center gap-2 rounded-full border border-chart-warn/40 bg-chart-warn/10 px-3 py-1 text-xs font-medium text-chart-warn"
+      className="inline-flex items-center gap-2 rounded-full border border-chart-warn/40 bg-chart-warn/10 px-3 py-1 text-xs font-medium text-chart-warn-text"
       role="status"
       aria-live="polite"
       title="Manual ColorPicker overrides are active. The solver no longer guarantees every permutation is optimal — check the Verify stage for ΔE / CVD / contrast warnings."

@@ -120,7 +120,7 @@ export function SemanticRoleAudit({ theme }: SemanticRoleAuditProps) {
             <>
               {fails > 0 && <span className="text-chart-negative-text">{fails} fail</span>}
               {fails > 0 && warns > 0 && <span> · </span>}
-              {warns > 0 && <span className="text-chart-warn">{warns} warn</span>}
+              {warns > 0 && <span className="text-chart-warn-text">{warns} warn</span>}
             </>
           )}
         </div>
@@ -168,7 +168,7 @@ export function SemanticRoleAudit({ theme }: SemanticRoleAuditProps) {
                     r.pass === "ok"
                       ? "text-chart-positive-text"
                       : r.pass === "warn"
-                      ? "text-chart-warn"
+                      ? "text-chart-warn-text"
                       : "text-chart-negative-text"
                   }`}
                   title={r.reason}

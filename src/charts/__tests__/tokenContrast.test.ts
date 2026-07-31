@@ -41,6 +41,7 @@ const TEXT_TOKENS = [
   "chart-negative-text",
   "chart-info-text",
   "chart-muted-text",
+  "chart-warn-text",
   // shadcn's base muted token. Its stock light value is 46.9% lightness, which
   // measured 4.48:1 and failed by 0.02 across 9 rendered labels.
   "muted-foreground",

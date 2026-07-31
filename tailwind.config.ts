@@ -78,6 +78,7 @@ export default {
           "positive-strong": "hsl(var(--chart-positive-strong))",
           "negative-text": "hsl(var(--chart-negative-text))",
           "info-text": "hsl(var(--chart-info-text))",
+          "warn-text": "hsl(var(--chart-warn-text))",
           "muted-text": "hsl(var(--chart-muted-text))",
           "info-strong": "hsl(var(--chart-info-strong))",
           target: "hsl(var(--chart-target))",

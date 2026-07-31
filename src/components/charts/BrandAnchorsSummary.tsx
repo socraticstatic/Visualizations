@@ -79,7 +79,7 @@ export function BrandAnchorsSummary({ theme, onEdit }: Props) {
                 ? "text-chart-axis"
                 : safeDe && safeCr
                 ? "text-chart-positive-text"
-                : "text-chart-warn";
+                : "text-chart-warn-text";
               return (
                 <tr key={i} className="border-t border-chart-grid/50">
                   <td className="py-1 pr-4 tabular-nums text-chart-axis">{i + 1}</td>

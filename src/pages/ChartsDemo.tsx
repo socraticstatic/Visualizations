@@ -363,7 +363,7 @@ const ChartsDemo = () => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     document
       .getElementById(`section-${id}`)
-      ?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+      ?.scrollIntoView({ behavior: reduce ? "instant" : "smooth", block: "start" });
   }
 
   // "?" opens the glossary from anywhere, and <Term> asks for a specific entry.
@@ -503,10 +503,7 @@ const ChartsDemo = () => {
   useUrlStateSync(urlState, (s) => {
     if (s.section) {
       setSection(s.section);
-      // Anchors only exist after the first paint, so defer the scroll.
-      requestAnimationFrame(() =>
-        document.getElementById(`section-${s.section}`)?.scrollIntoView({ block: "start" })
-      );
+      scrollToSectionWhenSettled(s.section);
     }
     if (s.kind || s.theme || typeof s.n === "number") {
       applyPrimaryBuilder({ kind: s.kind, theme: s.theme, n: s.n });
@@ -1418,7 +1415,7 @@ const ChartsDemo = () => {
                 Constrained mode · default N clears every configured floor; the audit flags any N that doesn't
               </span>
             ) : !audit.bgPass ? (
-              <span className="text-[11px] text-destructive">
+              <span className="text-[11px] text-chart-negative-text">
                 Ramp · WCAG contrast {audit.worstContrastVsBg.toFixed(2)}:1 fails (≥ 3:1 required) — see Verify panel
               </span>
             ) : audit.overall === "warn" ? (
@@ -2866,6 +2863,30 @@ function WarningList({
  */
 const LABEL_DARK = fromCss("#000000");
 const LABEL_LIGHT = fromCss("#ffffff");
+
+/**
+ * Scroll to a deep-linked section once the page stops growing under it.
+ *
+ * A single rAF is not enough: LazyMount panels and the auto-running sweep
+ * mount after first paint, so an early scroll lands short and the target
+ * drifts further down. A shared link that puts the reader in the wrong place
+ * is the feature failing, so retry until the anchor is actually near the top
+ * or the attempts run out.
+ */
+function scrollToSectionWhenSettled(id: string, attempts = 12) {
+  const el = document.getElementById(`section-${id}`);
+  if (!el) {
+    if (attempts > 0) requestAnimationFrame(() => scrollToSectionWhenSettled(id, attempts - 1));
+    return;
+  }
+  el.scrollIntoView({ behavior: "instant", block: "start" });
+  if (attempts <= 0) return;
+  // 56px clears the sticky bar; anything larger means the page moved.
+  window.setTimeout(() => {
+    const top = el.getBoundingClientRect().top;
+    if (Math.abs(top) > 56) scrollToSectionWhenSettled(id, attempts - 1);
+  }, 120);
+}
 
 function labelOn(swatch: Pick<ColorRecord, "rgb">): string {
   return contrastRatio(swatch, LABEL_DARK) >= contrastRatio(swatch, LABEL_LIGHT)

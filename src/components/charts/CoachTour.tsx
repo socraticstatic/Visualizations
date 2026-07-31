@@ -85,14 +85,13 @@ export function CoachTour({ open, onClose }: Props) {
       document.querySelector<HTMLElement>(`[data-tour="${STEPS[step].target}"]`);
 
     /**
-     * Read-only. Safe to run on every scroll event.
+     * Read-only. Safe to run on every scroll event and on the tick below.
      *
-     * This used to also call scrollIntoView, while being bound to `scroll`.
-     * Each smooth scroll fires scroll events, each of which restarted the
-     * animation from the current position, so the page never reached the
-     * anchor. It looked fine only because step 1's anchor is usually already
-     * near the top; open the tour from further down the page and the
-     * highlight sat over empty space forever.
+     * This used to also call scrollIntoView. Since it is bound to `scroll` and
+     * runs on a 400ms interval, the tour dragged the reader back to its anchor
+     * about three times a second — directly contradicting the comment below
+     * about staying open while the user tries the control being described.
+     * Scrolling now happens once per step, never in response to scrolling.
      */
     function measure() {
       const el = target();
@@ -103,7 +102,7 @@ export function CoachTour({ open, onClose }: Props) {
     const el = target();
     if (el) {
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+      el.scrollIntoView({ behavior: reduce ? "instant" : "smooth", block: "center" });
     }
 
     measure();

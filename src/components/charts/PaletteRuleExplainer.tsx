@@ -120,7 +120,7 @@ function RuleStat({
 }) {
   const toneClass =
     tone === "fail"
-      ? "border-destructive/40 bg-destructive/10 text-destructive"
+      ? "border-destructive/40 bg-destructive/10 text-chart-negative-text"
       : tone === "warn"
       ? "border-chart-target/40 bg-chart-target/10 text-chart-target"
       : "border-border bg-background/40 text-foreground";

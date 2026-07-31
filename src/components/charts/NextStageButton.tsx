@@ -25,7 +25,7 @@ export function NextStageButton({ current }: { current: SectionId }) {
           const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
           document
             .getElementById(sectionElementId(next))
-            ?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+            ?.scrollIntoView({ behavior: reduce ? "instant" : "smooth", block: "start" });
         }}
         className="tap-target inline-flex items-center gap-1 rounded-full border border-chart-grid bg-chart-bg px-3 py-1 text-xs text-chart-muted-text transition-colors hover:border-chart-info hover:text-foreground"
         title={`Jump to ${SECTION_LABELS[next]}`}
