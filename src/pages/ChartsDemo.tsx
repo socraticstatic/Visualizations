@@ -366,6 +366,27 @@ const ChartsDemo = () => {
       ?.scrollIntoView({ behavior: reduce ? "instant" : "smooth", block: "start" });
   }
 
+  /**
+   * Deep-linked section: scroll once, after the section state has been
+   * restored and rendered.
+   *
+   * Doing this inside the hash-hydrate callback worked in dev but not in a
+   * production build, where scrollY stayed 0. Browser scroll restoration
+   * defaults to "auto" and resets the position on load, so the scroll has to
+   * own it explicitly.
+   */
+  const deepLinkDone = useRef(false);
+  useEffect(() => {
+    if (deepLinkDone.current || !section) return;
+    deepLinkDone.current = true;
+    const prev = history.scrollRestoration;
+    history.scrollRestoration = "manual";
+    scrollToSectionWhenSettled(section);
+    return () => {
+      history.scrollRestoration = prev;
+    };
+  }, [section]);
+
   // "?" opens the glossary from anywhere, and <Term> asks for a specific entry.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -501,10 +522,7 @@ const ChartsDemo = () => {
     section,
   };
   useUrlStateSync(urlState, (s) => {
-    if (s.section) {
-      setSection(s.section);
-      scrollToSectionWhenSettled(s.section);
-    }
+    if (s.section) setSection(s.section);
     if (s.kind || s.theme || typeof s.n === "number") {
       applyPrimaryBuilder({ kind: s.kind, theme: s.theme, n: s.n });
     }
