@@ -1472,10 +1472,6 @@ const ChartsDemo = () => {
                     <EChart option={option} height="clamp(300px, calc(100dvh - 260px), 560px)" />
                   </div>
                 </ChartCard>
-                <div data-tour="vision-preview">
-                  <VisionPreviewToggle value={vision} onChange={setVision} />
-                </div>
-                <PaletteRuleExplainer kind={kind} n={n} requestedN={requestedN} />
               </div>
             ) : (
               /* Compare mode renders the two charts HERE, in the same slot the
@@ -1665,9 +1661,21 @@ const ChartsDemo = () => {
             </div>
             {warning && <div className="text-chart-negative-text">⚠ {warning}</div>}
           </div>
+
+          <div data-tour="vision-preview">
+            <VisionPreviewToggle value={vision} onChange={setVision} />
+          </div>
+          <PaletteRuleExplainer kind={kind} n={n} requestedN={requestedN} />
+
+
+          {compare && vision !== "normal" && (
+            <DiffOverlay colors={auditedColors} vision={vision} family={family} />
+          )}
+          </div>
+          </div>
+
           <TokenPreview tokens={chartTheme.tokens} theme={theme} />
           <PaletteSwatches theme={chartTheme} family={family} steps={n} />
-
           <details className="rounded-md border border-chart-grid">
             <summary className="tap-target cursor-pointer px-3 py-2 text-[11px] font-medium uppercase tracking-wide text-chart-muted-text hover:text-foreground">
               Test your own colors
@@ -1686,12 +1694,6 @@ const ChartsDemo = () => {
               />
             </div>
           </details>
-
-          {compare && vision !== "normal" && (
-            <DiffOverlay colors={auditedColors} vision={vision} family={family} />
-          )}
-          </div>
-          </div>
         </section>
 
         {/* EVIDENCE — proof for a reviewer. The person actively building is
