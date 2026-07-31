@@ -19,6 +19,7 @@
  * itself probes.
  */
 import { describe, it, expect } from "vitest";
+import { seedTokens } from "@/test/seedTokens";
 import { BEST_PRACTICE } from "@/charts/bestPractices";
 import type { ChartKind } from "@/charts/chartKinds";
 import { getChartTheme, type ChartTheme } from "@/charts/echartsTheme";
@@ -27,64 +28,7 @@ import { contrastRatio } from "@/charts/audit";
 import { THRESHOLDS, CVD_SEVERITY } from "@/charts/constraints";
 import { safeMaxN, clearSafeMaxNCache } from "@/charts/builtinBounds";
 
-// Seed the document so getChartTheme can read CSS vars in jsdom.
-// Mirrors the tokens shipped in src/index.css.
-function seedTokens() {
-  const lightVars: Record<string, string> = {
-    "--chart-bg": "0 0% 100%",
-    "--chart-surface": "0 0% 98%",
-    "--chart-grid": "214 32% 91%",
-    "--chart-axis": "215 16% 47%",
-    "--chart-tooltip-bg": "222 47% 11%",
-    "--chart-tooltip-fg": "0 0% 100%",
-    "--chart-muted": "215 20% 65%",
-    "--chart-other": "215 16% 47%",
-    "--chart-positive": "152 60% 36%",
-    "--chart-negative": "0 72% 45%",
-    "--chart-target": "32 95% 44%",
-    "--chart-forecast": "210 60% 60%",
-    "--chart-cat-anchor-1": "210 85% 45%",
-    "--chart-cat-anchor-2": "28 88% 50%",
-    "--chart-cat-anchor-3": "152 55% 38%",
-    "--chart-seq-low": "210 60% 96%",
-    "--chart-seq-high": "222 80% 30%",
-    "--chart-div-neg": "0 72% 45%",
-    "--chart-div-mid": "210 20% 96%",
-    "--chart-div-pos": "152 60% 36%",
-  };
-  const darkVars: Record<string, string> = {
-    "--chart-bg": "222 47% 6%",
-    "--chart-surface": "222 47% 9%",
-    "--chart-grid": "217 33% 18%",
-    "--chart-axis": "215 20% 65%",
-    "--chart-tooltip-bg": "0 0% 100%",
-    "--chart-tooltip-fg": "222 47% 11%",
-    "--chart-muted": "215 16% 47%",
-    "--chart-other": "215 20% 65%",
-    "--chart-positive": "152 65% 50%",
-    "--chart-negative": "0 75% 60%",
-    "--chart-target": "32 95% 60%",
-    "--chart-forecast": "210 80% 70%",
-    "--chart-cat-anchor-1": "210 90% 65%",
-    "--chart-cat-anchor-2": "28 92% 62%",
-    "--chart-cat-anchor-3": "152 60% 55%",
-    "--chart-seq-low": "222 47% 12%",
-    "--chart-seq-high": "210 90% 75%",
-    "--chart-div-neg": "0 75% 60%",
-    "--chart-div-mid": "222 47% 14%",
-    "--chart-div-pos": "152 65% 50%",
-  };
-  const root = document.documentElement;
-  for (const [k, v] of Object.entries(lightVars)) root.style.setProperty(k, v);
-  // Dark scope: the .dark root reads dark vars; jsdom needs an element with
-  // the .dark class for getChartTheme("dark", ...) to find it.
-  const darkRoot = document.createElement("div");
-  darkRoot.className = "dark";
-  for (const [k, v] of Object.entries(darkVars)) darkRoot.style.setProperty(k, v);
-  document.body.appendChild(darkRoot);
-}
-
-// Seed at module load time so describe-level calls (safeMaxN below) see tokens.
+// Seed from the real src/index.css so the fixture cannot drift from what ships.
 seedTokens();
 clearSafeMaxNCache();
 
