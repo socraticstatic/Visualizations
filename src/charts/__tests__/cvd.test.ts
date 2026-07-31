@@ -6,7 +6,7 @@ import { simulateRgb } from "@/charts/palette/cvd";
  * Machado, Oliveira & Fernandes 2009 dichromacy matrices (Table 1,
  * inf.ufrgs.br/~oliveira/pubs_files/CVD_Simulation/CVD_Simulation.html).
  *
- * History: commit 4f55074 replaced the correct DEUTAN matrix with values
+ * History: commit 3a0ab1a replaced the correct DEUTAN matrix with values
  * that appear nowhere in the paper, while claiming to fix it. These tests
  * pin the observable behavior so that cannot silently happen again.
  */

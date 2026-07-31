@@ -101,8 +101,8 @@ Semantic chart tokens in `index.css` (HSL, light + dark): surfaces, neutrals, st
 ## Run
 
 ```bash
-bun install
-bun run dev
+npm install
+npm run dev
 ```
 
 Then open the preview and navigate to **`/charts`**.
@@ -110,7 +110,7 @@ Then open the preview and navigate to **`/charts`**.
 ### Tests
 
 ```bash
-bunx vitest run
+npx vitest run
 ```
 
 Covers the palette primitives (`stableAssign`, `sequentialRamp` L-monotonicity, `divergingRamp` length, aligned encoding scales), `solveCategorical` property tests across N=2..8 (determinism, in-gamut sRGB, threshold-or-relaxation contract, lock-honoring), entity pins (permutation safety, collision bumping, paired remap of color/dash/decal/shape), URL state round-trips, and fixture determinism + messy-mode characteristics (nulls on lines, missing heatmap cells, diverging outliers).
