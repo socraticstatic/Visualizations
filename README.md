@@ -253,3 +253,19 @@ npm run build:lib     # → dist-lib/, an MIT-licensed, publishable package
 
 The published version tracks `PALETTE_VERSION`, not the app version: a version bump
 means the colors may have moved.
+
+### Publishing with 2FA on
+
+npm 11 defaults to `auth-type=web`, which bounces through a browser and fails on
+accounts using a passkey or an unavailable second factor. Use the terminal flow
+instead, which asks for username, password, and OTP directly:
+
+```bash
+npm run login:npm     # npm login --auth-type=legacy
+```
+
+Then publish, passing the current OTP through to `npm publish`:
+
+```bash
+npm run publish:lib -- --otp=123456
+```
