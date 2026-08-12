@@ -1,19 +1,39 @@
-Copyright (c) 2026 Micah Boswell. All Rights Reserved.
+Copyright (c) 2026 Micah Boswell.
 
-This software and its source code (the "Software") are the exclusive
-property of Micah Boswell. The Software is proprietary and confidential.
+This repository is dual-licensed. Which license applies depends on which
+files you are using.
 
-No part of the Software may be copied, reproduced, modified, merged,
-published, distributed, sublicensed, sold, or used to create derivative
-works, in whole or in part, by any means, without the express prior
-written permission of Micah Boswell.
+------------------------------------------------------------------------
+1. THE PALETTE ENGINE — MIT License
+------------------------------------------------------------------------
 
-Unauthorized use, reproduction, or distribution of the Software, or any
-portion of it, is strictly prohibited.
+The following paths are licensed under the MIT License. The full text is
+in LICENSE-MIT.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
-LIABILITY ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR
-THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+    src/charts/index.ts
+    src/charts/palette/**
+    src/charts/constraints.ts
+    src/charts/encoding.ts
+    src/charts/audit.ts
+    src/charts/version.ts
+
+These files are the solver, the constraint set, the CVD/contrast audit,
+and the redundant dash/decal/shape encodings. They are published to npm
+as the `chart-color-system` package, which is MIT-licensed in full.
+
+Palettes, tokens, and code you generate with the engine — including
+anything produced by the site's Export and Copy-snippet features — are
+yours. No attribution required, no restrictions.
+
+------------------------------------------------------------------------
+2. EVERYTHING ELSE — Proprietary, All Rights Reserved
+------------------------------------------------------------------------
+
+All other files in this repository — the React application, its UI
+components, the demo harness, the documentation site, and the written
+content — are proprietary. The full text is in LICENSE-PROPRIETARY.
+
+------------------------------------------------------------------------
+
+If you are unsure which applies to what you want to do, ask:
+https://github.com/socraticstatic/Visualizations/issues

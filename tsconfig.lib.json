@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": false,
+    "skipLibCheck": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist-lib/types",
+    "rootDir": "src/charts"
+  },
+  "include": [
+    "src/charts/index.ts",
+    "src/charts/palette/**/*.ts",
+    "src/charts/constraints.ts",
+    "src/charts/encoding.ts",
+    "src/charts/audit.ts",
+    "src/charts/version.ts"
+  ],
+  "exclude": ["src/charts/__tests__/**"]
+}

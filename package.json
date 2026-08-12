@@ -5,10 +5,18 @@
   "type": "module",
   "description": "A token-driven, math-backed palette system for ECharts dashboards — contrast/CVD/grayscale-proven categorical, sequential, and diverging palettes.",
   "author": "Micah Boswell (https://github.com/socraticstatic)",
-  "license": "UNLICENSED",
+  "license": "SEE LICENSE IN LICENSE",
   "repository": {
     "type": "git",
     "url": "https://github.com/socraticstatic/Visualizations.git"
+  },
+  "homepage": "https://github.com/socraticstatic/Visualizations#readme",
+  "bugs": {
+    "url": "https://github.com/socraticstatic/Visualizations/issues"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/socraticstatic"
   },
   "scripts": {
     "dev": "vite",
@@ -16,6 +24,8 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
+    "build:lib": "vite build --config vite.config.lib.ts && tsc -p tsconfig.lib.json && node scripts/build-lib.mjs",
+    "publish:lib": "npm run build:lib && npm publish ./dist-lib --access public",
     "test": "vitest run",
     "test:watch": "vitest"
   },

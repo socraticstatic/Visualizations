@@ -224,10 +224,32 @@ This rule is persisted to project memory (`mem://index.md`).
 
 ---
 
+## Sponsor
+
+If this system saves you a week of arguing about chart colors, you can support the
+work here: **[github.com/sponsors/socraticstatic](https://github.com/sponsors/socraticstatic)**
+
+---
+
 ## License
 
-Copyright © 2026 **Micah Boswell**. All rights reserved.
+Copyright © 2026 **Micah Boswell**. Dual-licensed — see [`LICENSE`](LICENSE).
 
-This project is proprietary. See [`LICENSE`](LICENSE) for full terms. No part of
-this software may be copied, modified, distributed, or used without express
-written permission from Micah Boswell.
+**The palette engine is MIT** ([`LICENSE-MIT`](LICENSE-MIT)): `src/charts/index.ts`,
+`src/charts/palette/**`, `constraints.ts`, `encoding.ts`, `audit.ts`, `version.ts`.
+It ships to npm as [`chart-color-system`](https://www.npmjs.com/package/chart-color-system).
+Palettes and tokens you generate with it — including anything from Export or
+Copy-snippet — are yours, no attribution required.
+
+**Everything else is proprietary** ([`LICENSE-PROPRIETARY`](LICENSE-PROPRIETARY)): the
+React application, its UI components, the demo harness, and the written content. No part
+may be copied, modified, or distributed without express written permission.
+
+### Building the package
+
+```bash
+npm run build:lib     # → dist-lib/, an MIT-licensed, publishable package
+```
+
+The published version tracks `PALETTE_VERSION`, not the app version: a version bump
+means the colors may have moved.
