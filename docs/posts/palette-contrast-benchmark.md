@@ -70,6 +70,21 @@ Tableau 10 spreads its first six hues across a ΔE of 13.9. Under deutan simulat
 
 Past roughly six hues, no palette holds up. I have not found one that does, and I do not believe one exists. Beyond that point, color stops being a reliable channel and something else has to carry series identity: dash pattern, decal fill, marker shape.
 
+## Why the background is the part I kept hitting
+
+I did not arrive at this from color theory. Most of my work has been dashboards for
+operations people: nuclear at Acumen, energy at CenterPoint Energy, networks at AT&T.
+The range those have to cover runs from a phone held in daylight to a wall-mounted
+display in a control room kept at low light.
+
+That is the inversion in the first two tables, met on the job rather than in a
+spreadsheet. A palette signed off on a white mockup goes up on the control room wall,
+and the light slots go with it. The failure does not announce itself. The chart still
+renders, and the operator quietly starts reading position and label instead of color.
+
+Which is the tell. When people stop trusting the color channel, they route around it,
+and you never hear about it as a color problem.
+
 ## What I built, and where it loses
 
 I wrote a solver that treats the background as an input instead of an assumption. Give it an N, a posture, a background, and your gridline color, and it returns a palette audited against contrast, CVD, and grayscale before you ship it.
