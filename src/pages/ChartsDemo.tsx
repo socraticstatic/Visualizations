@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Heart } from "lucide-react";
+import { Link } from "react-router-dom";
 import { EChart } from "@/components/charts/EChart";
 import {
   buildBase,
@@ -1909,13 +1910,18 @@ const ChartsDemo = () => {
             </a>
           </p>
           <div className="flex flex-wrap items-center gap-4">
+            {/* The repo is private, so a "Source" link here 404s for everyone
+                but the owner. Point at what a reader can actually open. */}
+            <Link to="/blog" className="hover:text-foreground">
+              Notes
+            </Link>
             <a
-              href="https://github.com/socraticstatic/Visualizations"
+              href="https://www.npmjs.com/package/chart-color-system"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-foreground"
             >
-              Source
+              npm
             </a>
             <a
               href="https://github.com/sponsors/socraticstatic"
