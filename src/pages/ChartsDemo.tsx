@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Heart } from "lucide-react";
 import { EChart } from "@/components/charts/EChart";
 import {
   buildBase,
@@ -1401,6 +1402,16 @@ const ChartsDemo = () => {
               <span className="sm:hidden">Tour</span>
               <span className="hidden sm:inline">Take the tour</span>
             </button>
+            <a
+              href="https://github.com/sponsors/socraticstatic"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="tap-target inline-flex items-center gap-1.5 rounded-md border border-chart-grid bg-chart-surface px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-chart-grid/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chart-focus"
+              title="Sponsor this project on GitHub"
+            >
+              <Heart className="h-3.5 w-3.5 text-chart-negative-text" aria-hidden />
+              <span>Sponsor</span>
+            </a>
           </div>
         </div>
         {/* The verdict lives with the nav, not beside the chart. Pinned inside
@@ -1881,6 +1892,43 @@ const ChartsDemo = () => {
         {/* REFERENCE — collapsed footer: glossary + decision rationale. */}
 
       </div>
+
+      {/* The only place on the site that asks for anything. Keep it quiet and
+          keep it last -- the tool has to earn the ask by working first. */}
+      <footer id="site-footer" className="mt-10 scroll-mt-20 border-t border-chart-grid">
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-3 px-6 py-6 text-xs text-chart-muted-text sm:flex-row sm:items-center sm:justify-between">
+          <p className="max-w-[60ch]">
+            Micah's Chart System · v{PALETTE_VERSION} · built by{" "}
+            <a
+              href="https://github.com/socraticstatic"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground underline underline-offset-2 hover:text-primary"
+            >
+              Micah Boswell
+            </a>
+          </p>
+          <div className="flex flex-wrap items-center gap-4">
+            <a
+              href="https://github.com/socraticstatic/Visualizations"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-foreground"
+            >
+              Source
+            </a>
+            <a
+              href="https://github.com/sponsors/socraticstatic"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-md border border-chart-grid bg-chart-surface px-2.5 py-1 text-foreground transition-colors hover:bg-chart-grid/30"
+            >
+              <Heart className="h-3.5 w-3.5 text-chart-negative-text" aria-hidden />
+              Sponsor this project
+            </a>
+          </div>
+        </div>
+      </footer>
 
       <ExportPalette
         open={exportOpen}
