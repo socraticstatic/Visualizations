@@ -489,20 +489,24 @@ export default function PaletteContrastBenchmark() {
 
         <H2>Reproduce this</H2>
         <P>The engine is MIT.</P>
-        <pre className="mt-4 overflow-x-auto rounded-lg border border-chart-grid bg-chart-surface p-4 text-[12px] leading-relaxed">
-          <code>{`npm install chart-color-system culori`}</code>
+        {/* No scroll and no wrap: every line is short enough to fit a 375px
+            viewport, so the reader never drags sideways and never sees a
+            continuation line land left of its own indentation. pre-wrap stays
+            on as a safety net for large text zoom, where breaking beats
+            hiding. */}
+        <pre className="mt-4 whitespace-pre-wrap break-words rounded-lg border border-chart-grid bg-chart-surface p-4 text-[12.5px] leading-relaxed">
+          <code>{`npm i chart-color-system culori`}</code>
         </pre>
-        <pre className="mt-3 overflow-x-auto rounded-lg border border-chart-grid bg-chart-surface p-4 text-[12px] leading-relaxed">
-          <code>{`import { fromCss, contrastRatio } from "chart-color-system";
+        <pre className="mt-3 whitespace-pre-wrap break-words rounded-lg border border-chart-grid bg-chart-surface p-4 text-[12.5px] leading-relaxed">
+          <code>{`import { fromCss, contrastRatio }
+  from "chart-color-system";
 
 const bg = fromCss("#ffffff");
-const set2 = ["#66C2A5","#FC8D62","#8DA0CB","#E78AC3",
-              "#A6D854","#FFD92F","#E5C494","#B3B3B3"];
 
-set2.map(fromCss).forEach((c, i) => {
-  const r = contrastRatio(c, bg);
-  console.log(set2[i], r.toFixed(2) + ":1", r < 3 ? "FAIL" : "pass");
-});`}</code>
+// ColorBrewer Set2, worst slot
+const c = fromCss("#FFD92F");
+
+contrastRatio(c, bg);  // 1.38`}</code>
         </pre>
         <P>
           Every number on this page is computed in your browser by that package, against the
@@ -510,7 +514,7 @@ set2.map(fromCss).forEach((c, i) => {
           solver.
         </P>
         <P>
-          If you would rather move a slider than write a loop,{" "}
+          If you would rather move a slider than call a function,{" "}
           <Link to="/" className="text-primary underline underline-offset-2">
             the builder
           </Link>{" "}
