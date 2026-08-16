@@ -8,4 +8,4 @@
  * the sync is enforced instead by src/charts/__tests__/version.test.ts and by
  * a hard check in scripts/build-lib.mjs — bump both together.
  */
-export const PALETTE_VERSION = "0.7.1";
+export const PALETTE_VERSION = "0.7.2";

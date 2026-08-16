@@ -8,6 +8,27 @@ The version here is also exported from code as `PALETTE_VERSION`.
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-08-16
+
+### Added
+- **Problem statement on the page.** One sentence under the hero title saying what the tool fixes (palettes that pass the WCAG 3:1 floor on one background and silently fail on the other), ending in a "Read the finding →" link to the palette-contrast benchmark note, plus a "Why this exists" link in the top nav. Prompted by reviewer feedback that the page never explains the problem it solves.
+- **SRI on the exported report's CDN script.** The standalone HTML report now loads a pinned `echarts@5.6.0` with `integrity` (sha384) + `crossorigin` instead of a floating, unverified `echarts@5` tag.
+
+### Fixed
+- **ColorPicker preserves the user's exact hex.** The hex → `H S% L%` token write rounded H/S/L to integers, shifting user colors on entry (#777777 became #787878). Triples now carry 4-decimal precision; hex → triple → hex verified identity for all 16,777,216 hex values (exhaustive sweep, 0 mismatches) with a regression test. The anchor-lock status line now reports the exact hex the user typed.
+- **`pairScore`'s CVD multiplier did the opposite of its stated intent.** The solver maximizes `min(normalΔE, cvdΔE·w, ΔL·4)`; protecting a channel in a min-composite means scaling it *down*, but the code multiplied CVD by 1.8 — hiding CVD deficits up to 44% below normal ΔE from the solver. Now `c / 1.8`. Worst-pair CVD ΔE at the safe cap improves in all six theme × posture configs (e.g. light kpi 8.34 → 11.58, dark comparative 10.50 → 14.04); `safeMaxN` stays 6 everywhere with zero relaxations at the cap. Built-in palette hexes change as a result.
+- **SVG palette export escapes the palette name.** `exp.name` was interpolated raw into markup that the export panel previews via `dangerouslySetInnerHTML`.
+- Deleted the unused shadcn `ui/chart.tsx` (a `dangerouslySetInnerHTML` style sink with zero importers) and the `recharts` dependency only it pulled in.
+
+### Changed
+- **Dependency majors, `npm audit` at 0.** vite 5 → 8 (rolldown; the echarts cache-chunk split moved from `manualChunks` to `advancedChunks`), vitest 3 → 4, `react-router-dom` 6 replaced by `react-router` 7.18 (all import sites migrated; APIs unchanged). Clears esbuild GHSA-67mh-4wv8-2f99 and react-router GHSA-wrjc-x8rr-h8h6 / GHSA-337j-9hxr-rhxg.
+
+`PALETTE_VERSION` bumped to `0.7.2`.
+
+## [0.2.0 – 0.7.1] - 2026-05-06 → 2026-08-15 (catch-up)
+
+Release sections 0.2.0 through 0.7.1 were never cut; the entries below this heading accumulated under [Unreleased] across that span and belong to these versions. From the git history, the span covers: the tiered build-out of the palette engine, encodings, ECharts adapter, and demo/QA harness (0.2.x–0.3.x); the 2026-07-30 accuracy audit (restored the published Machado deutan matrix, fixed diverging midpoint duplication, aligned grayscale preview with the audit, truth-in-labeling pass on every safety claim); solver performance (~20× via CVD-projection and candidate-cloud caches) and the responsive N-slider rebuild (0.7.0); nav/a11y/UX overhauls (four-section sticky nav, pinned verdict, glossary drawer, contrast passes); user-edited anchors as real hard locks; the Notes/blog section with the palette-contrast benchmark post; dual licensing with the MIT `chart-color-system` lib build; and the package.json ↔ `PALETTE_VERSION` drift guard (0.7.1).
+
 ### Fixed (2026-07-30 follow-ups)
 - **Theme flip no longer resets the step/series count.** `onApply` fell back to `DEFAULT_N` for changes that didn't carry `n`, and a second effect re-snapped N on `[kind, theme]`. N now survives theme toggles; kind changes still snap to the kind's default.
 - **Sequential ramps are multi-hue (teal → indigo/violet).** Single-hue ramps compressed adjacent steps to ΔE ≈ 3.5 at 9 steps because both endpoints must clear WCAG 3:1; hue travel raises adjacent-step ΔE to ~4.5–6.6 (light) / ~4.6–4.8 (dark) with every stop verified ≥ 3:1 on both themes. Piecewise legend labels are integers and the heatmap grid clears them.
