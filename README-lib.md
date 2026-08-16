@@ -12,9 +12,10 @@ dichromacy. The CVD/ΔE floors are deliberately minimal at high N, and the redun
 dash / decal / shape channels are what actually carry series identity there. This library
 tells you when that line is crossed instead of pretending it isn't.
 
-For context on why this matters: of the five most widely used chart palettes, three fail
-the 3:1 WCAG non-text contrast floor on a white background — Tableau 10 at 2.42:1,
-ColorBrewer Set2 at 2.14:1, and Observable 10 at 1.91:1.
+For context on why this matters: of five widely used chart palettes, four fail the 3:1
+WCAG non-text contrast floor on a white background at their worst slot — Tableau 10 at
+1.61:1 (#EDC948), ColorBrewer Set2 at 1.38:1 (#FFD92F), Observable 10 at 1.91:1, and
+Material 700 at 1.66:1. Only IBM Carbon clears it, at 3.33:1.
 
 ## Install
 

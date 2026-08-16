@@ -161,7 +161,7 @@ function renderVisionAudit(audit: AuditReport): string {
     <tr>
       <td>${v.mode}</td>
       <td class="num ${v.pass ? "pass" : "fail"}">${Number.isFinite(v.minDeltaE) ? v.minDeltaE.toFixed(1) : "—"}</td>
-      <td class="num">≥ ${v.threshold.toFixed(0)}</td>
+      <td class="num">≥ ${v.threshold < 1 ? v.threshold.toFixed(1) : v.threshold.toFixed(0)}</td>
       <td class="${v.pass ? "pass" : "fail"}">${v.pass ? "PASS" : "FAIL"}</td>
     </tr>`
     )

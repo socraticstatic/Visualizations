@@ -139,6 +139,10 @@ const SERIES_NAMES = [
 // with the slider to stress-test the palette, rather than landing on a busy 12.
 const DEFAULT_N = 2;
 
+/** Format a ΔE/ΔL threshold for display. The sub-1 floors (0.1 CVD, 0.5 ΔL)
+ *  rendered as "ΔE < 0" and "≥ 1" under a blanket toFixed(0). */
+const fmtThreshold = (v: number) => (v < 1 ? v.toFixed(1) : v.toFixed(0));
+
 function clampBuiltInN(k: ChartKind, t: Theme, requested: number) {
   const r = BEST_PRACTICE[k];
   // Belt-and-braces: a NaN/Infinity request (hostile URL, upstream bug) falls
@@ -2182,7 +2186,7 @@ function DiffOverlay({
         <span className="text-chart-axis">
           · {collisions.length === 0
             ? "no collisions"
-            : `${collisions.length} collision${collisions.length === 1 ? "" : "s"} (ΔE < ${threshold.toFixed(0)})`}
+            : `${collisions.length} collision${collisions.length === 1 ? "" : "s"} (ΔE < ${fmtThreshold(threshold)})`}
         </span>
       </summary>
 
@@ -2230,7 +2234,7 @@ function DiffOverlay({
                   <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: sim[c.a].hex }} />
                   <span className="inline-block w-3 h-3 rounded-sm" style={{ backgroundColor: sim[c.b].hex }} />
                   <span className="tabular-nums">
-                    #{c.a} ↔ #{c.b}: ΔE {c.before.toFixed(1)} → {c.after.toFixed(1)} (need ≥ {threshold.toFixed(0)})
+                    #{c.a} ↔ #{c.b}: ΔE {c.before.toFixed(1)} → {c.after.toFixed(1)} (need ≥ {fmtThreshold(threshold)})
                   </span>
                 </li>
               ))}
@@ -2311,7 +2315,7 @@ function SeriesScorecard({
         </h3>
         <div className="text-[10px] text-chart-axis">
           contrast ≥ 3:1 (WCAG 2.2 SC 1.4.11) · ΔE ≥ {THRESHOLDS.minDeltaENormal} normal /{" "}
-          {rows[0]?.cvdThreshold.toFixed(0) ?? "—"} {vision}
+          {rows[0] ? fmtThreshold(rows[0].cvdThreshold) : "—"} {vision}
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -2518,7 +2522,7 @@ function DiffOverlayBadge({
   }
   return (
     <div className="absolute top-2 right-2 max-w-[60%] rounded-md bg-chart-surface/95 border border-chart-negative px-2 py-1 text-[10px] text-chart-negative-text">
-      <div className="font-medium">⚠ {collisions.length} unreadable pair{collisions.length === 1 ? "" : "s"} (ΔE &lt; {threshold.toFixed(0)})</div>
+      <div className="font-medium">⚠ {collisions.length} unreadable pair{collisions.length === 1 ? "" : "s"} (ΔE &lt; {fmtThreshold(threshold)})</div>
       <div className="mt-0.5 text-chart-axis">
         {collisions.slice(0, 3).map((c) => `#${c.a}↔#${c.b}`).join(" · ")}
         {collisions.length > 3 && ` · +${collisions.length - 3}`}
