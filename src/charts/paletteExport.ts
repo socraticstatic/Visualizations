@@ -33,6 +33,18 @@ function safeName(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "palette";
 }
 
+/** XML-escape free text before interpolating it into SVG markup. The SVG
+ *  export is previewed via dangerouslySetInnerHTML, so an unescaped name
+ *  like `<img onerror=...>` would execute in the preview pane. */
+function xmlEscape(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
 function hex(c: ColorRecord): string {
   return c.hex.toUpperCase();
 }
@@ -243,7 +255,7 @@ export function toSvg(exp: PaletteExport): string {
   <g transform="translate(24, 24)">
     <rect x="-12" y="-12" width="${W - 24}" height="${H - 24}" rx="10" fill="${surface}" />
     <text x="0" y="14" font-size="14" font-family="sans-serif" font-weight="700" fill="${fg}">
-      ${exp.name}
+      ${xmlEscape(exp.name)}
     </text>
     <text x="0" y="30" font-size="10" font-family="monospace" fill="${fg}" opacity="0.6">
       palette v${PALETTE_VERSION} · ${t.theme} · posture=${t.posture} · N=${t.effectiveN}
