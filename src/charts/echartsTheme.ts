@@ -10,6 +10,7 @@ import { solveCategorical, type SolveResult } from "./palette/categorical";
 import { sequentialRamp, divergingRamp } from "./palette/ramps";
 import { dashScale, decalScale, shapeScale, MAX_SLOTS } from "./encoding";
 import { POSTURE, type Posture } from "./constraints";
+import { getEditedAnchorIndexes } from "./manualOverrides";
 
 export type Theme = "light" | "dark";
 
@@ -61,6 +62,16 @@ function readTokens(root: HTMLElement = document.documentElement): ChartTokens {
   };
 }
 
+/** Where a user-edited anchor ended up in the solved palette. */
+export interface AnchorLockStatus {
+  /** 0-based index into `tokens.anchors` (Anchor 1 → 0). */
+  anchorIndex: number;
+  /** The locked color, exactly as it appears in the palette. */
+  hex: string;
+  /** Palette slot the lock occupies, or null when N is too low to seat it. */
+  slot: number | null;
+}
+
 export interface ChartTheme {
   theme: Theme;
   tokens: ChartTokens;
@@ -70,6 +81,9 @@ export interface ChartTheme {
   /** True when the requested N exceeded the posture cap and "Other" is in use. */
   overflow: boolean;
   solve: SolveResult;
+  /** User-edited anchors passed to the solver as hard locks (empty when the
+   *  user has not edited any anchor — the built-in path). */
+  anchorLocks: AnchorLockStatus[];
   /** Hex strings ready for ECharts `series.color`. */
   colorHexes: string[];
   /** Aligned encoding slots. */
@@ -117,7 +131,11 @@ export function getChartTheme(theme: Theme, posture: Posture, n: number): ChartT
   const cap = Math.min(POSTURE[posture].maxCategorical, MAX_SLOTS);
   const overflow = n > cap;
   const effectiveN = Math.min(n, cap);
-  const key = `${theme}|${posture}|${effectiveN}`;
+  // Anchors the USER has edited become hard locks (see below), so they are
+  // part of the cache identity. Empty (the built-in path) adds nothing but a
+  // trailing "|" to the key.
+  const editedAnchorIndexes = getEditedAnchorIndexes(theme);
+  const key = `${theme}|${posture}|${effectiveN}|${editedAnchorIndexes.join(",")}`;
   const hit = cache.get(key);
   if (hit) return { ...hit, overflow };
 
@@ -127,18 +145,35 @@ export function getChartTheme(theme: Theme, posture: Posture, n: number): ChartT
   const root = ensureThemedRoot(theme === "dark" ? "dark" : "");
   const tokens = readTokens(root);
 
+  // DEFAULT anchors are preferences, not hard locks: forcing the builtin
+  // anchors verbatim made the solver report relaxations whenever one collided
+  // under CVD simulation, which collapsed `safeMaxN` to 1–2. With empty locks
+  // the solver is free to choose the most compliant colors from the OKLCH
+  // candidate cloud, and the built-in no-override path stays byte-identical.
+  //
+  // USER-EDITED anchors are a different contract: someone testing their own
+  // brand color needs that exact color in the palette, so each edited anchor
+  // is locked verbatim into a slot (in anchor order, up to N). The solver
+  // never nudges a lock; the audit + `solve.relaxations` report every floor
+  // the locked color breaks instead of silently discarding it.
+  const lockEntries = editedAnchorIndexes
+    .filter((i) => i < tokens.anchors.length)
+    .map((i) => ({ anchorIndex: i, color: tokens.anchors[i] }));
+  const locks = lockEntries.slice(0, effectiveN).map((e) => e.color);
+
   const solve = solveCategorical({
     n: effectiveN,
     posture,
     background: tokens.bg,
     grid: tokens.grid,
-    // Anchors are *preferences*, not hard locks. Forcing them caused the
-    // solver to report relaxations the moment one of the brand colors
-    // collided with another under CVD simulation, which collapsed
-    // `safeMaxN` to 1–2. With empty locks the solver is free to choose
-    // the most compliant 12 colors from the OKLCH candidate cloud.
-    locks: [],
+    locks,
   });
+
+  const anchorLocks: AnchorLockStatus[] = lockEntries.map((e, idx) => ({
+    anchorIndex: e.anchorIndex,
+    hex: e.color.hex,
+    slot: idx < effectiveN ? idx : null,
+  }));
 
   const colorHexes = solve.palette.map((c) => c.hex);
   const result: ChartTheme = {
@@ -148,6 +183,7 @@ export function getChartTheme(theme: Theme, posture: Posture, n: number): ChartT
     effectiveN,
     overflow,
     solve,
+    anchorLocks,
     colorHexes,
     dashes: dashScale.slice(0, effectiveN) as typeof dashScale,
     decals: decalScale.slice(0, effectiveN) as typeof decalScale,

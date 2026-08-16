@@ -58,7 +58,7 @@ export const GLOSSARY: GlossaryEntry[] = [
     term: "Anchor",
     short: "A brand color locked into a slot.",
     detail:
-      "Anchors (`--chart-cat-anchor-1/2/3`) are brand-color preferences. The built-in builder solves with no hard locks — forcing anchors verbatim collapsed the safe cap when one collided under CVD simulation — so the solver is free to pick the most compliant palette and anchors act as seeds, not guarantees.",
+      "Anchors (`--chart-cat-anchor-1/2/3`) behave differently by origin. The DEFAULT anchors are preferences only: the built-in builder solves with no hard locks (forcing them verbatim collapsed the safe cap when one collided under CVD simulation), so the solver freely picks the most compliant palette. An anchor YOU edit in the color picker becomes a hard lock: it is seeded verbatim into its palette slot, never nudged, and the audit reports every floor your locked color breaks.",
     source: "src/charts/echartsTheme.ts",
   },
   {

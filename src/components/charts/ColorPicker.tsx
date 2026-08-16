@@ -8,7 +8,12 @@
  */
 import { useEffect, useState } from "react";
 import { converter, parse, formatHex } from "culori";
-import type { Theme } from "@/charts/echartsTheme";
+import type { AnchorLockStatus, Theme } from "@/charts/echartsTheme";
+import {
+  ANCHOR_VARS,
+  clearEditedAnchors,
+  markAnchorEdited,
+} from "@/charts/manualOverrides";
 
 const toHsl = converter("hsl");
 
@@ -85,9 +90,12 @@ function readToken(theme: Theme, name: string): string {
 export interface ColorPickerProps {
   theme: Theme;
   onChange: () => void;
+  /** Per-anchor lock status from the current solve (chartTheme.anchorLocks):
+   *  which edited anchors made it into the palette, and at which slot. */
+  anchorStatus?: AnchorLockStatus[];
 }
 
-export function ColorPicker({ theme, onChange }: ColorPickerProps) {
+export function ColorPicker({ theme, onChange, anchorStatus }: ColorPickerProps) {
   // Re-read tokens whenever the theme flips so the swatches reflect what's
   // actually on the page (including any user overrides already applied).
   const [values, setValues] = useState<Record<string, string>>({});
@@ -101,11 +109,16 @@ export function ColorPicker({ theme, onChange }: ColorPickerProps) {
   function update(varName: string, hex: string) {
     const triple = hexToHslTriple(hex);
     for (const root of getRoots(theme)) root.style.setProperty(varName, triple);
+    // An edited categorical anchor becomes a hard lock in the solver — record
+    // it so getChartTheme knows this anchor is a user color, not a default.
+    const anchorIndex = (ANCHOR_VARS as readonly string[]).indexOf(varName);
+    if (anchorIndex !== -1) markAnchorEdited(theme, anchorIndex);
     setValues((v) => ({ ...v, [varName]: hex }));
     onChange();
   }
 
   function reset() {
+    clearEditedAnchors(theme);
     for (const root of getRoots(theme)) {
       for (const t of TOKENS) root.style.removeProperty(t.var);
     }
@@ -151,14 +164,26 @@ export function ColorPicker({ theme, onChange }: ColorPickerProps) {
                   </span>
                 </label>
               ))}
+              {g === "Categorical anchors" && anchorStatus && anchorStatus.length > 0 && (
+                <ul className="space-y-0.5 pt-1" data-testid="anchor-lock-status">
+                  {anchorStatus.map((s) => (
+                    <li key={s.anchorIndex} className="text-[10px] tabular-nums text-chart-axis">
+                      Anchor {s.anchorIndex + 1} ({s.hex.toUpperCase()}):{" "}
+                      {s.slot !== null
+                        ? `locked into palette slot ${s.slot}`
+                        : "not used — N is below this anchor's slot"}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         ))}
       </div>
       <p className="text-[11px] text-chart-axis">
-        Background and ramp edits re-solve immediately. Categorical anchors are
-        preferences, not locks — the solver still picks the most compliant
-        palette, and the audit flags anything your edits break.
+        Background and ramp edits re-solve immediately. Anchors you edit are
+        locked verbatim into the palette, in slot order — the solver never
+        nudges them, and the audit below tells you exactly what they break.
       </p>
     </div>
   );

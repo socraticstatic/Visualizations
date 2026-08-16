@@ -1700,6 +1700,7 @@ const ChartsDemo = () => {
             <div className="border-t border-chart-grid p-3">
               <ColorPicker
                 theme={theme}
+                anchorStatus={chartTheme.anchorLocks}
                 onChange={() => {
                   // getChartTheme memoizes by theme|posture|N internally, so a
                   // colorRev bump alone re-renders with a stale solve. Both
