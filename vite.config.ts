@@ -12,6 +12,18 @@ export default defineConfig(() => ({
     },
   },
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        // echarts dwarfs the rest of the bundle (~1MB of the 1.77MB total).
+        // Splitting it into its own chunk lets browsers cache it across app
+        // deploys — app code changes no longer invalidate the chart engine.
+        manualChunks: {
+          echarts: ["echarts"],
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
