@@ -2,10 +2,10 @@
  * Probe the highest N for which the solver produces a palette with ZERO
  * relaxations and full constraint satisfaction, given a (theme, posture).
  *
- * This is how the builder enforces the project rule that built-in controls
- * (kind, N, theme) only generate optimal palettes. The N slider in
- * ChartsDemo clamps its `max` to this value so unreachable-by-construction
- * permutations cannot be picked through default UI.
+ * The N slider in ChartsDemo does NOT clamp its max to this value: the slider
+ * runs to the kind's recommendedN, shows this probe as the "safe" marker, and
+ * values above it surface warnings via the audit panel and OptimalOnlyBadge.
+ * Default snaps (kind changes, presets) do stay at or below this cap.
  */
 import { getChartTheme, type Theme } from "./echartsTheme";
 import type { Posture } from "./constraints";

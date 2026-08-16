@@ -1945,8 +1945,12 @@ const ChartsDemo = () => {
             hasManualOverrides={manualOverrides}
             safeCapA={safeBuiltinMaxA}
             recommendedA={rule.recommendedN}
+            nA={n}
+            relaxationsA={chartTheme.solve.relaxations}
             safeCapB={compare ? safeBuiltinMaxB : undefined}
             recommendedB={compare ? ruleB.recommendedN : undefined}
+            nB={compare ? nB : undefined}
+            relaxationsB={compare ? chartThemeB.solve.relaxations : undefined}
             compare={compare}
           />
         </div>
