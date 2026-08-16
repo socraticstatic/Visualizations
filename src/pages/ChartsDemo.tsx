@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Heart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { EChart } from "@/components/charts/EChart";
 import {
   buildBase,
@@ -1424,6 +1424,13 @@ const ChartsDemo = () => {
             <SectionNav onNavigate={goToSection} />
           </div>
           <div className="ml-auto flex shrink-0 items-center gap-2">
+            <Link
+              to="/blog/palette-contrast-benchmark"
+              className="tap-target hidden rounded-md border border-chart-grid bg-chart-surface px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-chart-grid/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chart-focus sm:inline-block"
+              title="The finding this tool exists to fix"
+            >
+              Why this exists
+            </Link>
             <button
               type="button"
               onClick={() => {
@@ -1484,6 +1491,19 @@ const ChartsDemo = () => {
             Micah's Chart System{" "}
             <span className="text-chart-muted-text">for Sane and Useful Color Strategies</span>
           </h1>
+          {/* The problem statement lives here because the page doesn't explain
+              itself: reviewers landed on the builder and couldn't tell what it
+              was for. One sentence, one link to the evidence, nothing else. */}
+          <p className="mt-1.5 max-w-[72ch] text-sm text-foreground/90">
+            Default chart palettes pass the WCAG 3:1 contrast floor on one background and silently fail on the
+            other. This builder treats the background as an input and audits before you ship.{" "}
+            <Link
+              to="/blog/palette-contrast-benchmark"
+              className="whitespace-nowrap font-medium text-primary underline underline-offset-4 hover:text-foreground"
+            >
+              Read the finding →
+            </Link>
+          </p>
           <p className="mt-1.5 max-w-[72ch] text-sm text-chart-muted-text">
             Pick a chart type and the number of data points — get an audited palette with matched dash, decal, and
             shape encodings.
