@@ -1,0 +1,42 @@
+name: Release chart-color-system
+
+# Publishes dist-lib to npm with provenance when a lib-v* tag is pushed.
+#
+# Auth: npm trusted publishing (OIDC) — configure once on npmjs.com:
+# package chart-color-system → Settings → Trusted Publisher → GitHub Actions,
+# repo socraticstatic/Visualizations, workflow release-lib.yml.
+# After that, no token and no 2FA tap is ever needed: `git tag lib-v0.7.3 &&
+# git push origin lib-v0.7.3` is the entire release.
+
+on:
+  push:
+    tags: ["lib-v*"]
+
+permissions:
+  contents: read
+  id-token: write # OIDC for npm provenance + trusted publishing
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+          # NO registry-url: setup-node would write a placeholder _authToken
+          # to .npmrc, which overrides OIDC trusted publishing.
+      # Trusted publishing (OIDC token exchange) requires npm >= 11.5.
+      - run: npm install -g npm@latest
+      - run: npm ci
+      - name: Tag must match package version
+        run: |
+          TAG="${GITHUB_REF_NAME#lib-v}"
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "tag lib-v$TAG != package.json $PKG" >&2; exit 1
+          fi
+      - run: npm test
+      - run: npm run build:lib
+      - run: npm publish ./dist-lib --provenance --access public
