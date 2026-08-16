@@ -9,9 +9,9 @@
  * (per-user) and would blow out the URL. The link captures the *recipe*, not
  * the brand anchors.
  */
-import type { ChartKind } from "./chartKinds";
+import { CHART_KIND_LABEL, type ChartKind } from "./chartKinds";
 import type { Theme } from "./echartsTheme";
-import type { VisionMode } from "./audit";
+import { VISION_MODES, type VisionMode } from "./audit";
 
 /**
  * The four scroll-anchored sections, in reading order.
@@ -51,24 +51,41 @@ export function encodeUrlState(s: UrlState): string {
   return p.toString();
 }
 
+/** A hash is untrusted input — hand-edited, stale, or hostile. Every key is
+ *  validated against the real domain; anything invalid is DROPPED (never
+ *  defaulted to a different value, never cast through). */
+function isChartKind(k: string): k is ChartKind {
+  return k in CHART_KIND_LABEL;
+}
+
+function parseN(raw: string | null): number | undefined {
+  if (!raw) return undefined;
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) && parsed >= 1 && parsed <= 24 ? parsed : undefined;
+}
+
 export function decodeUrlState(hash: string): Partial<UrlState> {
   const raw = hash.startsWith("#") ? hash.slice(1) : hash;
   if (!raw) return {};
   const p = new URLSearchParams(raw);
   const out: Partial<UrlState> = {};
   const k = p.get("k");
-  if (k) out.kind = k as ChartKind;
-  const n = p.get("n");
-  if (n) out.n = Number(n);
+  // An unknown kind used to be cast straight through and crashed the page on
+  // BEST_PRACTICE[kind] lookup — drop the key instead.
+  if (k && isChartKind(k)) out.kind = k;
+  const n = parseN(p.get("n"));
+  if (n !== undefined) out.n = n;
   const t = p.get("t");
   if (t === "light" || t === "dark") out.theme = t;
   const v = p.get("v");
-  if (v) out.vision = v as VisionMode;
+  // An unknown vision mode used to reach the CVD simulator, which silently
+  // fell back to the tritan matrix — drop the key instead.
+  if (v && (VISION_MODES as readonly string[]).includes(v)) out.vision = v as VisionMode;
   if (p.get("c") === "1") out.compare = true;
   const kb = p.get("kb");
-  if (kb) out.kindB = kb as ChartKind;
-  const nb = p.get("nb");
-  if (nb) out.nB = Number(nb);
+  if (kb && isChartKind(kb)) out.kindB = kb;
+  const nb = parseN(p.get("nb"));
+  if (nb !== undefined) out.nB = nb;
   const tb = p.get("tb");
   if (tb === "light" || tb === "dark") out.themeB = tb;
   const sec = p.get("s");

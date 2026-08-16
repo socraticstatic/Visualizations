@@ -13,7 +13,16 @@ import { simulateRgb } from "./palette/cvd";
 import { converter, formatHex, type Oklab } from "culori";
 import { THRESHOLDS, CVD_SEVERITY } from "./constraints";
 
-export type VisionMode = "normal" | "deutan" | "protan" | "tritan" | "achromatopsia";
+/** Runtime list of vision modes — the single source for the VisionMode type
+ *  and for validating untrusted input (e.g. the `v` URL parameter). */
+export const VISION_MODES = [
+  "normal",
+  "deutan",
+  "protan",
+  "tritan",
+  "achromatopsia",
+] as const;
+export type VisionMode = (typeof VISION_MODES)[number];
 
 function toGrayscale(c: ColorRecord): ColorRecord {
   // Rec. 709 luma requires linearized (scene-linear) inputs.
@@ -103,8 +112,7 @@ export function auditPalette(
   background: ColorRecord,
   skipPairwiseDeltaE = false
 ): AuditReport {
-  const modes: VisionMode[] = ["normal", "deutan", "protan", "tritan", "achromatopsia"];
-  const perVision: VisionResult[] = modes.map((mode) => {
+  const perVision: VisionResult[] = VISION_MODES.map((mode) => {
     const threshold =
       mode === "normal"
         ? THRESHOLDS.minDeltaENormal
@@ -144,8 +152,16 @@ export function auditPalette(
   const bgPass = worstContrast >= 3; // WCAG 2.2 SC 1.4.11
 
   const fails = perVision.filter((v) => !v.pass).length;
+  // An empty palette has nothing to audit — every check above passes
+  // vacuously, and reporting "pass" for zero colors would be a lie.
   const overall: AuditReport["overall"] =
-    fails === 0 && bgPass ? "pass" : fails <= 1 && bgPass ? "warn" : "fail";
+    palette.length === 0
+      ? "fail"
+      : fails === 0 && bgPass
+      ? "pass"
+      : fails <= 1 && bgPass
+      ? "warn"
+      : "fail";
 
   return { perVision, worstContrastVsBg: worstContrast, bgPass, overall };
 }

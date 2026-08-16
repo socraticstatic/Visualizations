@@ -141,6 +141,9 @@ const DEFAULT_N = 2;
 
 function clampBuiltInN(k: ChartKind, t: Theme, requested: number) {
   const r = BEST_PRACTICE[k];
+  // Belt-and-braces: a NaN/Infinity request (hostile URL, upstream bug) falls
+  // back to the kind's default instead of poisoning Math.min/Math.max.
+  if (!Number.isFinite(requested)) requested = DEFAULT_N;
   const min = r.family === "categorical" ? 1 : 3;
   const max = r.family === "categorical" ? Math.min(r.recommendedN, safeMaxN(t, r.posture)) : r.recommendedN;
   return Math.min(Math.max(min, requested), max);

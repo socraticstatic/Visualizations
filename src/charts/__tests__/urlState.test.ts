@@ -39,6 +39,42 @@ describe("urlState", () => {
   });
 });
 
+describe("hostile / malformed hash input", () => {
+  it("drops a non-numeric n (#n=abc) instead of propagating NaN", () => {
+    const decoded = decodeUrlState("#n=abc");
+    expect(decoded.n).toBeUndefined();
+  });
+
+  it("drops out-of-range and non-integer n / nb values", () => {
+    expect(decodeUrlState("#n=0").n).toBeUndefined();
+    expect(decodeUrlState("#n=25").n).toBeUndefined();
+    expect(decodeUrlState("#n=-3").n).toBeUndefined();
+    expect(decodeUrlState("#n=3.5").n).toBeUndefined();
+    expect(decodeUrlState("#n=Infinity").n).toBeUndefined();
+    expect(decodeUrlState("#nb=99").nB).toBeUndefined();
+    expect(decodeUrlState("#nb=abc").nB).toBeUndefined();
+  });
+
+  it("accepts the full valid n range 1..24", () => {
+    expect(decodeUrlState("#n=1").n).toBe(1);
+    expect(decodeUrlState("#n=24").n).toBe(24);
+    expect(decodeUrlState("#nb=12").nB).toBe(12);
+  });
+
+  it("drops an unknown chart kind instead of crashing the page", () => {
+    // BEST_PRACTICE[<bogus>] used to throw on first property access.
+    expect(decodeUrlState("#k=bogus").kind).toBeUndefined();
+    expect(decodeUrlState("#kb=bogus").kindB).toBeUndefined();
+    expect(decodeUrlState("#k=line").kind).toBe("line");
+    expect(decodeUrlState("#kb=heatmap").kindB).toBe("heatmap");
+  });
+
+  it("drops an unknown vision mode instead of silently simulating tritan", () => {
+    expect(decodeUrlState("#v=bogus").vision).toBeUndefined();
+    expect(decodeUrlState("#v=deutan").vision).toBe("deutan");
+  });
+});
+
 describe("section deep-link", () => {
   const BASE = {
     kind: "line" as const,
