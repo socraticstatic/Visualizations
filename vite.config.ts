@@ -18,8 +18,11 @@ export default defineConfig(() => ({
         // echarts dwarfs the rest of the bundle (~1MB of the 1.77MB total).
         // Splitting it into its own chunk lets browsers cache it across app
         // deploys — app code changes no longer invalidate the chart engine.
-        manualChunks: {
-          echarts: ["echarts"],
+        // Vite 8 (rolldown) dropped the object form of manualChunks; this is
+        // the rolldown-native equivalent. zrender is echarts' render engine
+        // and ships with it.
+        advancedChunks: {
+          groups: [{ name: "echarts", test: /node_modules[\\/](echarts|zrender)[\\/]/ }],
         },
       },
     },

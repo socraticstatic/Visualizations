@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { BENCHMARKS } from "@/charts/benchmarks";
 import { fromCss, deltaE, type ColorRecord } from "@/charts/palette/distance";
 import { contrastRatio, simulateColor, type VisionMode } from "@/charts/audit";

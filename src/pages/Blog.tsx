@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { BlogLayout, Prose } from "@/components/blog/BlogLayout";
 import { POSTS, formatPostDate } from "@/posts/registry";
 

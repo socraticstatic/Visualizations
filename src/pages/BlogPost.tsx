@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router";
 import { BlogLayout, Prose } from "@/components/blog/BlogLayout";
 import { findPost, formatPostDate } from "@/posts/registry";
 

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Heart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { PALETTE_VERSION } from "@/charts/version";
 
 /**
