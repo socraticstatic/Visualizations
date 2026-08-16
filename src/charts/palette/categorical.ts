@@ -235,10 +235,30 @@ export function solveCategorical(input: SolveInput): SolveResult {
     }
   }
 
+  // Post-solve honesty check: report EVERY documented floor the final palette
+  // misses, not just the two pairwise ΔE floors. Names match RELAXATION_ORDER
+  // in constraints.ts so downstream UI can rank them.
+  let minBg = Infinity;
+  let minGrid = Infinity;
+  let minDl = Infinity;
+  for (let i = 0; i < current.length; i++) {
+    minBg = Math.min(minBg, deltaE(current[i], input.background));
+    minGrid = Math.min(minGrid, deltaE(current[i], input.grid));
+    for (let j = i + 1; j < current.length; j++) {
+      minDl = Math.min(minDl, deltaL(current[i], current[j]));
+    }
+  }
+
   const relaxations: string[] = [];
   if (input.n >= 2) {
     if (minNormal < THRESHOLDS.minDeltaENormal) relaxations.push("minDeltaENormal");
     if (minCvd < THRESHOLDS.minDeltaECvd) relaxations.push("minDeltaECvd");
+    if (minDl < THRESHOLDS.minDeltaL) relaxations.push("minDeltaL");
+  }
+  // Background/grid floors apply per color, so they are meaningful at N=1 too.
+  if (input.n >= 1) {
+    if (minBg < THRESHOLDS.minDeltaEvsBackground) relaxations.push("minDeltaEvsBackground");
+    if (minGrid < THRESHOLDS.minDeltaEvsGrid) relaxations.push("minDeltaEvsGrid");
   }
 
   return {
