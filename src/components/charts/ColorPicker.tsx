@@ -7,15 +7,13 @@
  * re-solve their palettes against the new anchors / endpoints / background.
  */
 import { useEffect, useState } from "react";
-import { converter, parse, formatHex } from "culori";
 import type { AnchorLockStatus, Theme } from "@/charts/echartsTheme";
+import { hexToHslTriple, hslTripleToHex } from "@/components/charts/hslTriple";
 import {
   ANCHOR_VARS,
   clearEditedAnchors,
   markAnchorEdited,
 } from "@/charts/manualOverrides";
-
-const toHsl = converter("hsl");
 
 interface TokenDef {
   var: string;
@@ -66,20 +64,6 @@ function getReadRoot(theme: Theme): HTMLElement {
       `[data-chart-themed-root="${theme === "dark" ? "dark" : "light"}"]`
     ) ?? document.documentElement
   );
-}
-
-function hslTripleToHex(triple: string): string {
-  const parsed = parse(`hsl(${triple})`);
-  return parsed ? (formatHex(parsed) ?? "#000000") : "#000000";
-}
-
-function hexToHslTriple(hex: string): string {
-  const c = toHsl(parse(hex)!);
-  if (!c) return "0 0% 0%";
-  const h = Math.round(c.h ?? 0);
-  const s = Math.round((c.s ?? 0) * 100);
-  const l = Math.round((c.l ?? 0) * 100);
-  return `${h} ${s}% ${l}%`;
 }
 
 function readToken(theme: Theme, name: string): string {
@@ -182,8 +166,9 @@ export function ColorPicker({ theme, onChange, anchorStatus }: ColorPickerProps)
       </div>
       <p className="text-[11px] text-chart-axis">
         Background and ramp edits re-solve immediately. Anchors you edit are
-        locked verbatim into the palette, in slot order — the solver never
-        nudges them, and the audit below tells you exactly what they break.
+        locked into the palette at your exact hex, in slot order — the solver
+        never nudges them, and the audit below tells you exactly what they
+        break.
       </p>
     </div>
   );
