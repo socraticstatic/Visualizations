@@ -30,6 +30,15 @@ if (!version) {
   console.error("Could not read PALETTE_VERSION from src/charts/version.ts");
   process.exit(1);
 }
+// The app's package.json version and PALETTE_VERSION must move together —
+// they drifted once (0.1.0 vs a displayed v0.7.0). Refuse to publish a
+// package whose version contradicts the app that claims to be it.
+if (appPkg.version !== version) {
+  console.error(
+    `Version drift: package.json is ${appPkg.version} but PALETTE_VERSION is ${version}. Bump both together.`
+  );
+  process.exit(1);
+}
 
 const pkg = {
   name: "chart-color-system",
