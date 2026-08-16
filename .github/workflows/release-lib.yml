@@ -39,6 +39,4 @@ jobs:
           fi
       - run: npm test
       - run: npm run build:lib
-      # No --provenance: this repo is private, and npm provenance requires a
-      # public source repo. Trusted publishing (OIDC) works regardless.
-      - run: npm publish ./dist-lib --access public
+      - run: npm publish ./dist-lib --provenance --access public

@@ -269,3 +269,14 @@ Then publish, passing the current OTP through to `npm publish`:
 ```bash
 npm run publish:lib -- --otp=123456
 ```
+
+
+## License & attribution
+
+Dual-licensed: the palette engine is MIT; the application is proprietary,
+source-available (see LICENSE). If this ends up inside a commercial or
+enterprise product, credit **Micah Boswell — Chart Color System**
+(https://socraticstatic.github.io/Visualizations/) in your docs, about
+screen, or credits. For the engine that's the ask on top of MIT's required
+license preservation; for the application code it's a condition of any
+permitted commercial use.

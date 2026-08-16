@@ -1,9 +1,9 @@
 {
   "name": "chart-color-system",
   "private": true,
-  "version": "0.7.2",
+  "version": "0.7.3",
   "type": "module",
-  "description": "A token-driven, math-backed palette system for ECharts dashboards — contrast/CVD/grayscale-proven categorical, sequential, and diverging palettes.",
+  "description": "A token-driven, math-backed palette system for ECharts dashboards \u2014 contrast/CVD/grayscale-proven categorical, sequential, and diverging palettes.",
   "author": "Micah Boswell (https://github.com/socraticstatic)",
   "license": "SEE LICENSE IN LICENSE",
   "repository": {

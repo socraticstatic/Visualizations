@@ -4,13 +4,17 @@ Applies to every file in this repository EXCEPT the palette engine paths
 listed in LICENSE, which are MIT-licensed.
 
 The software and source code covered by this notice (the "Software") are
-the exclusive property of Micah Boswell. The Software is proprietary and
-confidential.
+the exclusive property of Micah Boswell. The Software is proprietary.
+Its source is published for inspection and learning; publication is not
+a grant of any license to use it.
 
 No part of the Software may be copied, reproduced, modified, merged,
 published, distributed, sublicensed, sold, or used to create derivative
 works, in whole or in part, by any means, without the express prior
-written permission of Micah Boswell.
+written permission of Micah Boswell. Any permitted commercial or
+enterprise use additionally requires visible attribution to
+"Micah Boswell — Chart Color System (https://socraticstatic.github.io/Visualizations/)"
+in the product's documentation, about screen, or credits.
 
 Unauthorized use, reproduction, or distribution of the Software, or any
 portion of it, is strictly prohibited.

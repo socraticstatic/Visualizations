@@ -37,3 +37,15 @@ content — are proprietary. The full text is in LICENSE-PROPRIETARY.
 
 If you are unsure which applies to what you want to do, ask:
 https://github.com/socraticstatic/Visualizations/issues
+
+------------------------------------------------------------------------
+3. ATTRIBUTION
+------------------------------------------------------------------------
+The MIT license on the palette engine requires that the copyright and
+license text above travel with the code. Beyond that legal minimum: if
+you build the engine or ideas from this repository into a commercial or
+enterprise product, credit "Micah Boswell — Chart Color System" with a
+link to https://socraticstatic.github.io/Visualizations/ in your
+documentation, about screen, or credits. For the proprietary application
+code, that attribution is a condition of any permitted commercial use
+(see LICENSE-PROPRIETARY).

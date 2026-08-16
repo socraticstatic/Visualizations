@@ -105,3 +105,12 @@ MIT © Micah Boswell
 
 The palette engine in this package is MIT. The interactive builder application it was
 extracted from is proprietary and not included here.
+
+
+## Attribution
+
+MIT requires the copyright and license text to travel with the code. If
+chart-color-system ships inside a commercial or enterprise product, also
+credit **Micah Boswell — Chart Color System**
+(https://socraticstatic.github.io/Visualizations/) in your documentation,
+about screen, or credits.
