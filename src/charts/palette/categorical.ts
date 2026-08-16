@@ -113,10 +113,16 @@ function pairScore(a: ColorRecord, b: ColorRecord): number {
   // Composite: optimise for the WORST channel — normal ΔE, CVD-worst ΔE,
   // and ΔL spread. Weighting CVD ≥ normal forces the solver to keep CVD
   // distance high even at large N (the rule that bites first as N grows).
+  //
+  // In a maximized min-composite a channel is protected by scaling it DOWN,
+  // not up: the smallest term binds, so dividing the CVD distance makes its
+  // deficits bind sooner than equal normal-ΔE deficits. The original
+  // `c * 1.8` did the opposite — it hid CVD deficits up to 44% below the
+  // normal ΔE from the solver entirely.
   const n = deltaE(a, b);
   const c = cvdDeltaE(a, b, CVD_SEVERITY);
   const l = deltaL(a, b) * 100;
-  return Math.min(n, c * 1.8, l * 4);
+  return Math.min(n, c / 1.8, l * 4);
 }
 
 function minPairScore(palette: ColorRecord[]): number {
