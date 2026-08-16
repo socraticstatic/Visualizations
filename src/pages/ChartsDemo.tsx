@@ -676,17 +676,29 @@ const ChartsDemo = () => {
     r: ReturnType<typeof BEST_PRACTICE[ChartKind] extends infer T ? () => T : never> | typeof rule,
     requested: number,
     rendered: number,
-    capped: boolean,
+    /** True only when the posture cap actually collapsed slots into "Other"
+     *  (chartTheme.overflow) — NOT when N is merely above the solver-safe cap. */
+    collapsed: boolean,
+    /** True when N exceeds the solver-safe cap for this theme/posture. */
+    aboveSafe: boolean,
+    safeCap: number,
     a: AuditReport,
     relax: string[]
   ) {
     const ws: Array<{ severity: "error" | "warn" | "info"; title: string; detail: string }> = [];
     const w = r.warn?.(rendered) ?? null;
-    if (capped) {
+    if (collapsed) {
       ws.push({
         severity: "error",
         title: `N=${requested} exceeds the ${CHART_KIND_LABEL[k]} hard cap of ${r.maxN}`,
         detail: `Slots past ${r.maxN} were collapsed into "Other". Lower N or pick a chart type that supports more series.`,
+      });
+    }
+    if (aboveSafe && !collapsed) {
+      ws.push({
+        severity: "warn",
+        title: `N=${rendered} is above the solver-safe cap of ${safeCap} for this theme`,
+        detail: `Up to N=${safeCap} every floor passes with zero relaxations. Above it nothing is collapsed — all ${rendered} slots render — but the solver may relax floors; the entries below show which ones.`,
       });
     }
     if (w) {
@@ -734,15 +746,37 @@ const ChartsDemo = () => {
   }
 
   const warnings = useMemo(
-    () => buildWarningList(kind, rule, requestedN, n, overflow, audit, chartTheme.solve.relaxations),
+    () =>
+      buildWarningList(
+        kind,
+        rule,
+        requestedN,
+        n,
+        chartTheme.overflow,
+        overflow,
+        safeBuiltinMaxA,
+        audit,
+        chartTheme.solve.relaxations
+      ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [overflow, requestedN, kind, rule, n, audit, chartTheme.solve.relaxations]
+    [chartTheme.overflow, overflow, safeBuiltinMaxA, requestedN, kind, rule, n, audit, chartTheme.solve.relaxations]
   );
   const overflowB = ruleB.family === "categorical" && nB > safeBuiltinMaxB;
   const warningsB = useMemo(
-    () => buildWarningList(kindB, ruleB, requestedNB, nB, overflowB, auditB, chartThemeB.solve.relaxations),
+    () =>
+      buildWarningList(
+        kindB,
+        ruleB,
+        requestedNB,
+        nB,
+        chartThemeB.overflow,
+        overflowB,
+        safeBuiltinMaxB,
+        auditB,
+        chartThemeB.solve.relaxations
+      ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [overflowB, requestedNB, kindB, ruleB, nB, auditB, chartThemeB.solve.relaxations]
+    [chartThemeB.overflow, overflowB, safeBuiltinMaxB, requestedNB, kindB, ruleB, nB, auditB, chartThemeB.solve.relaxations]
   );
 
 
@@ -1679,8 +1713,11 @@ const ChartsDemo = () => {
               Auto-selected: posture <span className="text-foreground">{posture}</span> · family{" "}
               <span className="text-foreground">{family}</span> · rendering{" "}
               <span className="text-foreground">N={n}</span>
-              {overflow && (
-                <span className="text-chart-negative-text"> (capped from {requestedN} — collapsed into Top-{n} + Other)</span>
+              {chartTheme.overflow && (
+                <span className="text-chart-negative-text"> (capped from {requestedN} — collapsed into Top-{chartTheme.effectiveN} + Other)</span>
+              )}
+              {!chartTheme.overflow && overflow && (
+                <span className="text-chart-negative-text"> (N={n} is above the solver-safe cap of {safeBuiltinMaxA} — see relaxed floors below)</span>
               )}
             </div>
             {warning && <div className="text-chart-negative-text">⚠ {warning}</div>}
@@ -1752,8 +1789,28 @@ const ChartsDemo = () => {
             {compare && vision === "normal" && (
               <>
                 <DiffSummary
-                  a={{ kind, n, requestedN, overflow, theme, recommendedN: rule.recommendedN, maxN: rule.maxN }}
-                  b={{ kind: kindB, n: nB, requestedN: requestedNB, overflow: overflowB, theme: themeB, recommendedN: ruleB.recommendedN, maxN: ruleB.maxN }}
+                  a={{
+                    kind,
+                    n,
+                    requestedN,
+                    collapsed: chartTheme.overflow,
+                    aboveSafe: overflow,
+                    safeCap: safeBuiltinMaxA,
+                    theme,
+                    recommendedN: rule.recommendedN,
+                    maxN: rule.maxN,
+                  }}
+                  b={{
+                    kind: kindB,
+                    n: nB,
+                    requestedN: requestedNB,
+                    collapsed: chartThemeB.overflow,
+                    aboveSafe: overflowB,
+                    safeCap: safeBuiltinMaxB,
+                    theme: themeB,
+                    recommendedN: ruleB.recommendedN,
+                    maxN: ruleB.maxN,
+                  }}
                 />
                 <VariantScorecard
                   a={{
@@ -1967,7 +2024,8 @@ const ChartsDemo = () => {
           rule={rule}
           n={n}
           requestedN={requestedN}
-          overflow={overflow}
+          aboveSafeCap={overflow}
+          safeCap={safeBuiltinMaxA}
           theme={theme}
           posture={posture}
           family={family}
@@ -1985,7 +2043,11 @@ type DiffVariant = {
   kind: ChartKind;
   n: number;
   requestedN: number;
-  overflow: boolean;
+  /** Posture cap actually collapsed slots into "Other". */
+  collapsed: boolean;
+  /** N is above the solver-safe cap (nothing collapsed; floors may relax). */
+  aboveSafe: boolean;
+  safeCap: number;
   theme: Theme;
   recommendedN: number;
   maxN: number;
@@ -1994,8 +2056,9 @@ type DiffVariant = {
 function DiffSummary({ a, b }: { a: DiffVariant; b: DiffVariant }) {
   function variantNotes(v: DiffVariant): string[] {
     const notes: string[] = [];
-    if (v.overflow) notes.push(`capped from ${v.requestedN} → ${v.n} (max ${v.maxN})`);
-    if (!v.overflow && v.n > v.recommendedN) notes.push(`above recommended ${v.recommendedN}`);
+    if (v.collapsed) notes.push(`capped from ${v.requestedN} → ${v.n} (max ${v.maxN})`);
+    if (!v.collapsed && v.aboveSafe) notes.push(`above the solver-safe cap of ${v.safeCap}`);
+    if (!v.collapsed && v.n > v.recommendedN) notes.push(`above recommended ${v.recommendedN}`);
     return notes;
   }
   const rows: { label: string; a: string; b: string; diff: boolean }[] = [
@@ -2750,7 +2813,8 @@ function ExplainPanel({
   rule,
   n,
   requestedN,
-  overflow,
+  aboveSafeCap,
+  safeCap,
   theme,
   posture,
   family,
@@ -2762,7 +2826,9 @@ function ExplainPanel({
   rule: (typeof BEST_PRACTICE)[ChartKind];
   n: number;
   requestedN: number;
-  overflow: boolean;
+  /** N exceeds the solver-safe cap (nothing collapsed; floors may relax). */
+  aboveSafeCap: boolean;
+  safeCap: number;
   theme: Theme;
   posture: string;
   family: "categorical" | "sequential" | "diverging";
@@ -2770,6 +2836,9 @@ function ExplainPanel({
   audit: AuditReport;
   relaxations: string[];
 }) {
+  // Actual Top-N + "Other" collapse comes from the posture cap, not the
+  // solver-safe cap — read it off the theme, never conflate the two.
+  const collapsed = chartTheme.overflow;
   const familyExplanation =
     family === "categorical"
       ? `Distinct entities with no inherent order, so we use a categorical palette: every slot is maximally separated in OKLab and paired 1:1 with a dash, decal, and marker shape so meaning survives color loss.`
@@ -2811,7 +2880,7 @@ function ExplainPanel({
   })();
 
   const rationaleText = [
-    `Chart palette — ${CHART_KIND_LABEL[kind]} · family ${family} · posture ${posture} · theme ${theme} · N=${n} (requested ${requestedN}${overflow ? `, capped` : ""}).`,
+    `Chart palette — ${CHART_KIND_LABEL[kind]} · family ${family} · posture ${posture} · theme ${theme} · N=${n} (requested ${requestedN}${collapsed ? `, capped` : aboveSafeCap ? `, above the solver-safe cap of ${safeCap}` : ""}).`,
     `Why this family: ${familyExplanation}`,
     `Why this posture: ${postureExplanation}`,
     `Why this N: recommended ≤ ${rule.recommendedN}, hard cap ${rule.maxN}. ${rule.rationale}`,
@@ -2863,8 +2932,10 @@ function ExplainPanel({
         </Row>
         <Row label="N (clamped)">
           Rendering <strong>N={n}</strong>. Recommended ≤ {rule.recommendedN}, hard cap {rule.maxN}.{" "}
-          {overflow
-            ? `You requested ${requestedN}; we collapsed everything past slot ${n} into "Other" because past the cap the palette can't stay readable.`
+          {collapsed
+            ? `You requested ${requestedN}; we collapsed everything past slot ${chartTheme.effectiveN} into "Other" because past the cap the palette can't stay readable.`
+            : aboveSafeCap
+            ? `N=${n} is above the solver-safe cap of ${safeCap} for this theme — nothing is collapsed, but the solver may relax floors (see Relaxations below).`
             : `Within the recommended range — no overflow needed.`}
         </Row>
         <Row label="Why this rule">{rule.rationale}</Row>
