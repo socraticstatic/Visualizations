@@ -92,6 +92,49 @@ export interface VisionResult {
   threshold: number;
 }
 
+/** Ramp family for the grayscale-survival check. */
+export type RampKind = "sequential" | "diverging";
+
+function isStrictlyMonotone(vals: number[]): boolean {
+  if (vals.length < 2) return true;
+  const increasing = vals[1] > vals[0];
+  for (let i = 1; i < vals.length; i++) {
+    if (increasing ? vals[i] <= vals[i - 1] : vals[i] >= vals[i - 1]) return false;
+  }
+  return true;
+}
+
+/**
+ * Grayscale-survival check for a RAMP (pairwise ΔE is skipped for ramps, but
+ * grayscale IS meaningful). A monotonic-L ramp is not automatically
+ * grayscale-safe — Rec.709 luma ordering can disagree with OKLab L across hue,
+ * so check the achromatopsia projection directly:
+ *   - sequential: strictly monotone in gray, adjacent stops separated ≥ floor.
+ *   - diverging: monotone on EACH arm around the structural midpoint. Cross-arm
+ *     grayscale collapse is inherent to diverging colormaps (both ends read
+ *     alike in gray) and is NOT flagged; a non-monotone ARM is a real defect.
+ */
+function rampGrayscaleResult(
+  palette: ColorRecord[],
+  kind: RampKind,
+  threshold: number
+): VisionResult {
+  const grays = palette.map((c) => simulate(c, "achromatopsia"));
+  const L = grays.map((g) => g.oklab.l);
+  let minAdj = Infinity;
+  for (let i = 1; i < grays.length; i++) {
+    minAdj = Math.min(minAdj, deltaE(grays[i - 1], grays[i]));
+  }
+  let pass: boolean;
+  if (kind === "sequential") {
+    pass = isStrictlyMonotone(L) && minAdj >= threshold;
+  } else {
+    const mid = Math.floor(L.length / 2);
+    pass = isStrictlyMonotone(L.slice(0, mid + 1)) && isStrictlyMonotone(L.slice(mid));
+  }
+  return { mode: "achromatopsia", minDeltaE: minAdj, pass, threshold };
+}
+
 export interface AuditReport {
   perVision: VisionResult[];
   /** Worst contrast ratio of any slot vs. the chart background. */
@@ -101,17 +144,21 @@ export interface AuditReport {
 }
 
 /**
- * @param skipPairwiseDeltaE - Pass true for sequential/diverging ramps.
- *   Gradient stops are intentionally close; pairwise ΔE separation is not a
- *   meaningful metric for ramps and would always flag them as failing. When
- *   true, all vision-mode ΔE entries report Infinity (pass); overall is
- *   determined solely by WCAG background contrast.
+ * @param ramp - `false` for a categorical palette (full pairwise audit). For a
+ *   ramp, pass its kind (`"sequential"` | `"diverging"`) — pairwise ΔE is
+ *   skipped (gradient stops are meant to be close) but the achromatopsia mode
+ *   runs a ramp-appropriate grayscale-survival check (see rampGrayscaleResult).
+ *   `true` is the legacy "skip everything for a ramp" form, kept for callers
+ *   that don't know the kind: it force-passes every mode as before.
  */
 export function auditPalette(
   palette: ColorRecord[],
   background: ColorRecord,
-  skipPairwiseDeltaE = false
+  ramp: boolean | RampKind = false
 ): AuditReport {
+  const isRamp = ramp !== false;
+  const rampKind: RampKind | null = typeof ramp === "string" ? ramp : null;
+
   const perVision: VisionResult[] = VISION_MODES.map((mode) => {
     const threshold =
       mode === "normal"
@@ -120,9 +167,13 @@ export function auditPalette(
         ? THRESHOLDS.minDeltaL * 100 // ΔL only
         : THRESHOLDS.minDeltaECvd;
 
-    // Ramp families: pairwise separation is not meaningful — gradient stops
-    // are designed to be perceptually close. Report n/a (Infinity = pass).
-    if (skipPairwiseDeltaE) {
+    // Ramp families: pairwise ΔE is not meaningful — gradient stops are meant
+    // to be perceptually close. Grayscale survival IS meaningful, though, so
+    // when the kind is known, run a ramp-appropriate check for that mode.
+    if (isRamp) {
+      if (mode === "achromatopsia" && rampKind && palette.length >= 2) {
+        return rampGrayscaleResult(palette, rampKind, threshold);
+      }
       return { mode, minDeltaE: Infinity, pass: true, threshold };
     }
 

@@ -662,11 +662,11 @@ const ChartsDemo = () => {
     );
   }, [chartThemeB, ruleB.family, nB]);
   const audit = useMemo(
-    () => auditPalette(auditedColors, chartTheme.tokens.bg, family !== "categorical"),
+    () => auditPalette(auditedColors, chartTheme.tokens.bg, family === "categorical" ? false : family),
     [auditedColors, chartTheme, family]
   );
   const auditB = useMemo(
-    () => auditPalette(auditedColorsB, chartThemeB.tokens.bg, ruleB.family !== "categorical"),
+    () => auditPalette(auditedColorsB, chartThemeB.tokens.bg, ruleB.family === "categorical" ? false : ruleB.family),
     [auditedColorsB, chartThemeB, ruleB.family]
   );
 
