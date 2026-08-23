@@ -39,7 +39,11 @@ export const THRESHOLDS = {
   minDeltaEvsBackground: 12,
   /** Minimum distance from any mark color to the gridline color. */
   minDeltaEvsGrid: 4,
-  /** Sequential ramp: target ΔE per visible bin. */
+  /** Sequential ramp: ADVISORY target ΔE per visible bin — a design goal, not
+   *  an enforced floor. Ramps are perceptually continuous, so the audit
+   *  intentionally skips per-step ΔE (see auditPalette's skipPairwiseDeltaE);
+   *  built-in ramps sit slightly under this at their documented maxN. Unlike
+   *  the floors above, nothing downstream reads this value. */
   sequentialStepDeltaE: 6,
 } as const;
 

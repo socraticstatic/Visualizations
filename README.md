@@ -2,7 +2,7 @@
 
 By **Micah Boswell** ([socraticstatic](https://github.com/socraticstatic)). Copyright © 2026 Micah Boswell. All rights reserved.
 
-A token-driven, math-backed palette system for ECharts dashboards. Generates categorical, sequential, and diverging palettes that are audited against WCAG contrast, color-vision deficiency (CVD) simulation, and grayscale, and pairs every color slot with a matching dash, decal, and marker shape so meaning survives even when color fails. Honesty note: past ~6 hues, no palette keeps colors reliably distinct under dichromacy — the configured CVD/ΔE floors in `constraints.ts` are deliberately minimal at high N, and the redundant dash/decal/shape encodings are what carry series identity.
+A token-driven, math-backed palette system for ECharts dashboards. Generates categorical, sequential, and diverging palettes, and pairs every color slot with a matching dash, decal, and marker shape so meaning survives even when color fails. **Categorical** palettes are audited pairwise against WCAG contrast, color-vision deficiency (CVD) simulation, and grayscale. **Sequential and diverging** ramps are audited for background contrast and built for monotonic OKLab lightness (their grayscale-survival property); pairwise ΔE separation is intentionally not applied to ramps, whose stops are designed to be perceptually adjacent. Honesty note: past ~6 hues, no palette keeps colors reliably distinct under dichromacy — the configured CVD/ΔE floors in `constraints.ts` are deliberately minimal at high N, and the redundant dash/decal/shape encodings are what carry series identity.
 
 > Current version: **0.7.0** (`PALETTE_VERSION` in `src/charts/version.ts`; history in `CHANGELOG.md`).
 
