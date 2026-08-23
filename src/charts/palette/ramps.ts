@@ -48,6 +48,9 @@ export function divergingRamp(
   // one stop exactly on the midpoint; even counts approach it from both sides
   // without including it (each arm is sampled with the midpoint as an
   // endpoint, then the midpoint stop is dropped) so no stop is duplicated.
+  // A single diverging stop is the neutral midpoint, not the negative extreme
+  // (the docstring guarantees odd counts land one stop exactly on the midpoint).
+  if (steps === 1) return [mid];
   const half = Math.floor(steps / 2);
   const odd = steps % 2 === 1;
   const negArm = sequentialRamp(neg, mid, half + 1);

@@ -11,9 +11,7 @@ import { getChartTheme, type Theme } from "./echartsTheme";
 import type { Posture } from "./constraints";
 import { POSTURE } from "./constraints";
 import { MAX_SLOTS } from "./encoding";
-import { contrastRatio } from "./audit";
-import { deltaE, cvdDeltaE } from "./palette/distance";
-import { THRESHOLDS, CVD_SEVERITY } from "./constraints";
+import { auditPalette } from "./audit";
 
 const cache = new Map<string, number>();
 
@@ -26,16 +24,13 @@ function passesAllConstraints(
   if (t.overflow) return false;
   if (t.solve.relaxations.length > 0) return false;
 
-  // Double-check accessibility invariants the solver targets.
-  const palette = t.solve.palette;
-  for (let i = 0; i < palette.length; i++) {
-    if (contrastRatio(palette[i], t.tokens.bg) < 3) return false;
-    for (let j = i + 1; j < palette.length; j++) {
-      if (deltaE(palette[i], palette[j]) < THRESHOLDS.minDeltaENormal) return false;
-      if (cvdDeltaE(palette[i], palette[j], CVD_SEVERITY) < THRESHOLDS.minDeltaECvd) return false;
-    }
-  }
-  return true;
+  // Certification must match what the user-facing audit enforces. The previous
+  // hand-rolled loop checked contrast, normal ΔE, and one CVD severity but
+  // OMITTED the achromatopsia (grayscale) gate — so safeMaxN could certify a
+  // palette (e.g. two locked anchors that gray to the same value) that the
+  // audit then failed, contradicting the "full constraint satisfaction" claim.
+  // Defer to auditPalette so the two verdicts can never disagree.
+  return auditPalette(t.solve.palette, t.tokens.bg).overall === "pass";
 }
 
 /**

@@ -13,9 +13,26 @@ export interface OklchTriple {
   h: number;
 }
 
+// culori's displayable() is exact: a valid sRGB color whose OKLCH roundtrip
+// lands a hair outside [0,1] (pure blue #0000ff comes back at r = -9.3e-15) is
+// judged out of gamut, and the chroma search below then visibly rewrites it
+// (#0000ff -> #0031e5, ΔE 4.76). Treat colors that are out of gamut only by
+// floating-point noise as in-gamut, so an already-displayable token is kept as
+// authored. Genuinely out-of-gamut colors still fall through to reduction.
+const GAMUT_EPS = 1e-4;
+function inGamutWithinEps(o: Oklch): boolean {
+  const rgb = toRgb(o);
+  if (!rgb) return false;
+  return (
+    rgb.r >= -GAMUT_EPS && rgb.r <= 1 + GAMUT_EPS &&
+    rgb.g >= -GAMUT_EPS && rgb.g <= 1 + GAMUT_EPS &&
+    rgb.b >= -GAMUT_EPS && rgb.b <= 1 + GAMUT_EPS
+  );
+}
+
 export function reduceToSrgb(triple: OklchTriple): OklchTriple {
   const initial: Oklch = { mode: "oklch", l: triple.l, c: triple.c, h: triple.h };
-  if (displayable(initial)) return triple;
+  if (inGamutWithinEps(initial)) return triple;
   let lo = 0;
   let hi = triple.c;
   // Binary search for the largest chroma that is in-gamut.
