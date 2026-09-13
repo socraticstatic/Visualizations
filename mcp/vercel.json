@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/mcp", "destination": "/api/mcp" }
+  ],
+  "redirects": [
+    { "source": "/", "destination": "https://socraticstatic.github.io/Visualizations/mcp-docs.html", "permanent": false }
+  ]
+}

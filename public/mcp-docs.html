@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chart Color System as a tool · MCP server</title>
+<meta name="description" content="The Chart Color System is available to AI assistants as a read-only MCP server: solve an anchored colorblind-safe chart palette, audit existing colors, simulate colorblind vision, build sequential and diverging ramps. Endpoint, tools, example prompts, privacy.">
+<link rel="canonical" href="https://socraticstatic.github.io/Visualizations/mcp-docs.html">
+<style>
+  :root{color-scheme:light dark;--bg:#fafaf9;--fg:#1c1917;--mute:#57534e;--line:#e7e5e4;--code:#f5f5f4;--accent:#0057b8}
+  @media (prefers-color-scheme:dark){:root{--bg:#0c0a09;--fg:#e7e5e4;--mute:#a8a29e;--line:#292524;--code:#1c1917;--accent:#7cb4ff}}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  main{max-width:72ch;margin:0 auto;padding:56px 24px 96px}
+  .eyebrow{font:600 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+  h1{font-size:clamp(32px,6vw,52px);line-height:1.05;margin:14px 0 18px;letter-spacing:-.01em}
+  h2{font-size:22px;margin:40px 0 10px}
+  a{color:var(--accent)}
+  code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px}
+  pre{background:var(--code);border:1px solid var(--line);padding:14px 16px;overflow-x:auto}
+  table{width:100%;border-collapse:collapse;margin:12px 0 20px}
+  td,th{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font:600 11px/1 ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+  .back{margin-top:48px;font-size:14px}
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">Machine readers · MCP</p>
+  <h1>The Chart Color System as a tool.</h1>
+  <p>The engine behind this app is available to AI assistants as a read-only <a href="https://modelcontextprotocol.io">Model Context Protocol</a> server. An assistant that connects to it can solve a chart palette around your brand colors, audit colors you already have, show what a colorblind reader sees, and build sequential or diverging scales, with the engine's measurements and honesty notes instead of a guess.</p>
+
+  <h2>Endpoint</h2>
+  <pre>https://chart-color-mcp.vercel.app/mcp</pre>
+  <p>Streamable HTTP, stateless: JSON-RPC 2.0 over <code>POST</code> with <code>Accept: application/json, text/event-stream</code>. No authentication, no accounts, read-only. In Claude: Settings, Connectors, add custom connector, paste the URL. In Claude Code: <code>claude mcp add --transport http chart-colors https://chart-color-mcp.vercel.app/mcp</code>.</p>
+
+  <h2>Tools</h2>
+  <table>
+    <thead><tr><th>Tool</th><th>What it returns</th></tr></thead>
+    <tbody>
+      <tr><td><code>solve_palette</code></td><td>A categorical palette of n colors with your anchors kept exactly in slot order, the worst pair distances under normal and colorblind vision, the engine's relaxation notes, a full audit against your background, and a link that opens it in the app. Says so plainly above six slots, the honest cap.</td></tr>
+      <tr><td><code>audit_palette</code></td><td>Pass, warn or fail for colors you already have: pairwise OKLab separation under normal vision, deuteranopia, protanopia, tritanopia and achromatopsia, plus WCAG 2.2 non-text contrast of every color against the background.</td></tr>
+      <tr><td><code>simulate_palette</code></td><td>Each color as seen under each vision mode (published Machado 2009 matrices), so the assistant can describe or render the palette as a colorblind reader sees it.</td></tr>
+      <tr><td><code>build_ramp</code></td><td>An evenly spaced perceptual scale, sequential or diverging, with a background-contrast audit.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>The engine behind it</h2>
+  <p>The same code the app runs, published as <a href="https://www.npmjs.com/package/chart-color-system">chart-color-system</a> on npm. Every result reports the engine version. Distances are OKLab ΔE; contrast is WCAG 2.2.</p>
+
+  <h2>Three things to ask</h2>
+  <ul>
+    <li>"Give me six chart colors that keep #0057b8 and stay distinguishable for deuteranopes on a white background."</li>
+    <li>"Audit these five colors on a dark dashboard background and tell me which pair fails."</li>
+    <li>"Build a seven-step diverging scale from red through neutral to blue."</li>
+  </ul>
+
+  <h2>Privacy</h2>
+  <p>The server keeps no accounts and stores nothing from a conversation. Requests are processed and discarded.</p>
+
+  <p class="back"><a href="./">← Chart Color System</a></p>
+</main>
+</body>
+</html>
