@@ -58,6 +58,14 @@ What survives of that finding: the audit must resolve the selection's actual
 background rather than assume a token, which is a plugin feature, not a
 library change.
 
+**C3. Decals cannot be represented in Figma at all.** Spike A ran on
+2026-09-15 and Figma's SVG import discards `<pattern>` fills outright, leaving
+the shape unfilled with no warning. Earlier drafts assumed decals would carry
+into mockups and treated them as the redundancy story once C1 demoted dash to
+a reference value. Both halves of that were wrong. Decal is now carried by the
+engine into real ECharts output and by the reference variable, and nowhere
+else. See Spike A results and command 4.
+
 ## Licensing
 
 `LICENSE` currently grants MIT to `index.ts`, `palette/**`, `constraints.ts`,
@@ -215,7 +223,7 @@ One collection, `Chart Color System`, modes `Light` and `Dark`.
 ```
 chart/series/1/color      COLOR    bindable
 chart/series/1/dash       STRING   reference only, see C1
-chart/series/1/decal      STRING   reference only, see C1
+chart/series/1/decal      STRING   reference only; never rendered in Figma, see C1 and C3
 chart/series/1/shape      STRING   reference only, see C1
 chart/surface             COLOR    bindable
 chart/grid                COLOR    bindable
@@ -317,17 +325,33 @@ Inputs: chart kind, N, fixture mode, theme.
 
 `gate.ts` sets effective N and produces refusals or advisories, which render
 before the insert control enables. `budget.ts` estimates node count and refuses
-above the ceiling found in Spike A. Then `buildChartOption` builds the option,
-ECharts renders to an SVG string, and the sandbox inserts via
-`createNodeFromSvg`.
+above the ceiling. Then `buildChartOption` builds the option, ECharts renders
+to an SVG string, and the sandbox inserts via `createNodeFromSvg`.
+
+**Mockups carry color, dash, and shape. They do not carry decal.** Per Spike A,
+Figma discards `<pattern>` fills, so the option built for the Figma path emits
+decals off rather than emitting patterns that would vanish without a trace.
+Tiling the decal geometry as explicit paths was considered and rejected: a
+20x7 tile across a 6px bar is roughly 170 paths per bar, about 12,000 for a
+12-series chart, against 219 for the pattern version.
+
+The plugin states the loss rather than hiding it. Every inserted mockup
+carries a visible note that decal is absent and that bars and areas therefore
+show less redundancy here than the shipped chart will. A designer must not
+hand off a mockup believing the decal layer is represented.
+
+Decal is not broken generally. It works in real ECharts output and it is
+carried in the reference variables for whoever implements the chart. It simply
+cannot cross into Figma.
 
 Fixtures default to `messy`. `fixtures.ts` says synthetic "looks pretty, hides
 palette weaknesses," and a mockup on smooth fake data is how a palette ships
 broken. Synthetic stays available and labeled.
 
-Ramps render as discrete piecewise bins, never continuous gradients:
-`createNodeFromSvg` has documented gradient-transform failures, and the
-dataviz best practice points the same direction.
+Ramps render as discrete piecewise bins, never continuous gradients. Gradient
+import was not tested in Spike A, but pattern fills were and they vanish, so
+the conservative default holds; the dataviz best practice points the same
+direction independently.
 
 The frame name carries kind, N, engine version, and fixture mode, so a mockup
 found three months later traces to the configuration that produced it.
@@ -346,21 +370,62 @@ relaunch does not reset the panel.
 Nothing about a file's contents is stored, and nothing leaves the machine. The
 manifest declares no network access, so it could not.
 
-## Spike A, gating the Mockup command only
+## Spike A results, run 2026-09-15
 
-Two questions, answered in Figma desktop before Mockup is planned:
+### Q1. Does `<pattern>` survive the SVG boundary? No.
 
-1. **Does `<pattern>` survive `createNodeFromSvg`?** ECharts decals render as
-   SVG patterns. Figma's import handles geometry, gradients, and masks;
-   programmatic references are where it frays. With dash demoted to a
-   reference value by C1, decals are the redundancy story in Figma. If patterns
-   drop, Mockup needs a different decal strategy, probably tiled vector
-   geometry emitted directly.
-2. **Where is the node ceiling?** A messy 12-series scatter or a calendar
-   heatmap is thousands of paths, and `createNodeFromSvg` is synchronous. The
-   answer sets the constant in `budget.ts`.
+ECharts emits decals as real `<pattern>` elements in `<defs>`, filled with
+plain `<path>` geometry, no images and no data URIs. A 12-series bar chart
+emits 11 patterns and 6 `patternTransform`s, so the construct scales with N.
 
-Commands 1 through 3 do not depend on this spike.
+A deliberately unambiguous probe settled it: four 220x220 rects, three filled
+by pattern (plain stripes, stripes with `patternTransform="rotate(45)"`, and
+dots) and one solid control, all red-stroked. Pasted into Figma, the three
+pattern rects imported fully transparent, with content behind them showing
+straight through; the solid control imported opaque.
+
+The probe is committed at `docs/spikes/figma-pattern-probe.svg` so the finding
+is reproducible: paste it into any Figma file and only the green control
+appears.
+
+Figma discards pattern fills and leaves the shape unfilled. Silently. No
+warning, no placeholder, no error. That silent-failure shape is exactly what
+this system exists to argue against, and it now applies to our own output
+path, which is why command 4 has to say it out loud.
+
+### What does survive
+
+Verified by importing a 12-series line chart:
+
+| Encoding | Survives import | Evidence |
+|---|---|---|
+| Color | yes | fills import exactly |
+| Dash | yes | `stroke-dasharray="6,3"` per series, visibly dashed after import |
+| Shape / markers | yes | point symbols import as vector shapes |
+| Text | yes | axis labels import; ECharts emits no `font-family`, so Figma applies its default |
+| Decal | **no** | pattern fills dropped |
+
+### Q2. Node ceiling: measured locally, unmeasured in Figma
+
+Element counts from the real ECharts SVG output:
+
+| Case | SVG elements | Size |
+|---|---|---|
+| bar, 12 series, decals | 219 | 25 KB |
+| calendar heatmap, 1 year | 766 | 97 KB |
+| line, 12 series, 60 points | 790 | 188 KB |
+| scatter, 12 x 300 points | 3,639 | 795 KB |
+
+Scatter is an order of magnitude worse than anything else because every point
+is its own path, so `budget.ts` keys off data-point count, not chart kind.
+
+**The Figma-side ceiling is still unmeasured.** The stress paste did not
+complete: the Text tool was active when the paste fired, so 795KB of SVG
+source landed as literal text in a text node rather than importing. That run
+proves nothing about Figma's limits and is not counted. It is the one piece of
+Spike A still outstanding, and it only affects the constant in `budget.ts`.
+
+Commands 1 through 3 never depended on this spike.
 
 ## Pure function contracts
 
@@ -403,6 +468,7 @@ Vitest in `figma/` over the pure modules:
 - `background`: resolves nested opacity chains; refuses image backdrops, non-normal blend modes, and chains reaching canvas without an opaque background.
 - `diffWritten`: detects drift, and defaults to preserving the designer's value.
 - `protocol`: every sandbox reply is a valid union member.
+- **No-pattern invariant**: the SVG built for the Figma path contains zero `<pattern>` elements, across all 28 kinds. Anything that slips through disappears silently on import, so this is asserted rather than eyeballed.
 
 **SVG snapshot tests.** 28 kinds by 2 themes by 2 fixture modes is 112
 combinations. Snapshot the SVG strings so a token or theme change cannot
@@ -429,7 +495,8 @@ Done means, in Figma desktop:
 5. Audit against a deliberately bad selection returns failures matching what the engine returns for the same colors and the same background.
 6. Audit against an image fill and against a transparent-to-canvas node refuses, with reasons.
 7. Simulate produces frames visibly wrong in the expected way, originals untouched.
-8. Mockup inserts editable vectors: a series path is selectable, and its decal renders (Spike A permitting).
+8. Mockup inserts editable vectors: a series path is selectable, its stroke dash matches the slot's dash, and its marker shape is a real vector.
+8b. The inserted mockup carries its visible decal-absent note, and the emitted SVG contains no `<pattern>`.
 9. A pie at 8 slices is refused in the UI with the alternative named, and cannot be inserted.
 10. A mockup over the node ceiling is refused with the estimate shown.
 11. The 1-mode fallback exercised.
@@ -466,9 +533,12 @@ kinds; loading remotely is not on the table.
    both rest on. No prerequisites: they use `solveCategorical`,
    `auditPalette`, and `simulateRgb` directly, none of which touch
    `echartsTheme`, and all of which are already MIT.
-3. Spike A. Cheap, and it gates everything in plan 2.
+3. The remainder of Spike A: the Figma-side node ceiling, which is one paste
+   with the move tool explicitly selected first. It sets a constant in
+   `budget.ts` and blocks nothing else.
 
-**Plan 2, written only after Spike A answers the pattern question:**
+**Plan 2. Spike A answered the pattern question on 2026-09-15, so this can now
+be written:**
 
 4. Licensing: `LICENSE`, `LICENSE-PROPRIETARY`, `README-lib.md`, minor bump.
    The one-way door, opened only once Mockup is known to be buildable.
