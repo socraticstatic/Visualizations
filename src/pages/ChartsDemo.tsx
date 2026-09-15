@@ -51,6 +51,7 @@ import { Ship } from "@/components/charts/sections/Ship";
 import { type SectionId } from "@/charts/urlState";
 import { VisionPreviewToggle } from "@/components/charts/VisionPreviewToggle";
 import { WorkflowPresets, type WorkflowState } from "@/components/charts/WorkflowPresets";
+import { buildWarningList } from "@/charts/warnings";
 import {
   clearManualColorOverrides,
   getEditedAnchorIndexes,
@@ -674,80 +675,6 @@ const ChartsDemo = () => {
     [auditedColorsB, chartThemeB, ruleB.family]
   );
 
-  // Build the prioritized warning list for any (kind, n, audit) tuple.
-  function buildWarningList(
-    k: ChartKind,
-    r: ReturnType<typeof BEST_PRACTICE[ChartKind] extends infer T ? () => T : never> | typeof rule,
-    requested: number,
-    rendered: number,
-    /** True only when the posture cap actually collapsed slots into "Other"
-     *  (chartTheme.overflow) — NOT when N is merely above the solver-safe cap. */
-    collapsed: boolean,
-    /** True when N exceeds the solver-safe cap for this theme/posture. */
-    aboveSafe: boolean,
-    safeCap: number,
-    a: AuditReport,
-    relax: string[]
-  ) {
-    const ws: Array<{ severity: "error" | "warn" | "info"; title: string; detail: string }> = [];
-    const w = r.warn?.(rendered) ?? null;
-    if (collapsed) {
-      ws.push({
-        severity: "error",
-        title: `N=${requested} exceeds the ${CHART_KIND_LABEL[k]} hard cap of ${r.maxN}`,
-        detail: `Slots past ${r.maxN} were collapsed into "Other". Lower N or pick a chart type that supports more series.`,
-      });
-    }
-    if (aboveSafe && !collapsed) {
-      ws.push({
-        severity: "warn",
-        title: `N=${rendered} is above the solver-safe cap of ${safeCap} for this theme`,
-        detail: `Up to N=${safeCap} every floor passes with zero relaxations. Above it nothing is collapsed — all ${rendered} slots render — but the solver may relax floors; the entries below show which ones.`,
-      });
-    }
-    if (w) {
-      ws.push({
-        severity: "warn",
-        title: w,
-        detail: `${CHART_KIND_LABEL[k]} recommends N ≤ ${r.recommendedN}; rendering ${rendered}.`,
-      });
-    } else if (rendered > r.recommendedN && !capped) {
-      ws.push({
-        severity: "warn",
-        title: `N=${rendered} is above the recommended ${r.recommendedN} for ${CHART_KIND_LABEL[k]}`,
-        detail: `Past ${r.recommendedN} slots, dash / decal / shape carry identity rather than color.`,
-      });
-    }
-    for (const v of a.perVision) {
-      if (!v.pass) {
-        ws.push({
-          severity: v.mode === "normal" ? "error" : "warn",
-          title: `${v.mode} fails ${v.mode === "achromatopsia" ? "ΔL" : "ΔE"} ≥ ${v.threshold < 1 ? v.threshold.toFixed(1) : v.threshold.toFixed(0)} (got ${v.minDeltaE.toFixed(1)})`,
-          detail:
-            v.mode === "achromatopsia"
-              ? "Two slots collapse to indistinguishable grays — meaning will be lost in print, projector, or grayscale screenshots."
-              : v.mode === "normal"
-              ? "Two slots are too close even in normal vision. Lower N or change chart type."
-              : "Two slots simulate to indistinguishable colors under this CVD type. Dash, decal, and shape still differentiate them, but color alone won't.",
-        });
-      }
-    }
-    if (!a.bgPass) {
-      ws.push({
-        severity: "error",
-        title: `Contrast vs. background ${a.worstContrastVsBg.toFixed(2)}:1 fails WCAG 2.2 SC 1.4.11 (≥ 3:1)`,
-        detail: "At least one mark color blends into the chart background.",
-      });
-    }
-    for (const rx of relax) {
-      ws.push({
-        severity: "info",
-        title: `Solver relaxed: ${rx}`,
-        detail: "The optimizer couldn't satisfy this constraint at the current N and loosened it. Lower N to restore it.",
-      });
-    }
-    return ws;
-  }
 
   const warnings = useMemo(
     () =>
@@ -762,7 +689,6 @@ const ChartsDemo = () => {
         audit,
         chartTheme.solve.relaxations
       ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [chartTheme.overflow, overflow, safeBuiltinMaxA, requestedN, kind, rule, n, audit, chartTheme.solve.relaxations]
   );
   const overflowB = ruleB.family === "categorical" && nB > safeBuiltinMaxB;
@@ -779,7 +705,6 @@ const ChartsDemo = () => {
         auditB,
         chartThemeB.solve.relaxations
       ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [chartThemeB.overflow, overflowB, safeBuiltinMaxB, requestedNB, kindB, ruleB, nB, auditB, chartThemeB.solve.relaxations]
   );
 
