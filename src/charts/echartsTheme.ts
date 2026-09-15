@@ -10,7 +10,6 @@ import { solveCategorical, type SolveResult } from "./palette/categorical";
 import { sequentialRamp, divergingRamp } from "./palette/ramps";
 import { dashScale, decalScale, shapeScale, MAX_SLOTS } from "./encoding";
 import { POSTURE, type Posture } from "./constraints";
-import { getEditedAnchorIndexes } from "./manualOverrides";
 
 export type Theme = "light" | "dark";
 
@@ -127,14 +126,25 @@ function ensureThemedRoot(themeClass: "" | "dark"): HTMLElement {
   return el;
 }
 
-export function getChartTheme(theme: Theme, posture: Posture, n: number): ChartTheme {
+/**
+ * @param editedAnchorIndexes Anchors the user has edited, supplied by the
+ *   caller. This used to be read from the DOM via `manualOverrides`, which
+ *   coupled this module to the demo app's ColorPicker and made the two
+ *   circular. Omitting it is the built-in path, which is exactly what
+ *   `builtinBounds` claims to compute.
+ */
+export function getChartTheme(
+  theme: Theme,
+  posture: Posture,
+  n: number,
+  editedAnchorIndexes: number[] = []
+): ChartTheme {
   const cap = Math.min(POSTURE[posture].maxCategorical, MAX_SLOTS);
   const overflow = n > cap;
   const effectiveN = Math.min(n, cap);
-  // Anchors the USER has edited become hard locks (see below), so they are
-  // part of the cache identity. Empty (the built-in path) adds nothing but a
-  // trailing "|" to the key.
-  const editedAnchorIndexes = getEditedAnchorIndexes(theme);
+  // Edited anchors become hard locks (see below), so they are part of the
+  // cache identity. Empty (the built-in path) adds nothing but a trailing
+  // "|" to the key.
   const key = `${theme}|${posture}|${effectiveN}|${editedAnchorIndexes.join(",")}`;
   const hit = cache.get(key);
   if (hit) return { ...hit, overflow };

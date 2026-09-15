@@ -51,7 +51,11 @@ import { Ship } from "@/components/charts/sections/Ship";
 import { type SectionId } from "@/charts/urlState";
 import { VisionPreviewToggle } from "@/components/charts/VisionPreviewToggle";
 import { WorkflowPresets, type WorkflowState } from "@/components/charts/WorkflowPresets";
-import { clearManualColorOverrides, hasManualColorOverrides } from "@/charts/manualOverrides";
+import {
+  clearManualColorOverrides,
+  getEditedAnchorIndexes,
+  hasManualColorOverrides,
+} from "@/charts/manualOverrides";
 import { safeMaxN, clearSafeMaxNCache } from "@/charts/builtinBounds";
 
 type Vision = VisionMode;
@@ -602,7 +606,7 @@ const ChartsDemo = () => {
 
   const themeNB = ruleB.family === "categorical" ? nB : 1;
   const chartThemeB = useMemo(
-    () => getChartTheme(themeB, ruleB.posture, themeNB),
+    () => getChartTheme(themeB, ruleB.posture, themeNB, getEditedAnchorIndexes(themeB)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [themeB, ruleB.posture, themeNB, colorRev]
   );
@@ -624,7 +628,7 @@ const ChartsDemo = () => {
   // Bumped whenever entity pins change so the chart re-applies the permutation.
   const [pinRev, setPinRev] = useState(0);
   const rawChartTheme = useMemo(
-    () => getChartTheme(theme, posture, themeN),
+    () => getChartTheme(theme, posture, themeN, getEditedAnchorIndexes(theme)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [theme, posture, themeN, colorRev]
   );
