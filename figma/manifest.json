@@ -1,0 +1,14 @@
+{
+  "name": "Chart Color System",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "dist/ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": { "allowedDomains": ["none"] },
+  "menu": [
+    { "name": "Generate palette", "command": "generate" },
+    { "name": "Audit selection", "command": "audit" },
+    { "name": "Simulate vision", "command": "simulate" }
+  ]
+}

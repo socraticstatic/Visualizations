@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2020", "DOM"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "skipLibCheck": true,
+    "types": ["@figma/plugin-typings", "vitest/globals"],
+    "baseUrl": ".",
+    "paths": { "@engine/*": ["../src/charts/*"] }
+  },
+  "include": ["src", "vite.config.sandbox.ts", "vite.config.ui.ts", "vitest.config.ts"]
+}
