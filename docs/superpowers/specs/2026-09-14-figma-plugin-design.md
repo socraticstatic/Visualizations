@@ -169,6 +169,7 @@ figma/
       selection.ts      walks the selection, delegates to extractFills
       simulate.ts       clones frames, applies a SimulationSpec
       mockup.ts         createNodeFromSvg, places and labels the frame
+      store.ts          clientStorage get/set, sandbox-side by necessity
     shared/
       protocol.ts       message types, the contract between contexts
       spec.ts           buildVariableSpec  (pure)
@@ -177,7 +178,6 @@ figma/
       gate.ts           effectiveN, refusals, advisories  (pure)
       budget.ts         node-count estimate and refusal  (pure)
       background.ts     one background resolver + refusal set  (pure)
-      store.ts          clientStorage session persistence
   __tests__/
 ```
 
@@ -195,6 +195,8 @@ iframe UI (React + engine + echarts)              sandbox (figma API)
   auditPalette, contrastRatio        ◄─selection-colors───  traverse selection, extractFills
   simulateRgb                        ──render-simulation──►  clone frames, rewrite fills, lay out beside
   buildChartOption, renderToSVGString ──insert-mockup─────►  createNodeFromSvg, place, label
+  resolveBackground                  ◄─backdrop-chain─────  walk node.parent, serialize the chain
+  panel state                        ──►store-set / ◄─store-get──  clientStorage getAsync / setAsync
 ```
 
 The sandbox is deliberately dumb. Everything it does is a spec it was handed.
@@ -333,9 +335,13 @@ found three months later traces to the configuration that produced it.
 ## Persistence
 
 `figma.clientStorage` gives the plugin 5MB on the user's machine, private to
-this plugin ID. `shared/store.ts` uses it to remember last N, last chart kind,
-fixture mode, theme, and the designer's explicit background choice, so relaunch
-does not reset the panel.
+this plugin ID, with `getAsync` / `setAsync` / `deleteAsync` / `keysAsync`.
+
+It hangs off the `figma` global, which exists only in the sandbox, so
+`store.ts` is sandbox-side and the iframe reaches it through two protocol
+messages rather than calling it directly. It remembers last N, last chart
+kind, fixture mode, theme, and the designer's explicit background choice, so
+relaunch does not reset the panel.
 
 Nothing about a file's contents is stored, and nothing leaves the machine. The
 manifest declares no network access, so it could not.
@@ -365,7 +371,7 @@ Commands 1 through 3 do not depend on this spike.
 | `toFigmaRgb` / `fromFigmaRgb` | sRGB 0..1 <-> `ColorRecord` | round-trip stable | `figma` |
 | `gateChart` | kind, requested N, theme | refusal, advisories, effective N | `figma`, DOM |
 | `estimateNodes` | kind, N, fixture mode | node estimate, refusal | `figma`, DOM |
-| `resolveBackground` | fill chain (mockable) | `ColorRecord` or a typed refusal | `figma`, DOM |
+| `resolveBackground` | a serialized backdrop chain (mockable) | `ColorRecord` or a typed refusal | `figma`, DOM |
 | `diffWritten` | recorded values, current values | drifted variables needing confirmation | `figma`, DOM |
 
 ## Error handling
