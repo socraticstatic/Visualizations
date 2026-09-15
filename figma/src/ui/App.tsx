@@ -1,21 +1,74 @@
 import { useEffect, useState } from "react";
+import { PALETTE_VERSION } from "@engine/version";
+
+type Tab = "generate" | "audit" | "simulate";
+
+const TABS: Array<{ id: Tab; label: string; blurb: string }> = [
+  {
+    id: "generate",
+    label: "Generate",
+    blurb:
+      "Solve an audited palette against the background your chart actually sits on, then write it into this file as variables.",
+  },
+  {
+    id: "audit",
+    label: "Audit",
+    blurb:
+      "Measure the colours already in your selection for contrast and colour-vision deficiency, and say plainly which ones cannot be measured.",
+  },
+  {
+    id: "simulate",
+    label: "Simulate",
+    blurb:
+      "Copy the selection once per vision type so the failure is something you look at rather than read about.",
+  },
+];
 
 export function App() {
-  const [tab, setTab] = useState<string>("generate");
+  const [tab, setTab] = useState<Tab>("generate");
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
       const msg = e.data?.pluginMessage;
-      if (msg?.type === "open") setTab(msg.tab);
+      if (msg?.type === "open" && TABS.some((t) => t.id === msg.tab)) setTab(msg.tab as Tab);
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, []);
 
+  const active = TABS.find((t) => t.id === tab)!;
+
   return (
-    <main style={{ fontFamily: "Inter, system-ui, sans-serif", fontSize: 12, padding: 12 }}>
-      <h1 style={{ fontSize: 13, margin: "0 0 8px" }}>Chart Color System</h1>
-      <p style={{ margin: 0, opacity: 0.7 }}>Opened on the {tab} tab. Nothing is wired up yet.</p>
-    </main>
+    <div className="panel">
+      <header className="panel__head">
+        <h1 className="panel__title">Chart Color System</h1>
+        <span className="panel__version num">v{PALETTE_VERSION}</span>
+      </header>
+
+      <div className="tabs" role="tablist" aria-label="Plugin commands">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            className="tab"
+            role="tab"
+            id={`tab-${t.id}`}
+            aria-selected={tab === t.id}
+            aria-controls={`panel-${t.id}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <main
+        className="panel__body"
+        role="tabpanel"
+        id={`panel-${active.id}`}
+        aria-labelledby={`tab-${active.id}`}
+      >
+        <p className="note">{active.blurb}</p>
+      </main>
+    </div>
   );
 }
