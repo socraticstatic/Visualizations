@@ -78,13 +78,25 @@ either way. The relicense is a decision about honesty and reuse.
 **MIT is one-way.** Any version shipped under it stays MIT, and anyone may fork
 those rules from that version.
 
+**Therefore the relicense lands in plan 2, after Spike A, and never before.**
+Its only justification is that the Mockup command needs these five files, and
+whether Mockup is buildable is exactly what Spike A determines. Relicensing
+first would put an irreversible act ahead of the test that says whether it is
+needed: if `<pattern>` does not survive the SVG boundary and Mockup is cut or
+redesigned, five files would be permanently MIT for a command that never
+shipped.
+
+**Plan 1 needs no license change at all.** Commands 1 through 3 touch
+`solveCategorical`, `auditPalette`, `simulateRgb`, the ramps, `encoding`,
+`constraints`, and `version`. Every one of those is already MIT.
+
 `manualOverrides.ts` stays proprietary. It is 100 lines of demo-app DOM
 plumbing that detects whether a React ColorPicker wrote inline styles on
 `[data-chart-themed-root]` divs. It is not a rule and has no business in a
 library grant. See P0.
 
-Work: update `LICENSE` and `LICENSE-PROPRIETARY`, note the new surface in
-`README-lib.md`, bump `chart-color-system` minor.
+Work, in plan 2 only: update `LICENSE` and `LICENSE-PROPRIETARY`, note the new
+surface in `README-lib.md`, bump `chart-color-system` minor.
 
 ## Prerequisites
 
@@ -164,6 +176,8 @@ figma/
       color.ts          Figma RGB 0..1 <-> engine ColorRecord  (pure)
       gate.ts           effectiveN, refusals, advisories  (pure)
       budget.ts         node-count estimate and refusal  (pure)
+      background.ts     one background resolver + refusal set  (pure)
+      store.ts          clientStorage session persistence
   __tests__/
 ```
 
@@ -177,7 +191,7 @@ Two contexts, split on capability:
 
 ```
 iframe UI (React + engine + echarts)              sandbox (figma API)
-  solveCategorical, ramps            ──write-variables───►  createVariableCollection, setValueForModeAsync
+  solveCategorical, ramps            ──write-variables───►  createVariableCollection, setValueForMode
   auditPalette, contrastRatio        ◄─selection-colors───  traverse selection, extractFills
   simulateRgb                        ──render-simulation──►  clone frames, rewrite fills, lay out beside
   buildChartOption, renderToSVGString ──insert-mockup─────►  createNodeFromSvg, place, label
@@ -185,8 +199,12 @@ iframe UI (React + engine + echarts)              sandbox (figma API)
 
 The sandbox is deliberately dumb. Everything it does is a spec it was handed.
 
-`documentAccess: "dynamic-page"` means the variable APIs are the async
-variants. Every signature in `sandbox/variables.ts` is `...Async`.
+`documentAccess: "dynamic-page"` makes the variable *getters* async:
+`getVariableByIdAsync`, `getVariableCollectionByIdAsync`,
+`getLocalVariableCollectionsAsync`. Setters on an object already in hand stay
+synchronous. `setValueForMode(modeId, newValue)` is sync, and no
+`setValueForModeAsync` exists among `Variable`'s methods. So `variables.ts`
+is async on lookup and sync on write, not uniformly async.
 
 ## Variable schema
 
@@ -243,16 +261,33 @@ Four menu entries, one UI shell, four tabs, shared state.
 Inputs: N, anchor locks, background, ramp toggles and steps. Posture comes from
 the chart kind, never from the designer.
 
-Background is the designer's, resolved from the selected frame when there is
-one and from an explicit control otherwise. It is passed to `solveCategorical`
-and `auditPalette` directly. This is the C2 correction in practice.
+Background comes from `shared/background.ts`, the same resolver and the same
+refusal set Audit uses. It is passed to `solveCategorical` and `auditPalette`
+directly, which is the C2 correction in practice.
+
+There is no guessed background. When the resolver refuses, because the parent
+chain reaches canvas without an opaque background, or the backdrop is an image,
+or a non-normal blend mode intervenes, Generate requires an explicit background
+from the designer instead of solving against an assumption. A palette solved
+against the wrong background is the same false claim as an audit against the
+wrong background; treating the two commands differently was a defect in an
+earlier draft of this spec.
 
 Solve, show the audit inline, and write only on an explicit second action.
 Nothing touches the file until the designer says so.
 
+**Writing never silently overwrites a hand edit.** The plugin records the
+values it wrote in `setPluginData`. On re-run it diffs the collection's current
+values against that record, and any variable that has drifted is presented for
+confirmation rather than clobbered. Defaults preserve the designer's edit.
+JTBD-8 is a per-user color pin; a tool built on this system does not get to
+discard human overrides quietly.
+
 ### 2. Audit
 
-Reads `figma.currentPage.selection`, walks it, calls `extractFills`.
+Reads `figma.currentPage.selection`, walks it, calls `extractFills`, and
+resolves the backdrop through the same `shared/background.ts` that Generate
+uses. One resolver, one refusal set, two commands.
 
 Scope, stated honestly because this is the hardest part of the project:
 **v1 audits opaque SOLID fills over a solid resolved parent background.**
@@ -295,6 +330,16 @@ dataviz best practice points the same direction.
 The frame name carries kind, N, engine version, and fixture mode, so a mockup
 found three months later traces to the configuration that produced it.
 
+## Persistence
+
+`figma.clientStorage` gives the plugin 5MB on the user's machine, private to
+this plugin ID. `shared/store.ts` uses it to remember last N, last chart kind,
+fixture mode, theme, and the designer's explicit background choice, so relaunch
+does not reset the panel.
+
+Nothing about a file's contents is stored, and nothing leaves the machine. The
+manifest declares no network access, so it could not.
+
 ## Spike A, gating the Mockup command only
 
 Two questions, answered in Figma desktop before Mockup is planned:
@@ -320,6 +365,8 @@ Commands 1 through 3 do not depend on this spike.
 | `toFigmaRgb` / `fromFigmaRgb` | sRGB 0..1 <-> `ColorRecord` | round-trip stable | `figma` |
 | `gateChart` | kind, requested N, theme | refusal, advisories, effective N | `figma`, DOM |
 | `estimateNodes` | kind, N, fixture mode | node estimate, refusal | `figma`, DOM |
+| `resolveBackground` | fill chain (mockable) | `ColorRecord` or a typed refusal | `figma`, DOM |
+| `diffWritten` | recorded values, current values | drifted variables needing confirmation | `figma`, DOM |
 
 ## Error handling
 
@@ -334,6 +381,9 @@ Commands 1 through 3 do not depend on this spike.
 | Kind and N indefensible | Refuse, state the cap, name the alternative. Insert stays disabled. |
 | Estimated nodes above ceiling | Refuse with the estimate and the ceiling. Suggest fewer series or synthetic mode. |
 | `createNodeFromSvg` throws | Report with the kind that produced it. Never insert a partial frame. |
+| A variable's current value differs from what the plugin last wrote | Present it for confirmation, defaulting to keeping the designer's value. Never overwrite silently. |
+| Background cannot be defensibly resolved, in either Generate or Audit | Refuse with the reason and require an explicit background. Never assume a token. |
+| `clientStorage` read fails or returns nothing | Fall back to defaults and render normally. Persistence is a convenience, never a dependency. |
 
 ## Testing
 
@@ -344,6 +394,8 @@ Vitest in `figma/` over the pure modules:
 - `color`: round-trip stability at the sRGB boundary and gamut edges.
 - `gate`: across all 28 kinds, effective N never exceeds either bound; pie above 5 refuses; every refusal carries an alternative; advisories never dropped.
 - `budget`: estimates are monotone in N and never under-report.
+- `background`: resolves nested opacity chains; refuses image backdrops, non-normal blend modes, and chains reaching canvas without an opaque background.
+- `diffWritten`: detects drift, and defaults to preserving the designer's value.
 - `protocol`: every sandbox reply is a valid union member.
 
 **SVG snapshot tests.** 28 kinds by 2 themes by 2 fixture modes is 112
@@ -375,6 +427,9 @@ Done means, in Figma desktop:
 9. A pie at 8 slices is refused in the UI with the alternative named, and cannot be inserted.
 10. A mockup over the node ceiling is refused with the estimate shown.
 11. The 1-mode fallback exercised.
+12. A variable hand-edited between runs survives the next Generate unless explicitly confirmed for overwrite.
+13. Generate over a frame with an image backdrop refuses and asks for an explicit background, rather than solving against a token.
+14. Closing and relaunching the plugin restores the last N, kind, and fixture mode.
 
 "The build succeeded" is not verification.
 
@@ -388,26 +443,31 @@ The plugin ships MIT. ECharts is Apache-2.0 and needs a NOTICE; culori is MIT.
 Engine updates require republishing and re-review. That is the accepted cost
 of `allowedDomains: ["none"]`.
 
-ECharts across 28 kinds is effectively the full build, roughly a megabyte
-minified, inlined beside React into one HTML file with no network cache
-because the manifest forbids a CDN. That is the deal. Measure the bundle and
-record it; if it is unacceptable, the lever is cutting chart kinds, not
-loading remotely.
+ECharts across 28 kinds needs the full build. Measured, not estimated:
+`echarts.min.js` is 1.1MB. `echarts.simple.min.js` is 489KB but covers only
+line, bar, and pie, so it is not an option here. That 1.1MB inlines beside
+React into one HTML file with no network cache, because the manifest forbids a
+CDN. If it proves unacceptable in use, the only real lever is cutting chart
+kinds; loading remotely is not on the table.
 
 ## Ordering
 
-1. P0, the coupling cut. Small, independently valuable.
-2. Licensing: `LICENSE`, `LICENSE-PROPRIETARY`, `README-lib.md`.
-3. Commands 1 through 3. No prerequisites at all: they use `solveCategorical`,
-   `auditPalette`, and `simulateRgb` directly, none of which touch
-   `echartsTheme`. P0 is sequenced first only because it is small and
-   independently valuable, not because these depend on it.
-4. Spike A.
-5. P2 extraction, then Command 4.
-6. Packaging and submission.
+**Plan 1, no irreversible acts, no license changes:**
 
-Steps 1 through 3 are one plan. Steps 4 through 6 are a second plan, written
-after Spike A answers the pattern question.
+1. P0, the coupling cut. Small, independently valuable, and a prerequisite for
+   the relicense later rather than for anything in this plan.
+2. Commands 1 through 3, plus the shared `background.ts` and `store.ts` they
+   both rest on. No prerequisites: they use `solveCategorical`,
+   `auditPalette`, and `simulateRgb` directly, none of which touch
+   `echartsTheme`, and all of which are already MIT.
+3. Spike A. Cheap, and it gates everything in plan 2.
+
+**Plan 2, written only after Spike A answers the pattern question:**
+
+4. Licensing: `LICENSE`, `LICENSE-PROPRIETARY`, `README-lib.md`, minor bump.
+   The one-way door, opened only once Mockup is known to be buildable.
+5. P1 barrel exports, P2 extraction, then Command 4.
+6. Packaging and submission.
 
 ## Open items
 
