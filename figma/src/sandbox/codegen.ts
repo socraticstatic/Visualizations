@@ -1,7 +1,13 @@
 /**
  * Dev Mode entry point. Runs in the sandbox with no DOM, on a 15 second budget.
  */
-import { echartsOption, cssTokens, paletteJson, type CodegenSeries } from "../shared/codegen";
+import {
+  echartsOption,
+  cssTokens,
+  paletteJson,
+  collectSeries,
+  MAX_CODEGEN_NODES,
+} from "../shared/codegen";
 
 type Loose = Record<string, any>;
 
@@ -22,27 +28,17 @@ function firstOpaqueSolid(node: Loose): string | null {
   return null;
 }
 
-/**
- * Series in document order, de-duplicated by colour. A chart drawn in Figma is
- * usually one shape per series, so document order is slot order; repeating a
- * colour means the same series appearing twice, not a new slot.
- */
-function collectSeries(root: Loose): CodegenSeries[] {
-  const out: CodegenSeries[] = [];
-  const seen = new Set<string>();
-
+/** Every node carrying an opaque solid fill, in document order. */
+function collectFilled(root: Loose): Array<{ name: unknown; hex: string }> {
+  const out: Array<{ name: unknown; hex: string }> = [];
   const visit = (node: Loose) => {
     if (node !== root) {
       const hex = firstOpaqueSolid(node);
-      if (hex && !seen.has(hex)) {
-        seen.add(hex);
-        out.push({ name: String(node.name ?? ""), hex });
-      }
+      if (hex) out.push({ name: node.name, hex });
     }
     const kids = node.children;
     if (Array.isArray(kids)) kids.forEach(visit);
   };
-
   visit(root);
   return out;
 }
@@ -50,8 +46,23 @@ function collectSeries(root: Loose): CodegenSeries[] {
 export function registerCodegen(): void {
   figma.codegen.on("generate", (event) => {
     const node = event.node as unknown as Loose;
-    const series = collectSeries(node);
+    const { series, found, tooMany } = collectSeries(collectFilled(node));
     const surface = firstOpaqueSolid(node);
+
+    if (tooMany) {
+      return [
+        {
+          title: "Chart Color System",
+          language: "PLAINTEXT" as const,
+          code:
+            `This selection has ${found} filled nodes, past the ${MAX_CODEGEN_NODES} this reads as a\n` +
+            "set of series. That usually means a chart was pasted as vectors, where\n" +
+            "every point is its own path.\n\n" +
+            "Select the legend swatches, or one shape per series, and this will read\n" +
+            "them in order.",
+        },
+      ];
+    }
 
     if (series.length === 0) {
       return [

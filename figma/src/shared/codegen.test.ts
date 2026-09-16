@@ -1,7 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { MAX_SLOTS, dashScale, shapeScale } from "@engine/encoding";
 import { PALETTE_VERSION } from "@engine/version";
-import { echartsOption, cssTokens, paletteJson, type CodegenInput } from "./codegen";
+import {
+  echartsOption,
+  cssTokens,
+  paletteJson,
+  collectSeries,
+  MAX_CODEGEN_NODES,
+  type CodegenInput,
+} from "./codegen";
 
 const input = (n: number, names?: string[]): CodegenInput => ({
   surface: "#ffffff",
@@ -76,5 +83,37 @@ describe("paletteJson", () => {
     expect(parsed.slots).toHaveLength(3);
     expect(parsed.slots[0]).toMatchObject({ slot: 1, color: expect.any(String), shape: expect.any(String) });
     expect(parsed.slots[0].decal).toBeDefined();
+  });
+});
+
+describe("collectSeries", () => {
+  const filled = (n: number, hex = "#112233") =>
+    Array.from({ length: n }, (_, i) => ({ name: `Layer ${i}`, hex }));
+
+  it("keeps document order and does not collapse repeated colours", () => {
+    const res = collectSeries([
+      { name: "A", hex: "#ff0000" },
+      { name: "B", hex: "#00ff00" },
+      { name: "C", hex: "#ff0000" },
+    ]);
+    expect(res.series.map((s) => s.name)).toEqual(["A", "B", "C"]);
+    expect(res.tooMany).toBe(false);
+  });
+
+  it("caps at the encoding scale length, because past it there is no dash left", () => {
+    const res = collectSeries(filled(MAX_SLOTS + 8));
+    expect(res.series).toHaveLength(MAX_SLOTS);
+    expect(res.found).toBe(MAX_SLOTS + 8);
+  });
+
+  it("refuses a pasted chart rather than inventing hundreds of series", () => {
+    const res = collectSeries(filled(MAX_CODEGEN_NODES + 1));
+    expect(res.tooMany).toBe(true);
+    expect(res.series).toEqual([]);
+    expect(res.found).toBe(MAX_CODEGEN_NODES + 1);
+  });
+
+  it("accepts exactly the cap", () => {
+    expect(collectSeries(filled(MAX_CODEGEN_NODES)).tooMany).toBe(false);
   });
 });

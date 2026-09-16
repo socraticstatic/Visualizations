@@ -25,6 +25,40 @@ export interface CodegenInput {
   surface: string | null;
 }
 
+/** Beyond this, a selection is a pasted chart rather than a set of series. */
+export const MAX_CODEGEN_NODES = 200;
+
+export interface CollectResult {
+  series: CodegenSeries[];
+  /** Filled nodes found, before the slot cap. */
+  found: number;
+  tooMany: boolean;
+}
+
+interface FilledNode {
+  name?: unknown;
+  hex: string;
+}
+
+/**
+ * Series in document order.
+ *
+ * Deliberately does NOT de-duplicate by colour: two series may legitimately
+ * share one, and collapsing them silently renumbers every slot after the
+ * collision, which would hand a developer the wrong dash for the wrong series.
+ * The slot cap is the encoding scales' length, because past that there is no
+ * dash or shape left to assign.
+ */
+export function collectSeries(filled: FilledNode[]): CollectResult {
+  const found = filled.length;
+  if (found > MAX_CODEGEN_NODES) return { series: [], found, tooMany: true };
+  return {
+    series: filled.slice(0, MAX_SLOTS).map((f) => ({ name: String(f.name ?? ""), hex: f.hex })),
+    found,
+    tooMany: false,
+  };
+}
+
 const clean = (s: string) => s.replace(/[^A-Za-z0-9 _-]/g, "").trim();
 
 /** Layer names are often "Rectangle 12"; fall back to a slot label. */

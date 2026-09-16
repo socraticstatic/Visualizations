@@ -4,6 +4,9 @@ import { auditPalette, contrastRatio, simulateColor, type VisionMode } from "@en
 import { POSTURE, type Posture } from "@engine/constraints";
 import { MAX_SLOTS } from "@engine/encoding";
 import { DEFAULT_TOKENS } from "../shared/defaults";
+import { buildVariableSpec, type Drift } from "../shared/spec";
+import { isUnlocked, type LicenseStatus } from "../shared/license";
+import { send } from "./bridge";
 import { DashPreview, ShapeMarker, DecalSwatch } from "./Encoding";
 import { Specimen } from "./Specimen";
 
@@ -17,7 +20,16 @@ const VISION: Array<{ mode: VisionMode; label: string; note: string }> = [
 
 const POSTURES = Object.keys(POSTURE) as Posture[];
 
-export function GenerateTab({ theme }: { theme: "light" | "dark" }) {
+export function GenerateTab({
+  theme,
+  license,
+}: {
+  theme: "light" | "dark";
+  license: LicenseStatus | null;
+}) {
+  const [drift, setDrift] = useState<Drift[] | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [posture, setPosture] = useState<Posture>("comparative");
   const [requestedN, setRequestedN] = useState(6);
 
@@ -38,6 +50,61 @@ export function GenerateTab({ theme }: { theme: "light" | "dark" }) {
   );
 
   const audit = useMemo(() => auditPalette(solve.palette, tokens.surface), [solve, tokens]);
+
+  /** Both modes are solved, because a variable needs a value in each. */
+  const specs = useMemo(() => {
+    const forTheme = (t: "light" | "dark") => {
+      const tk = DEFAULT_TOKENS[t];
+      return {
+        palette: solveCategorical({ n, posture, background: tk.surface, grid: tk.grid, locks: [] }).palette,
+        surface: tk.surface,
+        grid: tk.grid,
+        axis: tk.axis,
+        label: tk.label,
+      };
+    };
+    return buildVariableSpec({ light: forTheme("light"), dark: forTheme("dark") });
+  }, [n, posture]);
+
+  const canWrite = isUnlocked("write-variables", license);
+
+  async function write(confirmedOverwrites: string[] = []) {
+    setBusy(true);
+    setSummary(null);
+    try {
+      const res = await send({ type: "write-variables", specs, confirmedOverwrites });
+      if (!res.ok) {
+        setSummary(res.detail);
+        return;
+      }
+      if (res.type !== "variables-written") return;
+      const p = res.payload;
+      setDrift(null);
+      setSummary(
+        `${p.created} created, ${p.updated} updated` +
+          (p.skipped ? `, ${p.skipped} left as you had them` : "") +
+          "." +
+          (p.usedFallbackCollection
+            ? " Your plan allows one mode per collection, so Dark went into a second collection. That keeps both sets of values, but switching theme means rebinding."
+            : "")
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function writeChecked() {
+    const prev = await send({ type: "read-written-record" });
+    if (prev.ok && prev.type === "written-record" && prev.payload) {
+      const { diffWritten, recordFromSpecs } = await import("../shared/spec");
+      const d = diffWritten(prev.payload, recordFromSpecs(specs));
+      if (d.length > 0) {
+        setDrift(d);
+        return;
+      }
+    }
+    await write();
+  }
 
   const verdict = audit.overall;
 
@@ -166,6 +233,43 @@ export function GenerateTab({ theme }: { theme: "light" | "dark" }) {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="write">
+        {drift ? (
+          <div className="drift">
+            <p>
+              {drift.length} variable{drift.length === 1 ? "" : "s"} changed since this plugin last
+              wrote. Your edits are kept unless you say otherwise.
+            </p>
+            <ul>
+              {drift.slice(0, 6).map((d) => (
+                <li key={`${d.name}:${d.mode}`}>
+                  <code className="num">{d.name}</code> <span className="drift__mode">{d.mode}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="write__actions">
+              <button className="btn" disabled={busy} onClick={() => void write(drift.map((d) => d.name))}>
+                Overwrite these
+              </button>
+              <button className="btn btn--quiet" disabled={busy} onClick={() => setDrift(null)}>
+                Keep mine
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button className="btn" disabled={busy || !canWrite} onClick={() => void writeChecked()}>
+            {busy ? "Writing" : `Write ${specs.length} variables into this file`}
+          </button>
+        )}
+        {!canWrite && (
+          <p className="note">
+            Writing variables, Dev Mode codegen and mockups need a licence. Auditing and simulating
+            do not, and never will.
+          </p>
+        )}
+        {summary && <p className="note">{summary}</p>}
       </section>
     </>
   );

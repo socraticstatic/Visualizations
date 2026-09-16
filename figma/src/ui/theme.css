@@ -346,3 +346,66 @@ body {
 }
 
 .vision__strip svg { flex: 1; min-width: 0; display: block; }
+
+/* ---- write / drift / licence ------------------------------------------- */
+
+.write { display: grid; gap: var(--space-sm); padding-top: var(--space-sm); }
+.write__actions { display: flex; gap: var(--space-sm); }
+
+.drift {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--ui-bg-secondary);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-label);
+}
+
+.drift p { margin: 0; }
+.drift ul { margin: 0; padding-left: var(--space-md); display: grid; gap: 2px; }
+.drift__mode { color: var(--ui-text-secondary); }
+
+.refusal {
+  margin: 0 0 var(--space-md);
+  padding: var(--space-md);
+  font-size: var(--text-label);
+  color: var(--ui-text-warning);
+  background: var(--ui-bg-secondary);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-lg);
+}
+
+.slot--audit { grid-template-columns: 16px 1fr 62px 58px; }
+.slot__name { font-size: var(--text-label); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slot__contrast.is-bad { color: var(--ui-text-danger); font-weight: 600; }
+
+.skipped { font-size: var(--text-label); color: var(--ui-text-secondary); }
+.skipped summary { cursor: pointer; }
+.skipped ul { margin: var(--space-xs) 0 0; padding-left: var(--space-md); display: grid; gap: var(--space-xs); }
+.skipped strong { color: var(--ui-text); font-weight: 500; }
+
+.licence {
+  margin-top: var(--space-xl);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--ui-border);
+  font-size: var(--text-label);
+  color: var(--ui-text-secondary);
+}
+
+.licence--ok { color: var(--ui-text-success); }
+.licence strong { color: inherit; font-weight: 600; }
+
+.licence__input {
+  width: 100%;
+  font: inherit;
+  font-size: 10px;
+  color: var(--ui-text);
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--radius);
+  padding: var(--space-sm);
+  resize: vertical;
+}
+
+.licence__error { margin: var(--space-sm) 0 0; color: var(--ui-text-danger); }

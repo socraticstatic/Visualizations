@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { PALETTE_VERSION } from "@engine/version";
 import { GenerateTab } from "./GenerateTab";
+import { AuditTab } from "./AuditTab";
+import { LicensePanel } from "./LicensePanel";
+import { useLicense } from "./useLicense";
 
 type Tab = "generate" | "audit" | "simulate";
 
@@ -50,6 +53,8 @@ export function App() {
     return () => window.removeEventListener("message", onMessage);
   }, []);
 
+  const { status: license, activate } = useLicense();
+
   const active = TABS.find((t) => t.id === tab)!;
 
   return (
@@ -81,11 +86,10 @@ export function App() {
         id={`panel-${active.id}`}
         aria-labelledby={`tab-${active.id}`}
       >
-        {tab === "generate" ? (
-          <GenerateTab theme={scheme} />
-        ) : (
-          <p className="note">{active.blurb}</p>
-        )}
+        {tab === "generate" && <GenerateTab theme={scheme} license={license} />}
+        {tab === "audit" && <AuditTab />}
+        {tab === "simulate" && <p className="note">{active.blurb}</p>}
+        <LicensePanel status={license} activate={activate} />
       </main>
     </div>
   );
