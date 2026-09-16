@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { BENCHMARKS } from "@/charts/benchmarks";
 import { fromCss, deltaE, type ColorRecord } from "@/charts/palette/distance";
 import { contrastRatio, simulateColor, type VisionMode } from "@/charts/audit";
-import { Prose } from "@/components/blog/BlogLayout";
+import { Prose, Wide } from "@/components/blog/BlogLayout";
 import FROZEN from "./benchmarkFacts.json";
 
 /**
@@ -362,14 +362,18 @@ export default function PaletteContrastBenchmark() {
       </Prose>
 
       <figure className="my-8">
-        <div className="mx-auto grid max-w-[1100px] gap-px overflow-hidden border-y border-chart-grid bg-chart-grid px-0 sm:grid-cols-2 sm:rounded-lg sm:border">
-          <SpecimenPlate bgHex={WHITE} label={`ColorBrewer Set2 on ${WHITE}`} />
-          <SpecimenPlate bgHex={DARK} label={`ColorBrewer Set2 on ${DARK}`} />
-        </div>
-        <figcaption className="mx-auto mt-2 max-w-[1100px] px-4 text-[11px] text-chart-muted-text sm:px-6">
-          Each specimen is a 2px stroke at the size these palettes are actually drawn. Same eight
-          colors, both grounds.
-        </figcaption>
+        <Wide>
+          <div className="grid gap-px overflow-hidden border-y border-chart-grid bg-chart-grid sm:grid-cols-2 sm:rounded-lg sm:border">
+            <SpecimenPlate bgHex={WHITE} label={`ColorBrewer Set2 on ${WHITE}`} />
+            <SpecimenPlate bgHex={DARK} label={`ColorBrewer Set2 on ${DARK}`} />
+          </div>
+          {/* The plate bleeds below sm, so the caption carries its own gutter
+              there and sits on the plate's edge from sm up. */}
+          <figcaption className="mt-2 px-4 text-[11px] text-chart-muted-text sm:px-0">
+            Each specimen is a 2px stroke at the size these palettes are actually drawn. Same eight
+            colors, both grounds.
+          </figcaption>
+        </Wide>
       </figure>
 
       <Prose>
@@ -387,10 +391,10 @@ export default function PaletteContrastBenchmark() {
         </P>
       </Prose>
 
-      <div className="mx-auto max-w-[1100px] px-4 sm:px-6">
+      <Prose>
         <ContrastTable bgHex={WHITE} caption={`On ${WHITE} · full palette length`} />
         <ContrastTable bgHex={DARK} caption={`On ${DARK} · same palettes, same slots`} />
-      </div>
+      </Prose>
 
       <Prose>
         <H2>These palettes are correct, for one background each</H2>
@@ -454,9 +458,9 @@ export default function PaletteContrastBenchmark() {
         </P>
       </Prose>
 
-      <div className="mx-auto max-w-[1100px] px-4 sm:px-6">
+      <Prose>
         <CvdTable />
-      </div>
+      </Prose>
 
       <Prose>
         <P>

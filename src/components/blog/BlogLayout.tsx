@@ -140,3 +140,19 @@ export function BlogLayout({ children }: { children: React.ReactNode }) {
 export function Prose({ children }: { children: React.ReactNode }) {
   return <div className="mx-auto max-w-[68ch] px-4 sm:px-6">{children}</div>;
 }
+
+/**
+ * The one measure a figure may break out to, for the rare block that genuinely
+ * needs the width - a side-by-side comparison, not a three-column table.
+ *
+ * It exists so a post has two edges instead of however many someone typed. The
+ * page had three: prose at 370, a specimen plate at 163, and tables at 187,
+ * because the plate and the tables carried the same max-width with different
+ * padding. Breaking out is a decision; three different left edges is a mistake.
+ *
+ * px-0 below sm is deliberate: a comparison plate runs to the bezel on a phone,
+ * where the gutter costs more than it gives. Its caption re-adds its own.
+ */
+export function Wide({ children }: { children: React.ReactNode }) {
+  return <div className="mx-auto max-w-[1100px] px-0 sm:px-6">{children}</div>;
+}
