@@ -233,9 +233,16 @@ export interface RouteMeta {
    * built only from correctly-rounded operations, and the same bundle now
    * returns byte-identical palettes under Node 24, Chrome 152 and
    * JavaScriptCore across all 64 configurations
-   * (docs/spikes/engine-divergence.md). So the reason these flags are false is
-   * gone, and they can be re-enabled once someone verifies a solver route
-   * hydrates clean. Not flipped blind.
+   * (docs/spikes/engine-divergence.md).
+   *
+   * That unblocked the routes it applied to, and they are already true: /blog
+   * and the post route both render: "app". Nothing is left to re-enable. The
+   * two routes still false are false for structural reasons the fix does not
+   * touch - "/" renders a written summary whose markup is deliberately not the
+   * app's, and /charts ships a shell with no markup to hydrate. Do not read
+   * the paragraph above as an invitation to flip them; turning "/" into
+   * render: "app" would trade 763 words of crawlable prose for a canvas
+   * skeleton that crawlers cannot execute.
    */
   hydrate: boolean;
   /** Left out of the sitemap when false. */
