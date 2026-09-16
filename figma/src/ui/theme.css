@@ -80,51 +80,59 @@ body {
   height: 100%;
 }
 
-.panel__head {
+/* Figma's own window chrome already names the plugin directly above this, so
+   a title here said "Chart Color System" twice in the first 40px of a 640px
+   panel. The version is the only part worth keeping, and it sits beside the
+   tabs where it reads as provenance rather than a heading. */
+.panel__top {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--space-sm);
-  padding: var(--space-md) var(--space-md) var(--space-sm);
-}
-
-.panel__title {
-  margin: 0;
-  font-size: var(--text-title);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  padding: var(--space-sm) var(--space-md);
 }
 
 .panel__version {
+  flex: none;
   font-size: var(--text-label);
   color: var(--ui-text-secondary);
 }
 
+/* A segmented control, which is the idiom Figma itself uses. Four separately
+   bordered pills with the active one filled brand-blue read as four buttons,
+   competed with the primary action for the only saturated colour in the
+   panel, and looked nothing like the application they sit inside. */
 .tabs {
   display: flex;
-  gap: var(--space-2xs);
-  padding: 0 var(--space-md) var(--space-sm);
+  flex: 1;
+  min-width: 0;
+  gap: 1px;
+  padding: 2px;
+  background: var(--ui-bg-secondary);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius);
 }
 
 .tab {
   flex: 1;
-  padding: 6px var(--space-sm);
+  min-width: 0;
+  padding: 4px var(--space-2xs);
   font: inherit;
   font-size: var(--text-label);
   color: var(--ui-text-secondary);
   background: transparent;
-  /* Interactive boundaries use border-strong: it is audited to the 3:1 non-text
-     floor, while --ui-border is a decorative divider and is not. */
-  border: 1px solid var(--ui-border-strong);
-  border-radius: var(--radius);
+  border: 0;
+  border-radius: calc(var(--radius) - 2px);
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.tab:hover { background: var(--ui-bg-secondary); color: var(--ui-text); }
+.tab:hover { color: var(--ui-text); }
 
 .tab[aria-selected="true"] {
-  background: var(--ui-brand);
-  border-color: var(--ui-brand);
-  color: var(--ui-text-onbrand);
+  background: var(--ui-bg);
+  color: var(--ui-text);
   font-weight: 500;
 }
 
@@ -271,8 +279,9 @@ body {
 
 .section__title {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: var(--space-sm);
+  gap: 2px var(--space-sm);
   margin: 0 0 var(--space-sm);
   font-size: var(--text-label);
   font-weight: 600;
@@ -281,6 +290,8 @@ body {
 }
 
 .section__note {
+  flex-basis: 100%;
+  line-height: 1.35;
   font-size: 10px;
   font-weight: 400;
   letter-spacing: 0;
@@ -321,20 +332,45 @@ body {
 .slot__hex { font-size: 10px; letter-spacing: -0.01em; }
 .slot__contrast { font-size: 10px; text-align: right; color: var(--ui-text-secondary); }
 
+/* The contrast column was a bare right-aligned number with nothing saying
+   what it measured. One header row costs 14px and answers it. */
+.slots__head {
+  display: grid;
+  grid-template-columns: 14px 16px 62px 44px 12px 22px 1fr;
+  gap: var(--space-sm);
+  padding: 0 var(--space-xs) 2px;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ui-text-secondary);
+}
+
+.slots__head span:last-child { text-align: right; }
+
 /* ---- vision ------------------------------------------------------------ */
 
 .vision { display: grid; gap: var(--space-xs); margin-bottom: var(--space-lg); }
 
 .vision__row {
   display: grid;
-  grid-template-columns: 96px 1fr;
+  grid-template-columns: 118px 1fr;
   align-items: center;
   gap: var(--space-sm);
+  min-height: 26px;
 }
 
-.vision__meta { display: grid; }
-.vision__label { font-size: var(--text-label); }
-.vision__note { font-size: 10px; color: var(--ui-text-secondary); }
+.vision__meta { display: grid; align-content: center; }
+.vision__label { font-size: var(--text-label); line-height: 1.2; }
+.vision__note {
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--ui-text-secondary);
+  /* One line, clipped. Three wrapped lines of parenthetical made every row a
+     different height and the strips beside them stopped aligning. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .vision__strip {
   display: flex;

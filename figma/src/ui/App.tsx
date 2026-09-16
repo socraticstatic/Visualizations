@@ -77,12 +77,8 @@ export function App() {
 
   return (
     <div className="panel">
-      <header className="panel__head">
-        <h1 className="panel__title">Chart Color System</h1>
-        <span className="panel__version num">v{PALETTE_VERSION}</span>
-      </header>
-
-      <div className="tabs" role="tablist" aria-label="Plugin commands">
+      <div className="panel__top">
+        <div className="tabs" role="tablist" aria-label="Plugin commands">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -94,8 +90,10 @@ export function App() {
             onClick={() => setTab(t.id)}
           >
             {t.label}
-          </button>
-        ))}
+            </button>
+          ))}
+        </div>
+        <span className="panel__version num">v{PALETTE_VERSION}</span>
       </div>
 
       <main

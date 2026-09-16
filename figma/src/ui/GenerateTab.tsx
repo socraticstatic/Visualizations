@@ -219,6 +219,15 @@ export function GenerateTab({
           Slots
           <span className="section__note">colour, dash, marker, decal — all four carry identity</span>
         </h2>
+        <div className="slots__head" aria-hidden>
+          <span />
+          <span />
+          <span>hex</span>
+          <span>dash</span>
+          <span />
+          <span>decal</span>
+          <span>vs bg</span>
+        </div>
         <ol className="slots">
           {solve.palette.map((c, i) => (
             <li className="slot" key={i}>
