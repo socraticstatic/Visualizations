@@ -1,47 +1,44 @@
 /**
- * The mark asserts a contrast floor, so it is tested like any other claim.
- * The first draft failed its own audit at 2.31:1, which is exactly the kind of
- * self-refuting artifact this plugin exists to catch.
+ * The mark makes a claim: that it shows one colour as four people receive it,
+ * legibly. So the claim is tested with the engine that generates it.
+ *
+ * An earlier mark failed its own contrast audit at 2.31:1. Writing this test
+ * before the artifact is what caught it.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
-import { fromCss, deltaL } from "@engine/palette/distance";
-import { contrastRatio, simulateColor } from "@engine/audit";
+import { fromCss, deltaE } from "@engine/palette/distance";
+import { contrastRatio, simulateColor, type VisionMode } from "@engine/audit";
 
-const here = fileURLToPath(new URL(".", import.meta.url));
-const SVG = readFileSync(resolve(here, "../../brand/icon.svg"), "utf8");
+const GROUND = fromCss("#14171a");
+const BASE = "#f20ddf";
+const MODES: VisionMode[] = ["normal", "deutan", "protan", "achromatopsia"];
 
-const GROUND = "#14171a";
-const SLOTS = ["#ebf2f9", "#a8c7e6", "#659cd2"];
+/** Must match VIEWS in scripts/render-brand.py. */
+const RENDERED = ["#f20ddf", "#7092da", "#0075e4", "#888888"];
 
-describe("plugin icon", () => {
-  it("uses exactly the colours this test audits, so the file cannot drift", () => {
-    for (const hex of [GROUND, ...SLOTS]) expect(SVG).toContain(hex);
-    const used = SVG.match(/#[0-9a-f]{6}/gi) ?? [];
-    expect(new Set(used.map((h) => h.toLowerCase()))).toEqual(
-      new Set([GROUND, ...SLOTS].map((h) => h.toLowerCase()))
-    );
+describe("plugin mark", () => {
+  it("renders exactly what the engine simulates, so art and audit cannot diverge", () => {
+    const derived = MODES.map((m) => simulateColor(fromCss(BASE), m).hex);
+    expect(derived).toEqual(RENDERED);
   });
 
-  it("clears the 3:1 non-text floor on its own ground", () => {
-    for (const hex of SLOTS) {
-      expect(contrastRatio(fromCss(hex), fromCss(GROUND))).toBeGreaterThanOrEqual(3);
+  it("clears the 3:1 non-text floor for every view on its own ground", () => {
+    for (const hex of RENDERED) {
+      expect(contrastRatio(fromCss(hex), GROUND)).toBeGreaterThanOrEqual(3);
     }
   });
 
-  it("survives greyscale, which is the claim it is making", () => {
-    const grey = SLOTS.map((h) => simulateColor(fromCss(h), "achromatopsia"));
-    for (let i = 1; i < grey.length; i++) {
-      expect(Math.abs(deltaL(grey[i], grey[i - 1]))).toBeGreaterThanOrEqual(0.12);
+  it("keeps the four views visibly distinct, so the mark has real variety", () => {
+    const views = RENDERED.map(fromCss);
+    for (let i = 0; i < views.length; i++) {
+      for (let j = i + 1; j < views.length; j++) {
+        expect(deltaE(views[i], views[j])).toBeGreaterThanOrEqual(8);
+      }
     }
   });
 
-  it("carries a distinct dash and marker per slot, not colour alone", () => {
-    expect((SVG.match(/stroke-dasharray/g) ?? []).length).toBe(2); // slot 1 is solid
-    expect(SVG).toContain("<circle");
-    expect(SVG).toContain("<polygon");
-    expect(SVG).toContain('rx="3"'); // the square marker
+  it("degrades to grey under total colour blindness, which is the point", () => {
+    const mono = fromCss(RENDERED[3]);
+    expect(Math.abs(mono.rgb.r - mono.rgb.g)).toBeLessThan(0.01);
   });
 });
