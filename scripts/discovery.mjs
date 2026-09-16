@@ -59,11 +59,14 @@ function robots(SITE) {
   return lines.join("\n");
 }
 
-function sitemap(SITE, routeList) {
-  const entries = routeList
-    .filter((r) => r.indexable)
+function sitemap(SITE, routeList, staticList) {
+  const entries = [
+    ...routeList.filter((r) => r.indexable),
+    // Static pages carry their own filename, so they are files, not directories.
+    ...staticList.map((p) => ({ ...p, indexable: true, isFile: true })),
+  ]
     .map((r) => {
-      const loc = pageUrl(SITE, r.path);
+      const loc = r.isFile ? fileUrl(SITE, r.path) : pageUrl(SITE, r.path);
       const lastmod = r.lastmod ? `\n    <lastmod>${r.lastmod}</lastmod>` : "";
       return `  <url>\n    <loc>${loc}</loc>${lastmod}\n    <priority>${r.priority.toFixed(1)}</priority>\n  </url>`;
     });
@@ -132,10 +135,10 @@ function llmsFull(SITE, routeList, posts, root) {
   return parts.join("\n");
 }
 
-export function writeDiscovery({ outDir, root, SITE, routeList, posts }) {
+export function writeDiscovery({ outDir, root, SITE, routeList, staticList, posts }) {
   const written = [];
   written.push(write(outDir, "robots.txt", robots(SITE)));
-  written.push(write(outDir, "sitemap.xml", sitemap(SITE, routeList)));
+  written.push(write(outDir, "sitemap.xml", sitemap(SITE, routeList, staticList)));
   written.push(write(outDir, "llms.txt", llmsIndex(SITE, routeList, posts)));
   written.push(write(outDir, "llms-full.txt", llmsFull(SITE, routeList, posts, root)));
 

@@ -13,7 +13,7 @@ import { renderToString } from "react-dom/server";
 import { StaticRouter } from "react-router";
 import { AppRoutes, AppShell } from "@/App";
 import BuilderSummary from "@/seo/BuilderSummary";
-import { routes, SITE, FAQ, url, type RouteMeta } from "@/seo/site";
+import { routes, staticPages, SITE, FAQ, url, type RouteMeta } from "@/seo/site";
 
 /**
  * Returns the inner HTML for #root, or "" when the route ships the bare shell.
@@ -37,5 +37,5 @@ export function render(meta: RouteMeta): string {
   );
 }
 
-export { routes, SITE, FAQ, url };
+export { routes, staticPages, SITE, FAQ, url };
 export type { RouteMeta };
