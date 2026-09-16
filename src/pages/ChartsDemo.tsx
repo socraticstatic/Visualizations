@@ -1376,14 +1376,17 @@ const ChartsDemo = () => {
           sticky rows would eat 100px of every screen forever. */}
       <div className="sticky top-0 z-40 border-b border-chart-grid bg-[hsl(var(--page-bg)/0.92)] backdrop-blur">
         <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-3 gap-y-1 px-6 py-1.5 sm:h-12 sm:flex-nowrap sm:py-0">
-          <div
-            className="flex h-6 w-6 shrink-0 items-end justify-center gap-0.5 rounded bg-primary p-1"
+          {/* The brand mark, same file the browser tab uses. This used to be
+              a three-bar tile built from the anchor tokens - a third mark,
+              different from both the favicon and the plugin icon. */}
+          <img
+            src={`${import.meta.env.BASE_URL}favicon.svg`}
+            alt=""
+            width={24}
+            height={24}
+            className="h-6 w-6 shrink-0 rounded"
             aria-hidden
-          >
-            <span className="w-1 rounded-sm" style={{ height: "45%", background: "hsl(var(--chart-cat-anchor-1))" }} />
-            <span className="w-1 rounded-sm" style={{ height: "100%", background: "hsl(var(--chart-cat-anchor-2))" }} />
-            <span className="w-1 rounded-sm" style={{ height: "70%", background: "hsl(var(--chart-cat-anchor-3))" }} />
-          </div>
+          />
           <div className="order-last w-full min-w-0 sm:order-none sm:w-auto sm:flex-1">
             <SectionNav onNavigate={goToSection} />
           </div>
