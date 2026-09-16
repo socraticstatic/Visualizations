@@ -135,7 +135,34 @@ function llmsFull(SITE, routeList, posts, root) {
   return parts.join("\n");
 }
 
-export function writeDiscovery({ outDir, root, SITE, routeList, staticList, posts }) {
+/**
+ * A post's .md twin is hand-written; the page recomputes its figures from the
+ * engine at render time. When the solver's output moves, the two disagree, and
+ * publishing both means publishing a contradiction on a site whose argument is
+ * that its numbers are checkable.
+ *
+ * This reports the drift on every build instead of failing it: which of the two
+ * is right is a content decision, not a build error. It stays loud because the
+ * last silent problem here survived for months.
+ */
+function reportMarkdownDrift(markdown, html, label) {
+  const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  // Ratios and ΔE values, the only claims that can drift. Bare integers and
+  // years are not figures in this sense and would be noise.
+  const claims = new Set(markdown.match(/\b\d+\.\d+(?::1)?\b/g) ?? []);
+  const missing = [...claims].filter((c) => {
+    const bare = c.replace(":1", "");
+    // The renderer splits "4.15" and ":1" across elements, so match the number.
+    return !text.includes(bare);
+  });
+  if (!missing.length) return;
+  console.warn(
+    `\n  drift: ${label} publishes ${missing.length} figure(s) the page does not render: ${missing.join(", ")}`,
+  );
+  console.warn("         the .md twin and the rendered post disagree; one of them is stale.");
+}
+
+export function writeDiscovery({ outDir, root, SITE, routeList, staticList, posts, renderedHtml = {} }) {
   const written = [];
   written.push(write(outDir, "robots.txt", robots(SITE)));
   written.push(write(outDir, "sitemap.xml", sitemap(SITE, routeList, staticList)));
@@ -150,7 +177,11 @@ export function writeDiscovery({ outDir, root, SITE, routeList, staticList, post
     if (!existsSync(src)) {
       throw new Error(`markdownSource missing for ${route.path}: ${route.markdownSource}`);
     }
-    written.push(write(outDir, `${route.path}.md`, readFileSync(src, "utf8")));
+    const markdown = readFileSync(src, "utf8");
+    if (renderedHtml[route.path]) {
+      reportMarkdownDrift(markdown, renderedHtml[route.path], `${route.path}.md`);
+    }
+    written.push(write(outDir, `${route.path}.md`, markdown));
   }
   return written;
 }
