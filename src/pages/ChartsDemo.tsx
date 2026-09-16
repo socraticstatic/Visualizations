@@ -52,6 +52,7 @@ import { type SectionId } from "@/charts/urlState";
 import { VisionPreviewToggle } from "@/components/charts/VisionPreviewToggle";
 import { WorkflowPresets, type WorkflowState } from "@/components/charts/WorkflowPresets";
 import { buildWarningList } from "@/charts/warnings";
+import { PluginPromo } from "@/components/charts/PluginPromo";
 import {
   clearManualColorOverrides,
   getEditedAnchorIndexes,
@@ -1517,7 +1518,7 @@ const ChartsDemo = () => {
                 </div>
               </div>
             )}
-          <div className="space-y-4 min-w-0">
+          <div className="space-y-10 min-w-0">
           <div className="flex flex-wrap items-end gap-x-6 gap-y-3 text-sm">
 
             <label className="flex flex-col gap-1" data-tour="chart-kind">
@@ -1829,6 +1830,7 @@ const ChartsDemo = () => {
           </Reuse>
 
           <Ship>
+          {family === "categorical" && <PluginPromo theme={chartTheme} />}
           {family === "categorical" && <CodeSnippet kind={kind} n={n} theme={chartTheme} />}
           <div className="flex flex-wrap items-center gap-2 rounded-md border border-chart-grid bg-chart-bg p-3">
             <span className="text-[10px] uppercase tracking-wide text-chart-axis mr-2">Ship</span>
