@@ -30,11 +30,14 @@ CARD_EDGE = (0xD8, 0xDE, 0xE4)
 
 FONT = "/System/Library/Fonts/SFNS.ttf"
 
-# The engine's output for n=6 on #ffffff, and its own simulations of it.
+# The engine's output for n=6 on #ffffff, and its own simulations of it, read
+# out of the running application. Regenerate these whenever PALETTE_VERSION
+# changes - they were stale for exactly as long as it took to notice that the
+# determinism fix had moved every palette. Current at 0.8.0.
 ROWS = [
-    ("Normal vision", ["#2080c3", "#0056aa", "#584503", "#370d91", "#45142b", "#bc006f"]),
-    ("Deuteranopia", ["#4974c2", "#0051a8", "#534a08", "#002e8f", "#2a2a2a", "#6c6c6b"]),
-    ("Total colour blindness", ["#7b7b7b", "#575757", "#474747", "#323232", "#262626", "#616161"]),
+    ("Normal vision", ["#733c8a", "#003307", "#3e7b00", "#2f5227", "#541761", "#9261b5"]),
+    ("Deuteranopia", ["#3b5588", "#2f290b", "#786b16", "#4f482a", "#1e365f", "#5a76b3"]),
+    ("Total colour blindness", ["#535353", "#2b2b2b", "#6d6d6d", "#4a4a4a", "#333333", "#767676"]),
 ]
 DASHES = [None, [6, 3], [2, 3], [10, 3, 2, 3], [8, 4], [1, 3]]
 SHAPES = ["circle", "triangle", "rect", "diamond", "pin", "arrow"]
