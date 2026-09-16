@@ -21,6 +21,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "freeze:benchmark": "node scripts/freeze-benchmark.mjs",
     "postbuild": "node scripts/prerender.mjs",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
