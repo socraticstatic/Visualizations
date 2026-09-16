@@ -14,7 +14,7 @@
  * Every colour here is audited in promoTokens.test.ts.
  */
 import { simulateColor, type VisionMode } from "@/charts/audit";
-import { dashScale, shapeScale } from "@/charts/encoding";
+import { dashScale, markerPathD } from "@/charts/encoding";
 import type { ChartTheme } from "@/charts/echartsTheme";
 import type { ColorRecord } from "@/charts/palette/distance";
 import { PROMO } from "./promoTokens";
@@ -34,18 +34,6 @@ const FEATURES: Array<[string, string]> = [
   ["Dev Mode codegen", "Your developer selects the frame and gets the ECharts option or CSS tokens."],
 ];
 
-/** Same marker table as the plugin panel, so both draw the same encoding. */
-const MARKER: Record<string, (x: number, y: number, c: string) => JSX.Element> = {
-  circle: (x, y, c) => <circle cx={x} cy={y} r="3.6" fill={c} />,
-  triangle: (x, y, c) => <polygon points={`${x},${y - 3.8} ${x + 3.8},${y + 2.9} ${x - 3.8},${y + 2.9}`} fill={c} />,
-  rect: (x, y, c) => <rect x={x - 3.3} y={y - 3.3} width="6.6" height="6.6" fill={c} />,
-  diamond: (x, y, c) => <polygon points={`${x},${y - 4.2} ${x + 3.8},${y} ${x},${y + 4.2} ${x - 3.8},${y}`} fill={c} />,
-  pin: (x, y, c) => (
-    <path d={`M${x} ${y - 4.2}c2.1 0 3.5 1.5 3.5 3.4 0 2.2-3.5 5-3.5 5s-3.5-2.8-3.5-5c0-1.9 1.4-3.4 3.5-3.4Z`} fill={c} />
-  ),
-  arrow: (x, y, c) => <polygon points={`${x},${y - 4.2} ${x + 3.8},${y + 3.8} ${x},${y + 1.8} ${x - 3.8},${y + 3.8}`} fill={c} />,
-  roundRect: (x, y, c) => <rect x={x - 3.3} y={y - 3.3} width="6.6" height="6.6" rx="2" fill={c} />,
-};
 
 /**
  * The viewBox is a FIXED size and the slots divide it, so the svg scales
@@ -89,7 +77,6 @@ function VisionStrip({
       {palette.map((c, i) => {
         const colour = simulateColor(c, mode).hex;
         const dash = dashScale[i % dashScale.length];
-        const draw = MARKER[shapeScale[i % shapeScale.length]] ?? MARKER.circle;
         const x0 = i * slotW;
         const y = ROW_H / 2;
         return (
@@ -104,7 +91,7 @@ function VisionStrip({
               strokeLinecap="round"
               strokeDasharray={dash === "solid" ? undefined : dash.join(" ")}
             />
-            {draw(x0 + slotW / 2, y, colour)}
+            <path d={markerPathD(i, x0 + slotW / 2, y, 3.6)} fill={colour} />
           </g>
         );
       })}
