@@ -303,9 +303,10 @@ export function routes(): RouteMeta[] {
       title: `${post.title} · ${SITE.name}`,
       description: post.summary,
       render: "app",
-      // Posts compute their figures from the engine at render time, and the
-      // engine is not reproducible across JS engines. See `hydrate` above.
-      hydrate: false,
+      // Safe again: the only figures that differed between Node and the
+      // browser were the solver's, and those are now frozen at build time
+      // (src/posts/benchmarkFacts.ts) rather than solved per reader.
+      hydrate: true,
       indexable: true,
       priority: 0.9,
       lastmod: post.date,
