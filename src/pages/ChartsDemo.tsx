@@ -261,7 +261,7 @@ function NSlider({
         <button type="button" aria-label={`Decrease to ${clamped - 1}`} className={stepBtn} onClick={() => stepBy(-1)} disabled={clamped <= min}>
           −
         </button>
-        <div className="relative flex-1 min-w-[240px]">
+        <div className="relative flex-1 min-w-0 sm:min-w-[240px]">
           <input
             ref={inputRef}
             type="range"
@@ -1535,7 +1535,7 @@ const ChartsDemo = () => {
                 ))}
               </select>
             </label>
-            <label className="flex flex-col gap-1" data-tour="n-slider">
+            <label className="flex min-w-0 flex-col gap-1" data-tour="n-slider">
               <span className="text-chart-axis text-xs">
                 {family === "categorical" ? "Data points / series" : "Ramp steps"}
               </span>
@@ -1631,7 +1631,7 @@ const ChartsDemo = () => {
                     ))}
                   </select>
                 </label>
-                <label className="flex flex-col gap-1">
+                <label className="flex min-w-0 flex-col gap-1">
                   <span className="text-chart-axis text-xs">
                     {ruleB.family === "categorical" ? "Data points / series" : "Ramp steps"}
                   </span>

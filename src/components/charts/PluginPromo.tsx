@@ -191,8 +191,10 @@ export function PluginPromo({ theme }: { theme: ChartTheme }) {
               className="mb-3 flex items-baseline justify-between gap-2 text-[10px] font-medium uppercase tracking-[0.13em]"
               style={{ color: PROMO.quiet.hex }}
             >
-              <span>Your palette, as others receive it</span>
-              <span className="tabular-nums">{palette.length}</span>
+              {/* Short enough not to wrap at phone width, where the count
+                  otherwise landed mid-phrase and read as part of it. */}
+              <span>As others receive it</span>
+              <span className="whitespace-nowrap tabular-nums">{palette.length} slots</span>
             </figcaption>
 
             <div className="space-y-3">
