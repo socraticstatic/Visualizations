@@ -1,0 +1,18 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.socraticstatic/chart-color-system",
+  "title": "Chart Color System",
+  "description": "Solve, audit and simulate chart color palettes: categorical palettes that stay distinguishable under colorblindness, WCAG 2.2 non-text contrast against the chart background, and sequential or diverging ramps. Read-only, no auth.",
+  "version": "0.1.0",
+  "websiteUrl": "https://socraticstatic.github.io/Visualizations/mcp-docs.html",
+  "repository": {
+    "url": "https://github.com/socraticstatic/Visualizations",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://chart-color-mcp.vercel.app/mcp"
+    }
+  ]
+}
