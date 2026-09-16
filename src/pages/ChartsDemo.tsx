@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Heart } from "lucide-react";
+import { ArrowRight, Heart } from "lucide-react";
 import { Link } from "react-router";
 import { EChart } from "@/components/charts/EChart";
 import {
@@ -1449,32 +1449,77 @@ const ChartsDemo = () => {
       </div>
 
       <div className="mx-auto max-w-[1600px] px-6 py-6 space-y-6">
-        {/* Title scrolls away. It earns its space once, not on every screen. */}
-        <header className="min-w-0">
-          <h1 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">
-            Micah's Chart System{" "}
-            <span className="text-chart-muted-text">for Sane and Useful Color Strategies</span>
-          </h1>
-          {/* The problem statement lives here because the page doesn't explain
-              itself: reviewers landed on the builder and couldn't tell what it
-              was for. One sentence, one link to the evidence, nothing else. */}
-          <p className="mt-1.5 max-w-[72ch] text-sm text-foreground/90">
-            Default chart palettes pass the WCAG 3:1 contrast floor on one background and silently fail on the
-            other. This builder treats the background as an input and audits before you ship.{" "}
-            <Link
-              to="/blog/palette-contrast-benchmark"
-              className="whitespace-nowrap font-medium text-primary underline underline-offset-4 hover:text-foreground"
-            >
-              Read the finding →
-            </Link>
-          </p>
-          <p className="mt-1.5 max-w-[72ch] text-sm text-chart-muted-text">
-            Pick a chart type and the number of data points — get an audited palette with matched dash, decal, and
-            shape encodings.
-            <span className="ml-2 inline-flex items-center rounded-full border border-chart-grid bg-chart-surface px-2 py-0.5 align-middle text-[11px] tabular-nums text-chart-muted-text">
+        {/* Masthead. The title scrolls away, so it earns its space once -- but
+            it was three same-weight paragraphs stacked 6px apart, and the
+            "Read the finding" underline sat 6px of ink above the next line of
+            body copy (link box bottom 227, next paragraph top 235, underline
+            offset 4). The evidence link now has its own row, the deck drops to
+            its own line instead of wrapping mid-phrase, and the version sits in
+            the kicker where metadata belongs rather than mid-sentence. */}
+        <header className="min-w-0 pb-2 pt-1">
+          <div className="flex items-center gap-3">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-chart-muted-text">
+              Palette builder &amp; audit
+            </span>
+            <span aria-hidden className="h-px min-w-6 flex-1 bg-chart-grid" />
+            <span className="shrink-0 rounded-full border border-chart-grid bg-chart-surface px-2 py-0.5 text-[11px] tabular-nums text-chart-muted-text">
               v{PALETTE_VERSION}
             </span>
-          </p>
+          </div>
+
+          {/* Two columns from lg: the claim on the left, the contract the
+              builder holds itself to on the right. The right column is what
+              the system enforces for every palette; the verdict strip in the
+              bar above is what the palette on screen measured. */}
+          <div className="mt-5 grid gap-x-12 gap-y-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+            <div className="min-w-0">
+            <h1 className="font-display text-[2rem] font-semibold leading-[1.05] tracking-tight md:text-[3rem]">
+              Micah's Chart System
+              <span className="mt-2 block text-[1.15rem] font-normal leading-snug tracking-normal text-chart-muted-text md:text-[1.6rem]">
+                for Sane and Useful Color Strategies
+              </span>
+            </h1>
+
+            {/* The problem statement lives here because the page doesn't explain
+                itself: reviewers landed on the builder and couldn't tell what it
+                was for. One sentence, one link to the evidence, nothing else. */}
+            <p className="mt-5 max-w-[62ch] text-base leading-relaxed text-foreground/90">
+              Default chart palettes pass the WCAG 3:1 contrast floor on one background and silently fail on the
+              other. This builder treats the background as an input and audits before you ship.
+            </p>
+
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <Link
+                to="/blog/palette-contrast-benchmark"
+                className="tap-target group inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chart-focus focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--page-bg))]"
+              >
+                Read the finding
+                <ArrowRight className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden />
+              </Link>
+              <p className="max-w-[48ch] text-sm leading-relaxed text-chart-muted-text">
+                Pick a chart type and the number of data points — get an audited palette with matched dash, decal,
+                and shape encodings.
+              </p>
+            </div>
+            </div>
+
+            <dl className="grid shrink-0 grid-cols-2 gap-x-8 gap-y-5 border-t border-chart-grid pt-5 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0">
+              {[
+                { term: "Contrast floor", detail: "≥ 3:1 on light and dark", note: "WCAG 2.2 SC 1.4.11" },
+                { term: "Colour vision", detail: "deutan · protan · tritan", note: "Machado 2009 matrices" },
+                { term: "Redundant encoding", detail: "dash · decal · marker", note: "paired 1:1 to each slot" },
+                { term: "Export", detail: "CSS · Tailwind · ECharts", note: "Figma tokens, SVG swatches" },
+              ].map((item) => (
+                <div key={item.term} className="min-w-0">
+                  <dt className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-chart-muted-text">
+                    {item.term}
+                  </dt>
+                  <dd className="mt-1 text-[13px] font-medium leading-snug text-foreground">{item.detail}</dd>
+                  <dd className="text-[11.5px] leading-snug text-chart-muted-text">{item.note}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
         </header>
 
         <section id="flow-build" className="scroll-mt-20 panel p-4 space-y-4">
