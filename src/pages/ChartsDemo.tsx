@@ -149,13 +149,41 @@ const DEFAULT_N = 2;
  *  rendered as "ΔE < 0" and "≥ 1" under a blanket toFixed(0). */
 const fmtThreshold = (v: number) => (v < 1 ? v.toFixed(1) : v.toFixed(0));
 
-function clampBuiltInN(k: ChartKind, t: Theme, requested: number) {
+/**
+ * `mode` decides whether the runtime-probed safe cap applies.
+ *
+ * "snap" is a value nobody asked for - a kind change falling back to
+ * DEFAULT_N - and those stay at or below the safe cap.
+ *
+ * "explicit" is an N somebody chose: the slider, a saved workflow, a shared
+ * link. Those are honoured up to the slider's own maximum, because both
+ * builtinBounds.ts and the slider's own comment say values above the safe cap
+ * are meant to surface warnings "so people can see and learn from their
+ * mistakes instead of being blocked".
+ *
+ * They were being blocked. The unconditional safe cap dates from the initial
+ * import; the comments describing the intended behaviour were written three
+ * months later, alongside the badge that reports it. With the cap in place
+ * safeMaxN is 6 for every theme and posture, so the slider ran to 12, the
+ * label read "max 12", and the committed value was always 6 - which also made
+ * the overflow flag, the aboveSafe warning and the 6-to-12 range dead code,
+ * and let a shared link say n=12 while rendering 6.
+ */
+function clampBuiltInN(
+  k: ChartKind,
+  t: Theme,
+  requested: number,
+  mode: "explicit" | "snap" = "snap"
+) {
   const r = BEST_PRACTICE[k];
   // Belt-and-braces: a NaN/Infinity request (hostile URL, upstream bug) falls
   // back to the kind's default instead of poisoning Math.min/Math.max.
   if (!Number.isFinite(requested)) requested = DEFAULT_N;
   const min = r.family === "categorical" ? 1 : 3;
-  const max = r.family === "categorical" ? Math.min(r.recommendedN, safeMaxN(t, r.posture)) : r.recommendedN;
+  const max =
+    r.family === "categorical" && mode === "snap"
+      ? Math.min(r.recommendedN, safeMaxN(t, r.posture))
+      : r.recommendedN;
   return Math.min(Math.max(min, requested), max);
 }
 
@@ -465,7 +493,13 @@ const ChartsDemo = () => {
     // only re-clamps if the new theme's safe range is narrower.
     const kindChanged = next.kind !== undefined && next.kind !== curKind;
     const fallbackN = kindChanged ? DEFAULT_N : curN;
-    const nextN = clampBuiltInN(nextKind, nextTheme, next.n ?? fallbackN);
+    // An N the caller passed is one somebody chose; anything else is a snap.
+    const nextN = clampBuiltInN(
+      nextKind,
+      nextTheme,
+      next.n ?? fallbackN,
+      next.n !== undefined ? "explicit" : "snap"
+    );
     if (isA) {
       skipNextKindSnap.current = true;
       if (next.kind && next.kind !== kind) setKind(next.kind);
