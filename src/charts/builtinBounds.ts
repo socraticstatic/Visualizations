@@ -18,9 +18,10 @@ const cache = new Map<string, number>();
 function passesAllConstraints(
   theme: Theme,
   posture: Posture,
-  n: number
+  n: number,
+  editedAnchorIndexes: number[]
 ): boolean {
-  const t = getChartTheme(theme, posture, n);
+  const t = getChartTheme(theme, posture, n, editedAnchorIndexes);
   if (t.overflow) return false;
   if (t.solve.relaxations.length > 0) return false;
 
@@ -45,15 +46,19 @@ function passesAllConstraints(
  * deliver it, while audit/badge UI still flags any intermediate N that needed
  * a relaxation. Returns at minimum 1.
  */
-export function safeMaxN(theme: Theme, posture: Posture): number {
-  const key = `${theme}|${posture}`;
+export function safeMaxN(
+  theme: Theme,
+  posture: Posture,
+  editedAnchorIndexes: number[] = []
+): number {
+  const key = `${theme}|${posture}|${editedAnchorIndexes.join(",")}`;
   const hit = cache.get(key);
   if (hit !== undefined) return hit;
 
   const upper = Math.min(MAX_SLOTS, POSTURE[posture].maxCategorical);
   let best = 1;
   for (let n = 1; n <= upper; n++) {
-    if (passesAllConstraints(theme, posture, n)) best = n;
+    if (passesAllConstraints(theme, posture, n, editedAnchorIndexes)) best = n;
   }
   cache.set(key, best);
   return best;

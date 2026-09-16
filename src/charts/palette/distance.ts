@@ -4,6 +4,7 @@
  */
 import { converter, formatHex, parse, type Oklab, type Rgb } from "culori";
 import { simulateRgb, type CvdType } from "./cvd";
+import { normalizeRecordParts } from "./deterministic";
 
 const toOklab = converter("oklab");
 const toRgb = converter("rgb");
@@ -21,8 +22,10 @@ export function fromCss(css: string): ColorRecord {
   const rgb = toRgb(parsed) as Rgb;
   return {
     hex: formatHex(parsed) ?? "#000000",
-    rgb: { r: rgb.r ?? 0, g: rgb.g ?? 0, b: rgb.b ?? 0 },
-    oklab: { l: lab.l ?? 0, a: lab.a ?? 0, b: lab.b ?? 0 },
+    ...normalizeRecordParts(
+      { r: rgb.r ?? 0, g: rgb.g ?? 0, b: rgb.b ?? 0 },
+      { l: lab.l ?? 0, a: lab.a ?? 0, b: lab.b ?? 0 }
+    ),
   };
 }
 

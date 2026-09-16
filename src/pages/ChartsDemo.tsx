@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Heart } from "lucide-react";
+import { ArrowRight, Heart } from "lucide-react";
 import { Link } from "react-router";
 import { EChart } from "@/components/charts/EChart";
 import {
@@ -51,7 +51,13 @@ import { Ship } from "@/components/charts/sections/Ship";
 import { type SectionId } from "@/charts/urlState";
 import { VisionPreviewToggle } from "@/components/charts/VisionPreviewToggle";
 import { WorkflowPresets, type WorkflowState } from "@/components/charts/WorkflowPresets";
-import { clearManualColorOverrides, hasManualColorOverrides } from "@/charts/manualOverrides";
+import { buildWarningList } from "@/charts/warnings";
+import { PluginPromo } from "@/components/charts/PluginPromo";
+import {
+  clearManualColorOverrides,
+  getEditedAnchorIndexes,
+  hasManualColorOverrides,
+} from "@/charts/manualOverrides";
 import { safeMaxN, clearSafeMaxNCache } from "@/charts/builtinBounds";
 
 type Vision = VisionMode;
@@ -143,13 +149,41 @@ const DEFAULT_N = 2;
  *  rendered as "ΔE < 0" and "≥ 1" under a blanket toFixed(0). */
 const fmtThreshold = (v: number) => (v < 1 ? v.toFixed(1) : v.toFixed(0));
 
-function clampBuiltInN(k: ChartKind, t: Theme, requested: number) {
+/**
+ * `mode` decides whether the runtime-probed safe cap applies.
+ *
+ * "snap" is a value nobody asked for - a kind change falling back to
+ * DEFAULT_N - and those stay at or below the safe cap.
+ *
+ * "explicit" is an N somebody chose: the slider, a saved workflow, a shared
+ * link. Those are honoured up to the slider's own maximum, because both
+ * builtinBounds.ts and the slider's own comment say values above the safe cap
+ * are meant to surface warnings "so people can see and learn from their
+ * mistakes instead of being blocked".
+ *
+ * They were being blocked. The unconditional safe cap dates from the initial
+ * import; the comments describing the intended behaviour were written three
+ * months later, alongside the badge that reports it. With the cap in place
+ * safeMaxN is 6 for every theme and posture, so the slider ran to 12, the
+ * label read "max 12", and the committed value was always 6 - which also made
+ * the overflow flag, the aboveSafe warning and the 6-to-12 range dead code,
+ * and let a shared link say n=12 while rendering 6.
+ */
+function clampBuiltInN(
+  k: ChartKind,
+  t: Theme,
+  requested: number,
+  mode: "explicit" | "snap" = "snap"
+) {
   const r = BEST_PRACTICE[k];
   // Belt-and-braces: a NaN/Infinity request (hostile URL, upstream bug) falls
   // back to the kind's default instead of poisoning Math.min/Math.max.
   if (!Number.isFinite(requested)) requested = DEFAULT_N;
   const min = r.family === "categorical" ? 1 : 3;
-  const max = r.family === "categorical" ? Math.min(r.recommendedN, safeMaxN(t, r.posture)) : r.recommendedN;
+  const max =
+    r.family === "categorical" && mode === "snap"
+      ? Math.min(r.recommendedN, safeMaxN(t, r.posture))
+      : r.recommendedN;
   return Math.min(Math.max(min, requested), max);
 }
 
@@ -251,11 +285,11 @@ function NSlider({
           the row's centerline sat below the track and the ± buttons (and the
           N box) rendered visibly low against the slider line. mb-4 reserves
           the space the hanging labels occupy. */}
-      <div className="mb-4 flex items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <button type="button" aria-label={`Decrease to ${clamped - 1}`} className={stepBtn} onClick={() => stepBy(-1)} disabled={clamped <= min}>
           −
         </button>
-        <div className="relative flex-1 min-w-[240px]">
+        <div className="relative min-w-[120px] flex-1">
           <input
             ref={inputRef}
             type="range"
@@ -459,7 +493,13 @@ const ChartsDemo = () => {
     // only re-clamps if the new theme's safe range is narrower.
     const kindChanged = next.kind !== undefined && next.kind !== curKind;
     const fallbackN = kindChanged ? DEFAULT_N : curN;
-    const nextN = clampBuiltInN(nextKind, nextTheme, next.n ?? fallbackN);
+    // An N the caller passed is one somebody chose; anything else is a snap.
+    const nextN = clampBuiltInN(
+      nextKind,
+      nextTheme,
+      next.n ?? fallbackN,
+      next.n !== undefined ? "explicit" : "snap"
+    );
     if (isA) {
       skipNextKindSnap.current = true;
       if (next.kind && next.kind !== kind) setKind(next.kind);
@@ -602,7 +642,7 @@ const ChartsDemo = () => {
 
   const themeNB = ruleB.family === "categorical" ? nB : 1;
   const chartThemeB = useMemo(
-    () => getChartTheme(themeB, ruleB.posture, themeNB),
+    () => getChartTheme(themeB, ruleB.posture, themeNB, getEditedAnchorIndexes(themeB)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [themeB, ruleB.posture, themeNB, colorRev]
   );
@@ -624,7 +664,7 @@ const ChartsDemo = () => {
   // Bumped whenever entity pins change so the chart re-applies the permutation.
   const [pinRev, setPinRev] = useState(0);
   const rawChartTheme = useMemo(
-    () => getChartTheme(theme, posture, themeN),
+    () => getChartTheme(theme, posture, themeN, getEditedAnchorIndexes(theme)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [theme, posture, themeN, colorRev]
   );
@@ -670,80 +710,6 @@ const ChartsDemo = () => {
     [auditedColorsB, chartThemeB, ruleB.family]
   );
 
-  // Build the prioritized warning list for any (kind, n, audit) tuple.
-  function buildWarningList(
-    k: ChartKind,
-    r: ReturnType<typeof BEST_PRACTICE[ChartKind] extends infer T ? () => T : never> | typeof rule,
-    requested: number,
-    rendered: number,
-    /** True only when the posture cap actually collapsed slots into "Other"
-     *  (chartTheme.overflow) — NOT when N is merely above the solver-safe cap. */
-    collapsed: boolean,
-    /** True when N exceeds the solver-safe cap for this theme/posture. */
-    aboveSafe: boolean,
-    safeCap: number,
-    a: AuditReport,
-    relax: string[]
-  ) {
-    const ws: Array<{ severity: "error" | "warn" | "info"; title: string; detail: string }> = [];
-    const w = r.warn?.(rendered) ?? null;
-    if (collapsed) {
-      ws.push({
-        severity: "error",
-        title: `N=${requested} exceeds the ${CHART_KIND_LABEL[k]} hard cap of ${r.maxN}`,
-        detail: `Slots past ${r.maxN} were collapsed into "Other". Lower N or pick a chart type that supports more series.`,
-      });
-    }
-    if (aboveSafe && !collapsed) {
-      ws.push({
-        severity: "warn",
-        title: `N=${rendered} is above the solver-safe cap of ${safeCap} for this theme`,
-        detail: `Up to N=${safeCap} every floor passes with zero relaxations. Above it nothing is collapsed — all ${rendered} slots render — but the solver may relax floors; the entries below show which ones.`,
-      });
-    }
-    if (w) {
-      ws.push({
-        severity: "warn",
-        title: w,
-        detail: `${CHART_KIND_LABEL[k]} recommends N ≤ ${r.recommendedN}; rendering ${rendered}.`,
-      });
-    } else if (rendered > r.recommendedN && !capped) {
-      ws.push({
-        severity: "warn",
-        title: `N=${rendered} is above the recommended ${r.recommendedN} for ${CHART_KIND_LABEL[k]}`,
-        detail: `Past ${r.recommendedN} slots, dash / decal / shape carry identity rather than color.`,
-      });
-    }
-    for (const v of a.perVision) {
-      if (!v.pass) {
-        ws.push({
-          severity: v.mode === "normal" ? "error" : "warn",
-          title: `${v.mode} fails ${v.mode === "achromatopsia" ? "ΔL" : "ΔE"} ≥ ${v.threshold < 1 ? v.threshold.toFixed(1) : v.threshold.toFixed(0)} (got ${v.minDeltaE.toFixed(1)})`,
-          detail:
-            v.mode === "achromatopsia"
-              ? "Two slots collapse to indistinguishable grays — meaning will be lost in print, projector, or grayscale screenshots."
-              : v.mode === "normal"
-              ? "Two slots are too close even in normal vision. Lower N or change chart type."
-              : "Two slots simulate to indistinguishable colors under this CVD type. Dash, decal, and shape still differentiate them, but color alone won't.",
-        });
-      }
-    }
-    if (!a.bgPass) {
-      ws.push({
-        severity: "error",
-        title: `Contrast vs. background ${a.worstContrastVsBg.toFixed(2)}:1 fails WCAG 2.2 SC 1.4.11 (≥ 3:1)`,
-        detail: "At least one mark color blends into the chart background.",
-      });
-    }
-    for (const rx of relax) {
-      ws.push({
-        severity: "info",
-        title: `Solver relaxed: ${rx}`,
-        detail: "The optimizer couldn't satisfy this constraint at the current N and loosened it. Lower N to restore it.",
-      });
-    }
-    return ws;
-  }
 
   const warnings = useMemo(
     () =>
@@ -758,7 +724,6 @@ const ChartsDemo = () => {
         audit,
         chartTheme.solve.relaxations
       ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [chartTheme.overflow, overflow, safeBuiltinMaxA, requestedN, kind, rule, n, audit, chartTheme.solve.relaxations]
   );
   const overflowB = ruleB.family === "categorical" && nB > safeBuiltinMaxB;
@@ -775,7 +740,6 @@ const ChartsDemo = () => {
         auditB,
         chartThemeB.solve.relaxations
       ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [chartThemeB.overflow, overflowB, safeBuiltinMaxB, requestedNB, kindB, ruleB, nB, auditB, chartThemeB.solve.relaxations]
   );
 
@@ -1412,14 +1376,17 @@ const ChartsDemo = () => {
           sticky rows would eat 100px of every screen forever. */}
       <div className="sticky top-0 z-40 border-b border-chart-grid bg-[hsl(var(--page-bg)/0.92)] backdrop-blur">
         <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-x-3 gap-y-1 px-6 py-1.5 sm:h-12 sm:flex-nowrap sm:py-0">
-          <div
-            className="flex h-6 w-6 shrink-0 items-end justify-center gap-0.5 rounded bg-primary p-1"
+          {/* The brand mark, same file the browser tab uses. This used to be
+              a three-bar tile built from the anchor tokens - a third mark,
+              different from both the favicon and the plugin icon. */}
+          <img
+            src={`${import.meta.env.BASE_URL}brand/mark-96.png`}
+            alt=""
+            width={24}
+            height={24}
+            className="h-6 w-6 shrink-0 rounded"
             aria-hidden
-          >
-            <span className="w-1 rounded-sm" style={{ height: "45%", background: "hsl(var(--chart-cat-anchor-1))" }} />
-            <span className="w-1 rounded-sm" style={{ height: "100%", background: "hsl(var(--chart-cat-anchor-2))" }} />
-            <span className="w-1 rounded-sm" style={{ height: "70%", background: "hsl(var(--chart-cat-anchor-3))" }} />
-          </div>
+          />
           <div className="order-last w-full min-w-0 sm:order-none sm:w-auto sm:flex-1">
             <SectionNav onNavigate={goToSection} />
           </div>
@@ -1485,32 +1452,77 @@ const ChartsDemo = () => {
       </div>
 
       <div className="mx-auto max-w-[1600px] px-6 py-6 space-y-6">
-        {/* Title scrolls away. It earns its space once, not on every screen. */}
-        <header className="min-w-0">
-          <h1 className="font-display text-3xl font-semibold tracking-tight md:text-4xl">
-            Micah's Chart System{" "}
-            <span className="text-chart-muted-text">for Sane and Useful Color Strategies</span>
-          </h1>
-          {/* The problem statement lives here because the page doesn't explain
-              itself: reviewers landed on the builder and couldn't tell what it
-              was for. One sentence, one link to the evidence, nothing else. */}
-          <p className="mt-1.5 max-w-[72ch] text-sm text-foreground/90">
-            Default chart palettes pass the WCAG 3:1 contrast floor on one background and silently fail on the
-            other. This builder treats the background as an input and audits before you ship.{" "}
-            <Link
-              to="/blog/palette-contrast-benchmark"
-              className="whitespace-nowrap font-medium text-primary underline underline-offset-4 hover:text-foreground"
-            >
-              Read the finding →
-            </Link>
-          </p>
-          <p className="mt-1.5 max-w-[72ch] text-sm text-chart-muted-text">
-            Pick a chart type and the number of data points — get an audited palette with matched dash, decal, and
-            shape encodings.
-            <span className="ml-2 inline-flex items-center rounded-full border border-chart-grid bg-chart-surface px-2 py-0.5 align-middle text-[11px] tabular-nums text-chart-muted-text">
+        {/* Masthead. The title scrolls away, so it earns its space once -- but
+            it was three same-weight paragraphs stacked 6px apart, and the
+            "Read the finding" underline sat 6px of ink above the next line of
+            body copy (link box bottom 227, next paragraph top 235, underline
+            offset 4). The evidence link now has its own row, the deck drops to
+            its own line instead of wrapping mid-phrase, and the version sits in
+            the kicker where metadata belongs rather than mid-sentence. */}
+        <header className="min-w-0 pb-2 pt-1">
+          <div className="flex items-center gap-3">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-chart-muted-text">
+              Palette builder &amp; audit
+            </span>
+            <span aria-hidden className="h-px min-w-6 flex-1 bg-chart-grid" />
+            <span className="shrink-0 rounded-full border border-chart-grid bg-chart-surface px-2 py-0.5 text-[11px] tabular-nums text-chart-muted-text">
               v{PALETTE_VERSION}
             </span>
-          </p>
+          </div>
+
+          {/* Two columns from lg: the claim on the left, the contract the
+              builder holds itself to on the right. The right column is what
+              the system enforces for every palette; the verdict strip in the
+              bar above is what the palette on screen measured. */}
+          <div className="mt-5 grid gap-x-12 gap-y-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+            <div className="min-w-0">
+              <h1 className="font-display text-[2rem] font-semibold leading-[1.05] tracking-tight md:text-[3rem]">
+                Micah's Chart System
+                <span className="mt-2 block text-[1.15rem] font-normal leading-snug tracking-normal text-chart-muted-text md:text-[1.6rem]">
+                  for Sane and Useful Color Strategies
+                </span>
+              </h1>
+
+              {/* The problem statement lives here because the page doesn't explain
+                  itself: reviewers landed on the builder and couldn't tell what it
+                  was for. One sentence, one link to the evidence, nothing else. */}
+              <p className="mt-5 max-w-[62ch] text-base leading-relaxed text-foreground/90">
+                Default chart palettes pass the WCAG 3:1 contrast floor on one background and silently fail on the
+                other. This builder treats the background as an input and audits before you ship.
+              </p>
+
+              <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
+                <Link
+                  to="/blog/palette-contrast-benchmark"
+                  className="tap-target group inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chart-focus focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--page-bg))]"
+                >
+                  Read the finding
+                  <ArrowRight className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden />
+                </Link>
+                <p className="max-w-[48ch] text-sm leading-relaxed text-chart-muted-text">
+                  Pick a chart type and the number of data points — get an audited palette with matched dash, decal,
+                  and shape encodings.
+                </p>
+              </div>
+            </div>
+
+            <dl className="hidden shrink-0 grid-cols-2 gap-x-8 gap-y-5 border-t border-chart-grid pt-5 sm:grid lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0">
+              {[
+                { term: "Contrast floor", detail: "≥ 3:1 on light and dark", note: "WCAG 2.2 SC 1.4.11" },
+                { term: "Colour vision", detail: "deutan · protan · tritan", note: "Machado 2009 matrices" },
+                { term: "Redundant encoding", detail: "dash · decal · marker", note: "paired 1:1 to each slot" },
+                { term: "Export", detail: "CSS · Tailwind · ECharts", note: "Figma tokens, SVG swatches" },
+              ].map((item) => (
+                <div key={item.term} className="min-w-0">
+                  <dt className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-chart-muted-text">
+                    {item.term}
+                  </dt>
+                  <dd className="mt-1 text-[13px] font-medium leading-snug text-foreground">{item.detail}</dd>
+                  <dd className="text-[11.5px] leading-snug text-chart-muted-text">{item.note}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
         </header>
 
         <section id="flow-build" className="scroll-mt-20 panel p-4 space-y-4">
@@ -1588,7 +1600,7 @@ const ChartsDemo = () => {
                 </div>
               </div>
             )}
-          <div className="space-y-4 min-w-0">
+          <div className="space-y-10 min-w-0">
           <div className="flex flex-wrap items-end gap-x-6 gap-y-3 text-sm">
 
             <label className="flex flex-col gap-1" data-tour="chart-kind">
@@ -1605,7 +1617,7 @@ const ChartsDemo = () => {
                 ))}
               </select>
             </label>
-            <label className="flex flex-col gap-1" data-tour="n-slider">
+            <label className="flex min-w-0 flex-col gap-1" data-tour="n-slider">
               <span className="text-chart-axis text-xs">
                 {family === "categorical" ? "Data points / series" : "Ramp steps"}
               </span>
@@ -1701,7 +1713,7 @@ const ChartsDemo = () => {
                     ))}
                   </select>
                 </label>
-                <label className="flex flex-col gap-1">
+                <label className="flex min-w-0 flex-col gap-1">
                   <span className="text-chart-axis text-xs">
                     {ruleB.family === "categorical" ? "Data points / series" : "Ramp steps"}
                   </span>
@@ -1900,6 +1912,7 @@ const ChartsDemo = () => {
           </Reuse>
 
           <Ship>
+          {family === "categorical" && <PluginPromo theme={chartTheme} />}
           {family === "categorical" && <CodeSnippet kind={kind} n={n} theme={chartTheme} />}
           <div className="flex flex-wrap items-center gap-2 rounded-md border border-chart-grid bg-chart-bg p-3">
             <span className="text-[10px] uppercase tracking-wide text-chart-axis mr-2">Ship</span>

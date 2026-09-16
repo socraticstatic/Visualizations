@@ -18,9 +18,10 @@ import {
   THRESHOLDS,
   type Posture,
 } from "../constraints";
-import { cvdDeltaE, deltaE, deltaL, fromCss, type ColorRecord } from "./distance";
-import { oklchToRgb, oklchOf, reduceToSrgb } from "./gamut";
+import { cvdDeltaE, deltaE, deltaL, type ColorRecord } from "./distance";
+import { oklchToRgb, reduceToSrgb } from "./gamut";
 import { converter, type Oklab } from "culori";
+import { normalizeRecordParts, exp as detExp } from "./deterministic";
 
 const toOklab = converter("oklab");
 
@@ -68,8 +69,7 @@ function rgbToColorRecord(rgb: { r: number; g: number; b: number }): ColorRecord
   const lab = toOklab({ mode: "rgb", ...rgb }) as Oklab;
   return {
     hex: formatHex({ mode: "rgb", ...rgb }) ?? "#000000",
-    rgb,
-    oklab: { l: lab.l ?? 0, a: lab.a ?? 0, b: lab.b ?? 0 },
+    ...normalizeRecordParts(rgb, { l: lab.l ?? 0, a: lab.a ?? 0, b: lab.b ?? 0 }),
   };
 }
 
@@ -218,7 +218,9 @@ export function solveCategorical(input: SolveInput): SolveResult {
       minPairScore(trial) -
       backgroundPenalty(cand, { background: input.background, grid: input.grid, thresholds: THRESHOLDS });
     const delta = trialScore - currentScore;
-    if (delta > 0 || rand() < Math.exp(delta / (10 * temp))) {
+    // detExp, not Math.exp: this comparison is the branch the whole search
+    // turns on, and Math.exp is not required to be correctly rounded.
+    if (delta > 0 || rand() < detExp(delta / (10 * temp))) {
       current = trial;
       currentScore = trialScore;
     }

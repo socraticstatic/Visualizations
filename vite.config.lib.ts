@@ -10,6 +10,11 @@ import path from "path";
  */
 export default defineConfig({
   build: {
+    // The npm package is the solver, not the site. Without this, vite copies
+    // all of public/ into dist-lib, so publishing shipped the favicon, the
+    // MCP docs page and (once the brand assets landed) 175KB of PNGs to
+    // everyone who installs chart-color-system.
+    copyPublicDir: false,
     outDir: "dist-lib",
     emptyOutDir: true,
     sourcemap: true,

@@ -18,7 +18,10 @@ export function NextStageButton({ current }: { current: SectionId }) {
   if (!next) return null;
 
   return (
-    <div className="flex justify-end pt-1">
+    <div className="flex flex-wrap items-center gap-2 rounded-md border border-chart-grid bg-chart-bg p-3">
+      <span className="mr-auto text-[10px] uppercase tracking-wide text-chart-axis">
+        End of {SECTION_LABELS[current]}
+      </span>
       <button
         type="button"
         onClick={() => {
@@ -30,7 +33,7 @@ export function NextStageButton({ current }: { current: SectionId }) {
         className="tap-target inline-flex items-center gap-1 rounded-full border border-chart-grid bg-chart-bg px-3 py-1 text-xs text-chart-muted-text transition-colors hover:border-chart-info hover:text-foreground"
         title={`Jump to ${SECTION_LABELS[next]}`}
       >
-        Next: {SECTION_LABELS[next]} <span aria-hidden>→</span>
+        Continue to {SECTION_LABELS[next]} <span aria-hidden>→</span>
       </button>
     </div>
   );
