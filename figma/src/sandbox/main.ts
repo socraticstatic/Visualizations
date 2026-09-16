@@ -80,12 +80,20 @@ if (figma.mode === "codegen") {
         }
 
         case "render-simulation": {
-          const created = renderSimulation(msg.frames);
-          if (created === 0) {
-            reply({ id: msg.id, ok: false, reason: "no-selection", detail: "Select something to simulate first." });
+          const outcome = renderSimulation(msg.frames);
+          if (!outcome.ok) {
+            reply({
+              id: msg.id,
+              ok: false,
+              reason: outcome.reason === "no-selection" ? "no-selection" : "figma-error",
+              detail:
+                outcome.reason === "no-selection"
+                  ? "Select something to simulate first."
+                  : `That selection has ${outcome.count} layers, too many to copy four times without stalling Figma.`,
+            });
             return;
           }
-          reply({ id: msg.id, ok: true, type: "simulation-rendered", payload: { created } });
+          reply({ id: msg.id, ok: true, type: "simulation-rendered", payload: { created: outcome.created } });
           return;
         }
 

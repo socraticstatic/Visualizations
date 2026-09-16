@@ -1,6 +1,7 @@
 import type {
   BackdropLayer, PaintKind, SelectionPayload, SerializedNode, SerializedPaint,
 } from "../shared/protocol";
+import { MAX_READ_NODES } from "../shared/limits";
 
 type Loose = Record<string, any>;
 
@@ -69,8 +70,6 @@ export function collectBackdrop(node: unknown): BackdropLayer[] {
   return out;
 }
 
-/** A selection of thousands of nodes is a pasted chart, not a design decision. */
-export const MAX_SELECTION_NODES = 400;
 
 export function readSelection(): SelectionPayload {
   const roots = figma.currentPage.selection;
@@ -82,7 +81,7 @@ export function readSelection(): SelectionPayload {
   // so the panel is told how much it is not seeing.
   const visit = (n: SceneNode) => {
     total++;
-    if (nodes.length < MAX_SELECTION_NODES) nodes.push(serializeNode(n));
+    if (nodes.length < MAX_READ_NODES) nodes.push(serializeNode(n));
     const kids = (n as unknown as Loose).children as SceneNode[] | undefined;
     if (Array.isArray(kids)) kids.forEach(visit);
   };

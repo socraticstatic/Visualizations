@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { simulateColor, type VisionMode } from "@engine/audit";
 import { fromFigmaRgb, toFigmaRgb } from "../shared/color";
 import type { SelectionPayload, SimulationSpec } from "../shared/protocol";
+import { MAX_SIMULATION_NODES, SIMULATION_COPIES } from "../shared/limits";
 import { onSelectionChange, send } from "./bridge";
 
 const MODES: Array<{ mode: VisionMode; label: string }> = [
@@ -45,6 +46,8 @@ export function SimulateTab() {
     return onSelectionChange((p) => setPayload(p.nodes.length ? p : null));
   }, []);
 
+  const tooMany = payload ? payload.total > MAX_SIMULATION_NODES : false;
+
   const solidCount = payload
     ? payload.nodes.reduce(
         (acc, n) => acc + (n.fills === "mixed" ? 0 : n.fills.filter((f) => f.kind === "solid").length),
@@ -81,6 +84,16 @@ export function SimulateTab() {
         receives. Image and gradient fills are left alone rather than given an invented colour.
       </p>
 
+      {tooMany && (
+        <p className="refusal">
+          This selection has {payload.total} layers. Simulating places{" "}
+          {SIMULATION_COPIES} copies, so that would create around{" "}
+          {payload.total * SIMULATION_COPIES} nodes at once and Figma will
+          struggle. Select the legend, a few representative shapes, or one
+          frame rather than a chart pasted as vectors.
+        </p>
+      )}
+
       <section className="verdict">
         <dl className="verdict__stats">
           <div>
@@ -104,8 +117,8 @@ export function SimulateTab() {
         )}
       </section>
 
-      <button className="btn" disabled={busy || solidCount === 0} onClick={() => void place()}>
-        {busy ? "Placing" : `Place ${MODES.length} simulated copies`}
+      <button className="btn" disabled={busy || tooMany || solidCount === 0} onClick={() => void place()}>
+        {busy ? "Placing" : `Place ${SIMULATION_COPIES} simulated copies`}
       </button>
       {solidCount === 0 && (
         <p className="note">Nothing in this selection has a solid fill to simulate.</p>

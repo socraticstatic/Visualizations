@@ -1,4 +1,5 @@
 import type { SimulationSpec } from "../shared/protocol";
+import { MAX_SIMULATION_NODES } from "../shared/limits";
 
 type Loose = Record<string, any>;
 
@@ -11,9 +12,29 @@ type Loose = Record<string, any>;
  * exactly, so the two walks stay aligned. Originals are never mutated, and
  * image and gradient fills are left alone rather than given an invented colour.
  */
-export function renderSimulation(frames: SimulationSpec[]): number {
+export type SimulationOutcome =
+  | { ok: true; created: number }
+  | { ok: false; reason: "no-selection" | "too-many"; count: number };
+
+function countNodes(roots: readonly SceneNode[]): number {
+  let n = 0;
+  const visit = (node: Loose) => {
+    n++;
+    const kids = node.children;
+    if (Array.isArray(kids)) kids.forEach(visit);
+  };
+  roots.forEach((r) => visit(r as unknown as Loose));
+  return n;
+}
+
+export function renderSimulation(frames: SimulationSpec[]): SimulationOutcome {
   const roots = figma.currentPage.selection;
-  if (roots.length === 0) return 0;
+  if (roots.length === 0) return { ok: false, reason: "no-selection", count: 0 };
+
+  // The panel disables this, but the panel is not the authority: a selection can
+  // change between the check and the call.
+  const count = countNodes(roots);
+  if (count > MAX_SIMULATION_NODES) return { ok: false, reason: "too-many", count };
 
   let created = 0;
 
@@ -52,5 +73,5 @@ export function renderSimulation(frames: SimulationSpec[]): number {
   }
 
   figma.commitUndo();
-  return created;
+  return { ok: true, created };
 }

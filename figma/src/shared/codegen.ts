@@ -12,6 +12,7 @@
  * reads chart tokens off a live element.
  */
 import { dashScale, decalScale, shapeScale, MAX_SLOTS } from "@engine/encoding";
+import { MAX_CODEGEN_NODES } from "./limits";
 import { PALETTE_VERSION } from "@engine/version";
 
 export interface CodegenSeries {
@@ -25,8 +26,7 @@ export interface CodegenInput {
   surface: string | null;
 }
 
-/** Beyond this, a selection is a pasted chart rather than a set of series. */
-export const MAX_CODEGEN_NODES = 200;
+export { MAX_CODEGEN_NODES };
 
 export interface CollectResult {
   series: CodegenSeries[];
