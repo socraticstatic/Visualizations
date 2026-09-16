@@ -31,6 +31,15 @@ test('refuses non-GET', () => {
   assert.equal(res.statusCode, 405);
 });
 
+test('the card fits the registry\'s limits', () => {
+  // registry.modelcontextprotocol.io rejects a publish with 422 when these
+  // overflow. Found the hard way: the first publish failed on a 212-character
+  // description after the workflow had already tagged and authenticated.
+  assert.ok(card.description.length <= 100, `description is ${card.description.length} chars, max 100`);
+  assert.ok(card.name.length <= 200, 'name too long');
+  assert.ok(card.title.length <= 100, 'title too long');
+});
+
 test('the card points at the live endpoint this project deploys', () => {
   const remote = card.remotes?.find((r) => r.type === 'streamable-http');
   assert.ok(remote, 'server.json must declare a streamable-http remote');
