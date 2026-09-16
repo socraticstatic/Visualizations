@@ -53,11 +53,27 @@ describe("charts masthead", () => {
     expect(MASTHEAD.slice(rowOpen, rowOpen + 200)).toMatch(/className="mt-[5-9] flex/);
   });
 
-  it("puts the version in the kicker, not mid-sentence", () => {
-    const version = MASTHEAD.indexOf("v{PALETTE_VERSION}");
-    expect(version).toBeGreaterThan(-1);
-    expect(version).toBeLessThan(MASTHEAD.indexOf("<h1"));
+  it("keeps the version out of running copy and out of the heading", () => {
+    // It used to hang off the end of the third paragraph, mid-sentence. It is
+    // metadata, so it sits with the action row - not inside body text, and not
+    // inside the h1, where it would join the heading's accessible name.
+    expect(MASTHEAD).toContain("v{PALETTE_VERSION}");
     expect(PARAGRAPHS.some((p) => p.includes("PALETTE_VERSION"))).toBe(false);
+    const h1 = MASTHEAD.slice(MASTHEAD.indexOf("<h1"), MASTHEAD.indexOf("</h1>"));
+    expect(h1).not.toContain("PALETTE_VERSION");
+  });
+
+  it("never draws a rule in chart-grid, which is invisible on the page", () => {
+    // chart-grid is a gridline colour, tuned for the chart surface. On the page
+    // background it measures 1.17:1 - the first masthead carried a 685px rule
+    // in it that simply was not there, and a version pill whose outline was
+    // not there either. Rules in the masthead use chart-axis at an alpha.
+    const classLists = [...MASTHEAD.matchAll(/className="([^"]*)"/g)].map((m) => m[1]);
+    expect(classLists.filter((c) => /(?:^|\s|:)border-chart-grid\b/.test(c))).toEqual([]);
+    // A hairline element filled with it is the same defect wearing a div.
+    expect(
+      classLists.filter((c) => /\b[hw]-px\b/.test(c) && /(?:^|\s)bg-chart-grid\b/.test(c))
+    ).toEqual([]);
   });
 
   it("drops the deck onto its own line instead of wrapping mid-phrase", () => {
