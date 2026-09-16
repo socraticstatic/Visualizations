@@ -1380,7 +1380,7 @@ const ChartsDemo = () => {
               a three-bar tile built from the anchor tokens - a third mark,
               different from both the favicon and the plugin icon. */}
           <img
-            src={`${import.meta.env.BASE_URL}favicon.svg`}
+            src={`${import.meta.env.BASE_URL}brand/mark-96.png`}
             alt=""
             width={24}
             height={24}

@@ -17,13 +17,11 @@ import { join } from "node:path";
 const ROOT = join(__dirname, "..", "..", "..");
 const read = (p: string) => readFileSync(join(ROOT, p), "utf8");
 
-/** The four views the mark is made of, from render-brand.py's VIEWS. */
-const VIEWS = ["#f20ddf", "#7092da", "#0075e4", "#888888"];
-
 describe("the brand mark", () => {
   it("ships every surface the markup asks for", () => {
     for (const f of [
-      "public/favicon.svg",
+      "public/brand/mark-32.png",
+      "public/brand/mark-96.png",
       "public/favicon.ico",
       "public/apple-touch-icon.png",
       "public/plugin-icon.png",
@@ -36,30 +34,32 @@ describe("the brand mark", () => {
     }
   });
 
-  it("is one colour as four people receive it, not a decorative shape", () => {
-    const svg = read("public/favicon.svg");
-    expect(svg.match(/<path/g)).toHaveLength(4);
-    // Each quadrant's gradient starts at that view's own colour.
-    for (const hex of VIEWS) {
-      expect(svg.toLowerCase(), hex).toContain(hex);
-    }
+  it("is the rendered artwork everywhere, never a redrawn variant", () => {
+    // There is deliberately no favicon.svg. A hand-authored vector is a second
+    // drawing of the mark however close it gets, and a simplified small-size
+    // variant is a second mark outright. Every surface is the same render at a
+    // different size.
+    expect(existsSync(join(ROOT, "public/favicon.svg"))).toBe(false);
+    const py = read("figma/scripts/render-brand.py");
+    expect(py).not.toContain("SMALL");
+    expect(py).not.toContain("svg_mark");
   });
 
   it("is what the tab, the home screen and the docs page point at", () => {
     const index = read("index.html");
-    expect(index).toContain('href="/favicon.svg"');
     expect(index).toContain('href="/favicon.ico"');
+    expect(index).toContain('href="/brand/mark-192.png"');
     expect(index).toContain('rel="apple-touch-icon"');
 
     // Served from a project subpath, so its hrefs must stay relative.
     const docs = read("public/mcp-docs.html");
-    expect(docs).toContain('href="favicon.svg"');
-    expect(docs).not.toContain('href="/favicon.svg"');
+    expect(docs).toContain('href="favicon.ico"');
+    expect(docs).not.toContain('href="/favicon.ico"');
   });
 
   it("is what the app draws in its own chrome", () => {
     const page = read("src/pages/ChartsDemo.tsx");
-    expect(page).toContain("favicon.svg");
+    expect(page).toContain("brand/mark-96.png");
     // The hand-built three-bar tile that used to sit in the sticky bar.
     expect(page).not.toContain('background: "hsl(var(--chart-cat-anchor-1))"');
   });
