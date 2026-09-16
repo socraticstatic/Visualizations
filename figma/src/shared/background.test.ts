@@ -29,7 +29,8 @@ describe("resolveBackground", () => {
       layer({ nodeId: "outer", fills: [solid(1, 1, 1)] }),
     ]);
     expect(r.ok).toBe(true);
-    if (r.ok) expect(Math.abs(r.color.rgb.r - 0.5)).toBeLessThan(1e-6);
+    // Snapped to the 8-bit grid it renders at: 0.5 becomes 128/255.
+    if (r.ok) expect(Math.abs(r.color.rgb.r - 128 / 255)).toBeLessThan(1e-6);
   });
 
   it("keeps walking outward past layers with no visible fill", () => {

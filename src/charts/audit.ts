@@ -12,6 +12,7 @@ import { deltaE } from "./palette/distance";
 import { simulateRgb } from "./palette/cvd";
 import { converter, formatHex, type Oklab } from "culori";
 import { THRESHOLDS, CVD_SEVERITY } from "./constraints";
+import { pow as detPow, quantize } from "./palette/deterministic";
 
 /** Runtime list of vision modes — the single source for the VisionMode type
  *  and for validating untrusted input (e.g. the `v` URL parameter). */
@@ -28,17 +29,17 @@ function toGrayscale(c: ColorRecord): ColorRecord {
   // Rec. 709 luma requires linearized (scene-linear) inputs.
   // Linearize gamma-encoded sRGB values first (IEC 61966-2-1 threshold = 0.04045).
   const lin = (v: number) =>
-    v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    v <= 0.04045 ? v / 12.92 : detPow((v + 0.055) / 1.055, 2.4);
   const linY = 0.2126 * lin(c.rgb.r) + 0.7152 * lin(c.rgb.g) + 0.0722 * lin(c.rgb.b);
   // Gamma-encode the linear luma back to sRGB for consistent downstream comparisons.
-  const y = linY <= 0.0031308 ? 12.92 * linY : 1.055 * Math.pow(linY, 1 / 2.4) - 0.055;
+  const y = linY <= 0.0031308 ? 12.92 * linY : 1.055 * detPow(linY, 1 / 2.4) - 0.055;
   const grayRgb = { r: y, g: y, b: y };
   // Derive OKLab from the actual gray — do not borrow L from the original color.
   const lab = toOklab({ mode: "rgb", ...grayRgb }) as Oklab;
   return {
     hex: formatHex({ mode: "rgb", ...grayRgb }) ?? c.hex,
     rgb: grayRgb,
-    oklab: { l: lab.l ?? 0, a: 0, b: 0 },
+    oklab: { l: quantize(lab.l ?? 0), a: 0, b: 0 },
   };
 }
 
@@ -56,14 +57,14 @@ function simulate(c: ColorRecord, mode: VisionMode): ColorRecord {
   return {
     hex: formatHex({ mode: "rgb", ...rgb }) ?? c.hex,
     rgb,
-    oklab: { l: lab.l ?? 0, a: lab.a ?? 0, b: lab.b ?? 0 },
+    oklab: { l: quantize(lab.l ?? 0), a: quantize(lab.a ?? 0), b: quantize(lab.b ?? 0) },
   };
 }
 
 function relativeLuminance(c: { r: number; g: number; b: number }) {
   // Use IEC 61966-2-1 threshold (0.04045) — consistent with toGrayscale and cvd.ts.
   const lin = (v: number) =>
-    v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    v <= 0.04045 ? v / 12.92 : detPow((v + 0.055) / 1.055, 2.4);
   return 0.2126 * lin(c.r) + 0.7152 * lin(c.g) + 0.0722 * lin(c.b);
 }
 

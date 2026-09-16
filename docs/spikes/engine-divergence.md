@@ -84,7 +84,51 @@ reproducible on another engine.
   user ever receives. `builtinBuilderInvariant.test.ts` proves a property of the
   Node palette, not of the shipped one.
 
-## Options
+## Fixed 2026-09-16
+
+Option 1. `src/charts/palette/deterministic.ts` provides `ln`, `exp` and `pow`
+built only from operations ECMAScript requires to be correctly rounded - `+`,
+`-`, `*`, `/`, `Math.sqrt`, `Math.round`. `ln` is range-reduced to [1,2) by
+exact halving then evaluated as an atanh series; `exp` is range-reduced to
+|r| <= ln2/2 then a Taylor polynomial, scaled by a power of two through exact
+doubling. Both agree with the platform's own functions to within 1e-12, which
+`deterministic.test.ts` asserts across 2000 points, and a guard in that suite
+fails if the module ever reaches for `Math.pow`, `Math.exp`, `Math.cbrt` or
+trigonometry again.
+
+Wired in at:
+
+- the annealer's acceptance test in `categorical.ts` - the branch the entire
+  search turns on
+- both sRGB transfer functions in `cvd.ts`, which feed every simulation
+- both in `audit.ts`, which feed contrast and the greyscale projection
+
+And every `ColorRecord` is now normalised at construction: rgb snapped to the
+8-bit grid it will actually be rendered at, oklab quantised to 1e-6. The snap
+was a correctness fix in its own right - a record used to carry
+full-precision rgb with an oklab derived from it while its `hex` was the 8-bit
+rounding of that rgb, so the record's distance maths described a colour
+slightly different from the one it named and from the one anyone would see.
+
+### Verification
+
+The same 64-configuration sweep, same method, after the change:
+
+| comparison | differing configurations |
+|---|---|
+| Node 24 vs JavaScriptCore | **0 of 64** |
+| Chrome 152 vs Node 24 | **0 of 64** |
+| Chrome 152 vs JavaScriptCore | **0 of 64** |
+
+Byte-identical palettes, relaxations and verdicts on all three engines. The
+Chrome comparison was done by fetching the Node and JSC outputs into the page
+and diffing there, rather than by transcribing them.
+
+`safeMaxN` still measures 6 for every theme and posture, so the "safe cap (6)"
+copy in the builder remains correct. Every palette in the product changed
+once, hence PALETTE_VERSION 0.8.0.
+
+## Options that were considered
 
 1. **Replace the transcendentals in the hot path** with deterministic
    implementations (fixed-point or a pinned polynomial for `exp`, `cbrt`).
@@ -96,5 +140,5 @@ reproducible on another engine.
    solve at runtime only for custom backgrounds. Removes the divergence from
    everything the site and the plugin show by default.
 
-Not chosen here. Any of them changes every palette in the product, which is the
-owner's call.
+Option 1 was taken. It changes every palette in the product once, which is why
+the version bumped.

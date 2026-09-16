@@ -4,6 +4,7 @@
 import { formatHex, converter, type Oklab } from "culori";
 import { oklchToRgb, oklchOf, reduceToSrgb } from "./gamut";
 import type { ColorRecord } from "./distance";
+import { normalizeRecordParts } from "./deterministic";
 
 const toOklab = converter("oklab");
 
@@ -11,8 +12,7 @@ function rgbToRecord(rgb: { r: number; g: number; b: number }): ColorRecord {
   const lab = toOklab({ mode: "rgb", ...rgb }) as Oklab;
   return {
     hex: formatHex({ mode: "rgb", ...rgb }) ?? "#000000",
-    rgb,
-    oklab: { l: lab.l ?? 0, a: lab.a ?? 0, b: lab.b ?? 0 },
+    ...normalizeRecordParts(rgb, { l: lab.l ?? 0, a: lab.a ?? 0, b: lab.b ?? 0 }),
   };
 }
 

@@ -42,7 +42,11 @@ describe("compositeOver", () => {
 
   it("blends linearly in sRGB at alpha 0.5", () => {
     const out = compositeOver(fromCss("#000000"), 0.5, fromCss("#ffffff"));
-    expect(Math.abs(out.rgb.r - 0.5)).toBeLessThan(1e-6);
+    // 0.5 is not representable on the 8-bit sRGB grid the result is actually
+    // drawn at; the nearest value is 128/255. ColorRecord snaps to that grid
+    // at construction (palette/deterministic.ts) so a record describes the
+    // colour it names rather than one a fraction of a step away.
+    expect(Math.abs(out.rgb.r - 128 / 255)).toBeLessThan(1e-6);
   });
 
   it("clamps alpha outside 0..1", () => {
