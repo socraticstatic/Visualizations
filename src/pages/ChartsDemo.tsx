@@ -285,11 +285,11 @@ function NSlider({
           the row's centerline sat below the track and the ± buttons (and the
           N box) rendered visibly low against the slider line. mb-4 reserves
           the space the hanging labels occupy. */}
-      <div className="mb-4 flex items-center gap-3">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
         <button type="button" aria-label={`Decrease to ${clamped - 1}`} className={stepBtn} onClick={() => stepBy(-1)} disabled={clamped <= min}>
           −
         </button>
-        <div className="relative flex-1 min-w-0 sm:min-w-[240px]">
+        <div className="relative min-w-[120px] flex-1">
           <input
             ref={inputRef}
             type="range"
