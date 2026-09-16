@@ -16,7 +16,18 @@ import { join } from "node:path";
 
 const SRC = readFileSync(join(__dirname, "..", "..", "pages", "ChartsDemo.tsx"), "utf8");
 
-const MASTHEAD = SRC.slice(SRC.indexOf("<header"), SRC.indexOf("</header>"));
+const RAW = SRC.slice(SRC.indexOf("<header"), SRC.indexOf("</header>"));
+
+/**
+ * Comments stripped before anything is scanned. A guard that reads prose will
+ * eventually trip on a comment explaining the very thing it forbids - the
+ * masthead's own comment names the link and the version chip these tests check
+ * the placement of. Blanked rather than deleted, so every offset below still
+ * points at the same character of markup.
+ */
+const MASTHEAD = RAW.replace(/\{\/\*[\s\S]*?\*\/\}|\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, (m) =>
+  m.replace(/[^\n]/g, " ")
+);
 
 /** Every <p> ... </p> in the masthead, tag included. */
 const PARAGRAPHS = [...MASTHEAD.matchAll(/<p\b[\s\S]*?<\/p>/g)].map((m) => m[0]);
