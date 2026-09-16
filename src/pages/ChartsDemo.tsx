@@ -1476,37 +1476,37 @@ const ChartsDemo = () => {
               bar above is what the palette on screen measured. */}
           <div className="mt-5 grid gap-x-12 gap-y-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <div className="min-w-0">
-            <h1 className="font-display text-[2rem] font-semibold leading-[1.05] tracking-tight md:text-[3rem]">
-              Micah's Chart System
-              <span className="mt-2 block text-[1.15rem] font-normal leading-snug tracking-normal text-chart-muted-text md:text-[1.6rem]">
-                for Sane and Useful Color Strategies
-              </span>
-            </h1>
+              <h1 className="font-display text-[2rem] font-semibold leading-[1.05] tracking-tight md:text-[3rem]">
+                Micah's Chart System
+                <span className="mt-2 block text-[1.15rem] font-normal leading-snug tracking-normal text-chart-muted-text md:text-[1.6rem]">
+                  for Sane and Useful Color Strategies
+                </span>
+              </h1>
 
-            {/* The problem statement lives here because the page doesn't explain
-                itself: reviewers landed on the builder and couldn't tell what it
-                was for. One sentence, one link to the evidence, nothing else. */}
-            <p className="mt-5 max-w-[62ch] text-base leading-relaxed text-foreground/90">
-              Default chart palettes pass the WCAG 3:1 contrast floor on one background and silently fail on the
-              other. This builder treats the background as an input and audits before you ship.
-            </p>
-
-            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
-              <Link
-                to="/blog/palette-contrast-benchmark"
-                className="tap-target group inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chart-focus focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--page-bg))]"
-              >
-                Read the finding
-                <ArrowRight className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden />
-              </Link>
-              <p className="max-w-[48ch] text-sm leading-relaxed text-chart-muted-text">
-                Pick a chart type and the number of data points — get an audited palette with matched dash, decal,
-                and shape encodings.
+              {/* The problem statement lives here because the page doesn't explain
+                  itself: reviewers landed on the builder and couldn't tell what it
+                  was for. One sentence, one link to the evidence, nothing else. */}
+              <p className="mt-5 max-w-[62ch] text-base leading-relaxed text-foreground/90">
+                Default chart palettes pass the WCAG 3:1 contrast floor on one background and silently fail on the
+                other. This builder treats the background as an input and audits before you ship.
               </p>
-            </div>
+
+              <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
+                <Link
+                  to="/blog/palette-contrast-benchmark"
+                  className="tap-target group inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chart-focus focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--page-bg))]"
+                >
+                  Read the finding
+                  <ArrowRight className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden />
+                </Link>
+                <p className="max-w-[48ch] text-sm leading-relaxed text-chart-muted-text">
+                  Pick a chart type and the number of data points — get an audited palette with matched dash, decal,
+                  and shape encodings.
+                </p>
+              </div>
             </div>
 
-            <dl className="grid shrink-0 grid-cols-2 gap-x-8 gap-y-5 border-t border-chart-grid pt-5 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0">
+            <dl className="hidden shrink-0 grid-cols-2 gap-x-8 gap-y-5 border-t border-chart-grid pt-5 sm:grid lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0">
               {[
                 { term: "Contrast floor", detail: "≥ 3:1 on light and dark", note: "WCAG 2.2 SC 1.4.11" },
                 { term: "Colour vision", detail: "deutan · protan · tritan", note: "Machado 2009 matrices" },
