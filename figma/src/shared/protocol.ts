@@ -73,6 +73,7 @@ export type Request =
   | { id: string; type: "write-variables"; specs: VariableSpec[]; confirmedOverwrites: string[] }
   | { id: string; type: "render-simulation"; frames: SimulationSpec[] }
   | { id: string; type: "insert-mockup"; svg: string; frameName: string; nodeEstimate: number }
+  | { id: string; type: "resize"; height: number }
   | { id: string; type: "store-get" }
   | { id: string; type: "store-set"; key: string; value: string };
 
@@ -85,6 +86,7 @@ export type Response =
   | { id: string; ok: true; type: "mockup-inserted"; payload: { nodes: number; frameName: string } }
   | { id: string; ok: true; type: "store"; payload: Record<string, string> }
   | { id: string; ok: true; type: "stored" }
+  | { id: string; ok: true; type: "resized"; payload: { height: number } }
   | { id: string; ok: false; reason: FailureReason; detail: string };
 
 export interface OpenMessage {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PALETTE_VERSION } from "@engine/version";
 import { GenerateTab } from "./GenerateTab";
 import { AuditTab } from "./AuditTab";
@@ -73,10 +73,36 @@ export function App() {
 
   const { status: license, activate, storageWarning } = useLicense();
 
+  /**
+   * Ask Figma for exactly the height this panel needs.
+   *
+   * The window was a fixed 720 and the body scrolled inside it, so short tabs
+   * left dead space and long ones hid their own controls behind a scrollbar.
+   * A ResizeObserver on the content reports the real height after every
+   * render, tab change and solve.
+   */
+  const bodyRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (!el || typeof ResizeObserver !== "function") return;
+    let last = 0;
+    const push = () => {
+      const h = Math.ceil(el.getBoundingClientRect().height);
+      // A pixel of jitter would ping-pong with Figma's own rounding.
+      if (Math.abs(h - last) < 4) return;
+      last = h;
+      void send({ type: "resize", height: h });
+    };
+    const ro = new ResizeObserver(push);
+    ro.observe(el);
+    push();
+    return () => ro.disconnect();
+  }, []);
+
   const active = TABS.find((t) => t.id === tab)!;
 
   return (
-    <div className="panel">
+    <div className="panel" ref={bodyRef}>
       <div className="panel__top">
         <div className="tabs" role="tablist" aria-label="Plugin commands">
         {TABS.map((t) => (

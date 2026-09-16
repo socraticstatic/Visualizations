@@ -28,7 +28,9 @@ function reply(res: Response): void {
 if (figma.mode === "codegen") {
   registerCodegen();
 } else {
-  figma.showUI(__html__, { width: 420, height: 720, themeColors: true });
+  /** Starting height only. The panel measures its own content and asks for the
+ *  height it actually needs, so the window fits rather than scrolls. */
+figma.showUI(__html__, { width: 420, height: 480, themeColors: true });
 
   // Posting the tab immediately races the iframe attaching its listener, which
   // is why every command used to land on Generate. Post it anyway for clients
@@ -117,6 +119,15 @@ if (figma.mode === "codegen") {
           reply({ id: msg.id, ok: true, type: "mockup-inserted", payload: r });
           break;
         }
+        case "resize": {
+          // Clamped: Figma refuses a window taller than the viewport, and a
+          // panel shorter than this cannot show its own controls.
+          const h = Math.max(240, Math.min(1100, Math.round(msg.height)));
+          figma.ui.resize(420, h);
+          reply({ id: msg.id, ok: true, type: "resized", payload: { height: h } });
+          break;
+        }
+
         case "store-get": {
           const raw = await figma.clientStorage.getAsync(STORE_KEY);
           reply({
