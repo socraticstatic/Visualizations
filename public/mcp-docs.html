@@ -6,6 +6,65 @@
 <title>Chart Color System as a tool · MCP server</title>
 <meta name="description" content="The Chart Color System is available to AI assistants as a read-only MCP server: solve an anchored colorblind-safe chart palette, audit existing colors, simulate colorblind vision, build sequential and diverging ramps. Endpoint, tools, example prompts, privacy.">
 <link rel="canonical" href="https://socraticstatic.github.io/Visualizations/mcp-docs.html">
+<meta name="robots" content="index, follow, max-snippet:-1">
+<meta property="og:title" content="Chart Color System as a tool · MCP server">
+<meta property="og:description" content="The Chart Color System as a read-only MCP server: solve an anchored colorblind-safe chart palette, audit existing colors, simulate colorblind vision, build sequential and diverging ramps.">
+<meta property="og:url" content="https://socraticstatic.github.io/Visualizations/mcp-docs.html">
+<meta property="og:type" content="website">
+<!-- Structured data, hand-written because this page is. The graph ids match
+     the ones src/seo/site.ts emits on the app routes, so an indexer reading
+     both sees one product described twice rather than two products. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebAPI",
+      "@id": "https://socraticstatic.github.io/Visualizations/mcp-docs.html#api",
+      "name": "Chart Color System MCP server",
+      "description": "A read-only Model Context Protocol server that solves, audits and simulates chart color palettes. Streamable HTTP, JSON-RPC 2.0, no authentication, no accounts, nothing stored.",
+      "url": "https://socraticstatic.github.io/Visualizations/mcp-docs.html",
+      "documentation": "https://socraticstatic.github.io/Visualizations/mcp-docs.html",
+      "provider": { "@id": "https://socraticstatic.github.io/Visualizations/#micah" },
+      "termsOfService": "https://github.com/socraticstatic/Visualizations/blob/main/LICENSE",
+      "potentialAction": [
+        { "@type": "Action", "name": "solve_palette", "description": "Return a categorical palette of n colors that keeps given brand anchors exactly in slot order, with worst-pair distances under normal and colorblind vision and a full audit against the chart background." },
+        { "@type": "Action", "name": "audit_palette", "description": "Pass, warn or fail for colors you already have: pairwise OKLab separation under normal vision, deuteranopia, protanopia, tritanopia and achromatopsia, plus WCAG 2.2 non-text contrast against the background." },
+        { "@type": "Action", "name": "simulate_palette", "description": "Each color as seen under each vision mode, using the published Machado (2009) matrices." },
+        { "@type": "Action", "name": "build_ramp", "description": "An evenly spaced perceptual scale, sequential or diverging, with a background-contrast audit." }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://socraticstatic.github.io/Visualizations/mcp-docs.html#faq",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "How do I connect the Chart Color System MCP server to Claude?",
+          "acceptedAnswer": { "@type": "Answer", "text": "In Claude: Settings, Connectors, add a custom connector, and paste https://chart-color-mcp.vercel.app/mcp. In Claude Code: claude mcp add --transport http chart-colors https://chart-color-mcp.vercel.app/mcp. The server is streamable HTTP, stateless, unauthenticated and read-only." }
+        },
+        {
+          "@type": "Question",
+          "name": "Does the Chart Color System MCP server store my data?",
+          "acceptedAnswer": { "@type": "Answer", "text": "No. The server keeps no accounts and stores nothing from a conversation. Requests are processed and discarded." }
+        },
+        {
+          "@type": "Question",
+          "name": "What does solve_palette do about more than six colors?",
+          "acceptedAnswer": { "@type": "Answer", "text": "It says so plainly. Six is the honest cap: past roughly six hues no categorical palette keeps its colors reliably distinct under dichromacy. Above six slots the solver relaxes its own floors and reports which ones, and recommends a second encoding - shape, dash or position - to carry series identity." }
+        }
+      ]
+    },
+    {
+      "@type": "Person",
+      "@id": "https://socraticstatic.github.io/Visualizations/#micah",
+      "name": "Micah Boswell",
+      "url": "https://conscious-shell.com",
+      "sameAs": ["https://github.com/socraticstatic"]
+    }
+  ]
+}
+</script>
 <style>
   :root{color-scheme:light dark;--bg:#fafaf9;--fg:#1c1917;--mute:#57534e;--line:#e7e5e4;--code:#f5f5f4;--accent:#0057b8}
   @media (prefers-color-scheme:dark){:root{--bg:#0c0a09;--fg:#e7e5e4;--mute:#a8a29e;--line:#292524;--code:#1c1917;--accent:#7cb4ff}}

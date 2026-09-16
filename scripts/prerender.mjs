@@ -69,7 +69,7 @@ function pageUrl(SITE, path) {
 }
 
 function pageHtml(shell, route, SITE, bodyHtml) {
-  const canonical = pageUrl(SITE, route.path);
+  const canonical = pageUrl(SITE, route.canonicalPath ?? route.path);
   let html = shell;
 
   html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${esc(route.title)}</title>`);
@@ -131,8 +131,14 @@ function pageHtml(shell, route, SITE, bodyHtml) {
  * looking fine in a browser. A silent regression is the failure mode, so the
  * build fails loudly rather than trusting that the writes above worked.
  */
-function verify({ outDir, SITE, routeList }) {
+function verify({ outDir, SITE, routeList, staticList }) {
   const problems = [];
+
+  for (const page of staticList) {
+    if (!existsSync(resolve(outDir, page.path))) {
+      problems.push(`${page.path}: listed in the sitemap but not present in the build`);
+    }
+  }
 
   for (const route of routeList) {
     const file = route.path ? resolve(outDir, route.path, "index.html") : resolve(outDir, "index.html");
@@ -141,8 +147,7 @@ function verify({ outDir, SITE, routeList }) {
       continue;
     }
     const html = readFileSync(file, "utf8");
-    const canonical = pageUrl(SITE, route.path);
-
+    const canonical = pageUrl(SITE, route.canonicalPath ?? route.path);
     if (!html.includes(`rel="canonical" href="${canonical}"`)) {
       problems.push(`${route.route}: canonical is not ${canonical}`);
     }
@@ -189,8 +194,9 @@ async function main() {
   const shell = readFileSync(shellPath, "utf8");
 
   const entry = await buildSsrBundle();
-  const { render, routes, SITE } = await import(entry);
+  const { render, routes, staticPages, SITE } = await import(entry);
   const routeList = routes();
+  const staticList = staticPages();
 
   const written = [];
   for (const route of routeList) {
@@ -241,9 +247,9 @@ async function main() {
       date: r.lastmod,
     }));
 
-  const discovery = writeDiscovery({ outDir, root, SITE, routeList, posts });
+  const discovery = writeDiscovery({ outDir, root, SITE, routeList, staticList, posts });
 
-  verify({ outDir, SITE, routeList });
+  verify({ outDir, SITE, routeList, staticList });
 
   console.log("\nprerendered:");
   for (const w of written) console.log(`  ${w.path.padEnd(34)} ${w.mode.padEnd(8)} ${w.bytes} bytes`);

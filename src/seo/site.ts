@@ -231,6 +231,11 @@ export interface RouteMeta {
   hydrate: boolean;
   /** Left out of the sitemap when false. */
   indexable: boolean;
+  /**
+   * Path this route declares canonical, when that is not itself. A duplicate
+   * route should point at the original rather than self-canonicalise.
+   */
+  canonicalPath?: string;
   lastmod?: string;
   priority: number;
   jsonLd: object[];
@@ -320,11 +325,28 @@ export function routes(): RouteMeta[] {
     render: "shell",
     hydrate: false,
     indexable: false,
+    canonicalPath: "",
     priority: 0.1,
     jsonLd: [],
   });
 
   return list;
+}
+
+/**
+ * Pages that are hand-written static HTML rather than app routes. They still
+ * belong in the sitemap and in llms.txt - mcp-docs.html is the page an
+ * assistant is pointed at when someone asks how to connect the tool.
+ */
+export function staticPages() {
+  return [
+    {
+      path: "mcp-docs.html",
+      title: "Chart Color System as a tool · MCP server",
+      lastmod: undefined as string | undefined,
+      priority: 0.7,
+    },
+  ];
 }
 
 export { FAQ };
