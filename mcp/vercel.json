@@ -1,9 +1,24 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    { "source": "/mcp", "destination": "/api/mcp" }
+    {
+      "source": "/mcp",
+      "destination": "/api/mcp"
+    },
+    {
+      "source": "/.well-known/mcp",
+      "destination": "/api/well-known"
+    },
+    {
+      "source": "/.well-known/mcp/server-card.json",
+      "destination": "/api/well-known"
+    }
   ],
   "redirects": [
-    { "source": "/", "destination": "https://socraticstatic.github.io/Visualizations/mcp-docs.html", "permanent": false }
+    {
+      "source": "/",
+      "destination": "https://socraticstatic.github.io/Visualizations/mcp-docs.html",
+      "permanent": false
+    }
   ]
 }
