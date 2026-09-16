@@ -199,6 +199,7 @@ async function main() {
   const staticList = staticPages();
 
   const written = [];
+  const renderedHtml = {};
   for (const route of routeList) {
     let body = "";
     try {
@@ -218,6 +219,7 @@ async function main() {
     const file = route.path ? resolve(outDir, route.path, "index.html") : shellPath;
     mkdirSync(dirname(file), { recursive: true });
     writeFileSync(file, html);
+    renderedHtml[route.path] = body;
     written.push({ path: `/${route.path}`, mode: route.render, bytes: body.length });
   }
 
@@ -247,7 +249,7 @@ async function main() {
       date: r.lastmod,
     }));
 
-  const discovery = writeDiscovery({ outDir, root, SITE, routeList, staticList, posts });
+  const discovery = writeDiscovery({ outDir, root, SITE, routeList, staticList, posts, renderedHtml });
 
   verify({ outDir, SITE, routeList, staticList });
 
