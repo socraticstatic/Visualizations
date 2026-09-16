@@ -104,6 +104,14 @@ if (figma.mode === "codegen") {
         }
 
         case "insert-mockup": {
+          // The gate belongs where the work happens. A disabled button in the
+          // panel is defeated by opening its console, which is the whole
+          // reason gate.ts exists - and this case shipped without it.
+          const mockupGate = await checkLicense();
+          if (!mockupGate.ok) {
+            reply({ id: msg.id, ok: false, reason: "unlicensed", detail: mockupGate.detail });
+            break;
+          }
           const r = insertMockup(msg.svg, msg.frameName, msg.nodeEstimate);
           figma.commitUndo();
           reply({ id: msg.id, ok: true, type: "mockup-inserted", payload: r });
