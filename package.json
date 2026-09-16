@@ -21,7 +21,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "postbuild": "node scripts/spa-fallback.mjs",
+    "freeze:benchmark": "node scripts/freeze-benchmark.mjs",
+    "postbuild": "node scripts/prerender.mjs",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",

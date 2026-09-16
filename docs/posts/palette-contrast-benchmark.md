@@ -89,9 +89,9 @@ and you never hear about it as a color problem.
 
 I wrote a solver that treats the background as an input instead of an assumption. Give it an N, a posture, a background, and your gridline color, and it returns a palette audited against contrast, CVD, and grayscale before you ship it.
 
-At N=6 on white it reaches 4.40:1 worst contrast with zero failing slots, and a worst-case CVD ΔE of 8.6. Both beat all five published palettes at that N. Its minimum pairwise ΔE of 15.3 beats four of them and loses to IBM Carbon's 19.3, which spreads its hues further than my solver does.
+At N=6 on white it reaches 4.15:1 worst contrast with zero failing slots, and a worst-case CVD ΔE of 11.6. Both beat all five published palettes at that N. Its minimum pairwise ΔE of 13.8 beats three of them and loses to Tableau 10 and IBM Carbon, which spread their hues further than my solver does.
 
-At N=10 it does not. Worst contrast holds at 4.06:1 with zero failures, but minimum pairwise ΔE drops to 4.0, well under Tableau 10's 8.4. The solver buys contrast compliance with hue spread, and above six slots the price gets steep.
+Above six slots it stops winning. Worst contrast holds, but pairwise separation drops well under Tableau 10's. The solver buys contrast compliance with hue spread, and the price gets steep.
 
 That is the same wall as everyone else's. I did not solve it. What the tool does is tell you when you have hit it, and pair every slot with a dash, a decal, and a shape so the chart survives the moment color gives out.
 
@@ -116,7 +116,7 @@ set2.map(fromCss).forEach((c, i) => {
 });
 ```
 
-Every number in this post comes from that package. The palette hexes are copied verbatim from each system's published spec.
+Every number in this post comes from that package. The figures measured off each published palette are computed when the page renders. The solver's own figures are frozen at build time against engine 0.7.3 and committed, because the annealer's result is not identical across JavaScript engines and a benchmark that changes with the reader's browser is not a benchmark. The palette hexes are copied verbatim from each system's published spec.
 
 If you would rather move a slider than write a loop, the [interactive builder](https://socraticstatic.github.io/Visualizations/) runs the same solver and audit in the browser, with CVD simulation and a grayscale check on every palette it produces. Source is on [GitHub](https://github.com/socraticstatic/Visualizations).
 
