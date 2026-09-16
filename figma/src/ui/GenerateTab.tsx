@@ -86,6 +86,9 @@ export function GenerateTab({
           "." +
           (p.usedFallbackCollection
             ? " Your plan allows one mode per collection, so Dark went into a second collection. That keeps both sets of values, but switching theme means rebinding."
+            : "") +
+          (p.unsupported.length
+            ? ` This Figma build refused ${p.unsupported.join(" and ")}, so the variables are written but that metadata is not.`
             : "")
       );
     } finally {

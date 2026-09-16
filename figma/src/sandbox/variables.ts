@@ -61,12 +61,18 @@ export async function readCurrentRecord(): Promise<WrittenRecord> {
   const light = collection.defaultModeId;
   const dark = collection.modes.find((m) => m.name === "Dark")?.modeId ?? light;
 
+  // valuesByMode does not resolve aliases, so a value may be a VariableAlias
+  // rather than a colour. Stringifying one would produce "[object Object]" and
+  // report permanent false drift on any variable a designer has aliased.
   const fmt = (v: unknown): string => {
     if (typeof v === "string") return v;
-    const c = v as { r: number; g: number; b: number };
-    return c && typeof c.r === "number"
-      ? `${c.r.toFixed(6)},${c.g.toFixed(6)},${c.b.toFixed(6)}`
-      : String(v);
+    if (v && typeof v === "object") {
+      const alias = v as { type?: string; id?: string };
+      if (alias.type === "VARIABLE_ALIAS") return `alias:${alias.id}`;
+      const c = v as { r: number; g: number; b: number };
+      if (typeof c.r === "number") return `${c.r.toFixed(6)},${c.g.toFixed(6)},${c.b.toFixed(6)}`;
+    }
+    return String(v);
   };
 
   for (const [name, variable] of await variablesOf(collection)) {
@@ -78,20 +84,23 @@ export async function readCurrentRecord(): Promise<WrittenRecord> {
   return out;
 }
 
-function applyMetadata(v: Variable, spec: VariableSpec): void {
-  // Code syntax puts the handoff name in Dev Mode's snippets rather than
-  // leaving a developer to invent one from the layer name.
+/**
+ * Returns what this client refused. Swallowing these silently would mean the
+ * handoff names and scoping quietly do not happen, with nothing to notice.
+ */
+function applyMetadata(v: Variable, spec: VariableSpec): string[] {
+  const failed: string[] = [];
   try {
     v.setVariableCodeSyntax("WEB", spec.codeSyntax);
   } catch {
-    /* older clients simply do without */
+    failed.push("code syntax");
   }
-  // Scoping keeps chart colours out of pickers they have no business in.
   try {
     (v as unknown as { scopes: string[] }).scopes = spec.scopes;
   } catch {
-    /* scopes unsupported on this client */
+    failed.push("variable scopes");
   }
+  return failed;
 }
 
 /**
@@ -130,6 +139,7 @@ export async function applySpecs(
   let created = 0;
   let updated = 0;
   let skipped = 0;
+  const unsupported = new Set<string>();
 
   for (const spec of specs) {
     const wasWritten = previous?.[spec.name];
@@ -152,7 +162,7 @@ export async function applySpecs(
     }
     v.setValueForMode(lightModeId, spec.light as VariableValue);
     if (strategy.darkModeId) v.setValueForMode(strategy.darkModeId, spec.dark as VariableValue);
-    applyMetadata(v, spec);
+    applyMetadata(v, spec).forEach((f) => unsupported.add(f));
 
     if (fallback) {
       let fv = fallbackByName.get(spec.name);
@@ -161,11 +171,22 @@ export async function applySpecs(
         fallbackByName.set(spec.name, fv);
       }
       fv.setValueForMode(fallback.defaultModeId, spec.dark as VariableValue);
-      applyMetadata(fv, spec);
+      applyMetadata(fv, spec).forEach((f) => unsupported.add(f));
     }
   }
 
   collection.setPluginData(RECORD_KEY, JSON.stringify(recordFromSpecs(specs)));
 
-  return { created, updated, skipped, usedFallbackCollection: Boolean(fallback) };
+  // Plugin actions are not in undo history by default. Without this the whole
+  // write is unreversible, which for a tool that refuses to clobber a designer's
+  // work would be a contradiction.
+  figma.commitUndo();
+
+  return {
+    created,
+    updated,
+    skipped,
+    usedFallbackCollection: Boolean(fallback),
+    unsupported: [...unsupported],
+  };
 }

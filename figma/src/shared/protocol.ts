@@ -36,6 +36,10 @@ export interface BackdropLayer {
 export interface SelectionPayload {
   nodes: SerializedNode[];
   backdrop: BackdropLayer[];
+  /** Nodes actually present, before the read cap. */
+  total: number;
+  /** True when `nodes` is a prefix of the selection rather than all of it. */
+  truncated: boolean;
 }
 
 export interface WriteSummary {
@@ -43,10 +47,21 @@ export interface WriteSummary {
   updated: number;
   skipped: number;
   usedFallbackCollection: boolean;
+  /** Metadata this Figma client refused, so the panel can say so out loud. */
+  unsupported: string[];
+}
+
+export interface SimulationSpec {
+  mode: string;
+  label: string;
+  offsetX: number;
+  /** Replacement colour per original node id and fill index. */
+  replacements: Array<{ nodeId: string; fillIndex: number; color: FigmaRgb }>;
 }
 
 export type FailureReason =
   | "no-selection"
+  | "unlicensed"
   | "background-unresolvable"
   | "storage-unavailable"
   | "figma-error";
@@ -55,6 +70,7 @@ export type Request =
   | { id: string; type: "read-selection" }
   | { id: string; type: "read-written-record" }
   | { id: string; type: "write-variables"; specs: VariableSpec[]; confirmedOverwrites: string[] }
+  | { id: string; type: "render-simulation"; frames: SimulationSpec[] }
   | { id: string; type: "store-get" }
   | { id: string; type: "store-set"; key: string; value: string };
 
@@ -62,6 +78,7 @@ export type Response =
   | { id: string; ok: true; type: "selection"; payload: SelectionPayload }
   | { id: string; ok: true; type: "written-record"; payload: WrittenRecord | null }
   | { id: string; ok: true; type: "variables-written"; payload: WriteSummary }
+  | { id: string; ok: true; type: "simulation-rendered"; payload: { created: number } }
   | { id: string; ok: true; type: "store"; payload: Record<string, string> }
   | { id: string; ok: true; type: "stored" }
   | { id: string; ok: false; reason: FailureReason; detail: string };

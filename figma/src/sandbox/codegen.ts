@@ -1,6 +1,7 @@
 /**
  * Dev Mode entry point. Runs in the sandbox with no DOM, on a 15 second budget.
  */
+import { hasLicense } from "./gate";
 import {
   echartsOption,
   cssTokens,
@@ -44,7 +45,20 @@ function collectFilled(root: Loose): Array<{ name: unknown; hex: string }> {
 }
 
 export function registerCodegen(): void {
-  figma.codegen.on("generate", (event) => {
+  figma.codegen.on("generate", async (event) => {
+    if (!(await hasLicense())) {
+      return [
+        {
+          title: "Chart Color System",
+          language: "PLAINTEXT" as const,
+          code:
+            "Dev Mode code generation needs a licence.\n\n" +
+            "Open the plugin in Design mode and enter your key. Auditing and\n" +
+            "simulating stay free.",
+        },
+      ];
+    }
+
     const node = event.node as unknown as Loose;
     const { series, found, tooMany } = collectSeries(collectFilled(node));
     const surface = firstOpaqueSolid(node);

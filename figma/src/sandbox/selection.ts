@@ -75,14 +75,23 @@ export const MAX_SELECTION_NODES = 400;
 export function readSelection(): SelectionPayload {
   const roots = figma.currentPage.selection;
   const nodes: SerializedNode[] = [];
+  let total = 0;
 
+  // Counting continues past the cap. Reporting on a prefix while calling it a
+  // verdict is the same false claim as auditing against a guessed background,
+  // so the panel is told how much it is not seeing.
   const visit = (n: SceneNode) => {
-    if (nodes.length >= MAX_SELECTION_NODES) return;
-    nodes.push(serializeNode(n));
+    total++;
+    if (nodes.length < MAX_SELECTION_NODES) nodes.push(serializeNode(n));
     const kids = (n as unknown as Loose).children as SceneNode[] | undefined;
     if (Array.isArray(kids)) kids.forEach(visit);
   };
   roots.forEach(visit);
 
-  return { nodes, backdrop: roots.length > 0 ? collectBackdrop(roots[0]) : [] };
+  return {
+    nodes,
+    backdrop: roots.length > 0 ? collectBackdrop(roots[0]) : [],
+    total,
+    truncated: total > nodes.length,
+  };
 }

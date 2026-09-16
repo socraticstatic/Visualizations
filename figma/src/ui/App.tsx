@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { PALETTE_VERSION } from "@engine/version";
 import { GenerateTab } from "./GenerateTab";
 import { AuditTab } from "./AuditTab";
+import { SimulateTab } from "./SimulateTab";
 import { LicensePanel } from "./LicensePanel";
 import { useLicense } from "./useLicense";
 
@@ -88,7 +89,7 @@ export function App() {
       >
         {tab === "generate" && <GenerateTab theme={scheme} license={license} />}
         {tab === "audit" && <AuditTab />}
-        {tab === "simulate" && <p className="note">{active.blurb}</p>}
+        {tab === "simulate" && <SimulateTab />}
         <LicensePanel status={license} activate={activate} />
       </main>
     </div>

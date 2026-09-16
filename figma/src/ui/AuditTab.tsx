@@ -19,7 +19,9 @@ interface Run {
   audited: Audited[];
   skipped: ExtractedFill[];
   report: AuditReport | null;
-  nodeCount: number;
+  read: number;
+  total: number;
+  truncated: boolean;
 }
 
 function run(payload: SelectionPayload): Run {
@@ -30,7 +32,10 @@ function run(payload: SelectionPayload): Run {
   const all = extractFills(payload.nodes);
   const skipped = all.filter((f) => f.status === "skipped");
   if (!background) {
-    return { background: null, backgroundNote, audited: [], skipped, report: null, nodeCount: payload.nodes.length };
+    return {
+      background: null, backgroundNote, audited: [], skipped, report: null,
+      read: payload.nodes.length, total: payload.total, truncated: payload.truncated,
+    };
   }
 
   const audited = all
@@ -46,7 +51,9 @@ function run(payload: SelectionPayload): Run {
     audited,
     skipped,
     report: audited.length >= 2 ? auditPalette(audited.map((a) => a.composited), background) : null,
-    nodeCount: payload.nodes.length,
+    read: payload.nodes.length,
+    total: payload.total,
+    truncated: payload.truncated,
   };
 }
 
@@ -78,6 +85,14 @@ export function AuditTab() {
 
   return (
     <>
+      {state.truncated && (
+        <p className="refusal">
+          This selection has {state.total} layers and this reads the first {state.read}. The verdict
+          below covers those only, so treat it as a sample rather than a result. Select fewer layers
+          for a number you can stand behind.
+        </p>
+      )}
+
       {state.backgroundNote && (
         <p className="refusal">
           {state.backgroundNote} Contrast is measured against a background, so there is no honest

@@ -9,6 +9,8 @@ import type { OpenMessage, Request, Response, SelectionPush, Tab } from "../shar
 import { registerCodegen } from "./codegen";
 import { readSelection } from "./selection";
 import { applySpecs, readCurrentRecord, readWrittenRecord } from "./variables";
+import { renderSimulation } from "./simulate";
+import { hasLicense } from "./gate";
 
 const TAB_FOR_COMMAND: Record<string, Tab> = {
   generate: "generate",
@@ -32,9 +34,16 @@ if (figma.mode === "codegen") {
 
   // Auditing should follow the canvas, not a button. Selecting a different
   // layer is the request.
+  // Coalesced: a marquee drag fires this continuously, and each read walks the
+  // selection. One push per settled selection is what the panel needs.
+  let pushTimer: number | null = null;
   figma.on("selectionchange", () => {
-    const push: SelectionPush = { type: "selection-changed", payload: readSelection() };
-    figma.ui.postMessage(push);
+    if (pushTimer !== null) clearTimeout(pushTimer);
+    pushTimer = setTimeout(() => {
+      pushTimer = null;
+      const push: SelectionPush = { type: "selection-changed", payload: readSelection() };
+      figma.ui.postMessage(push);
+    }, 120) as unknown as number;
   });
 
   figma.ui.onmessage = async (msg: Request) => {
@@ -56,8 +65,27 @@ if (figma.mode === "codegen") {
         }
 
         case "write-variables": {
+          if (!(await hasLicense())) {
+            reply({
+              id: msg.id,
+              ok: false,
+              reason: "unlicensed",
+              detail: "Writing variables needs a licence. Auditing and simulating do not.",
+            });
+            return;
+          }
           const payload = await applySpecs(msg.specs, msg.confirmedOverwrites);
           reply({ id: msg.id, ok: true, type: "variables-written", payload });
+          return;
+        }
+
+        case "render-simulation": {
+          const created = renderSimulation(msg.frames);
+          if (created === 0) {
+            reply({ id: msg.id, ok: false, reason: "no-selection", detail: "Select something to simulate first." });
+            return;
+          }
+          reply({ id: msg.id, ok: true, type: "simulation-rendered", payload: { created } });
           return;
         }
 
