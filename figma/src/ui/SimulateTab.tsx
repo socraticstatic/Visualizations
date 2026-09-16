@@ -63,7 +63,7 @@ export function SimulateTab() {
       const res = await send({ type: "render-simulation", frames: buildFrames(payload, 400) });
       setNote(
         res.ok && res.type === "simulation-rendered"
-          ? `Placed ${res.payload.created} copies beside the original. Yours is untouched, and one undo removes them.`
+          ? `Placed ${res.payload.created} copies beside the original. Yours is untouched, and undo removes them.`
           : res.ok
             ? null
             : res.detail

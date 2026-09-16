@@ -5,6 +5,7 @@ import { AuditTab } from "./AuditTab";
 import { SimulateTab } from "./SimulateTab";
 import { LicensePanel } from "./LicensePanel";
 import { useLicense } from "./useLicense";
+import { send } from "./bridge";
 
 type Tab = "generate" | "audit" | "simulate";
 
@@ -51,6 +52,15 @@ export function App() {
       if (msg?.type === "open" && TABS.some((t) => t.id === msg.tab)) setTab(msg.tab as Tab);
     };
     window.addEventListener("message", onMessage);
+
+    // The sandbox posts the launch tab immediately, which races this listener
+    // being attached, so every command landed on Generate. Ask for it instead.
+    void send({ type: "read-command" }).then((res) => {
+      if (res.ok && res.type === "command" && TABS.some((t) => t.id === res.payload)) {
+        setTab(res.payload);
+      }
+    });
+
     return () => window.removeEventListener("message", onMessage);
   }, []);
 

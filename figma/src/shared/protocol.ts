@@ -68,6 +68,7 @@ export type FailureReason =
 
 export type Request =
   | { id: string; type: "read-selection" }
+  | { id: string; type: "read-command" }
   | { id: string; type: "read-written-record" }
   | { id: string; type: "write-variables"; specs: VariableSpec[]; confirmedOverwrites: string[] }
   | { id: string; type: "render-simulation"; frames: SimulationSpec[] }
@@ -76,6 +77,7 @@ export type Request =
 
 export type Response =
   | { id: string; ok: true; type: "selection"; payload: SelectionPayload }
+  | { id: string; ok: true; type: "command"; payload: Tab }
   | { id: string; ok: true; type: "written-record"; payload: WrittenRecord | null }
   | { id: string; ok: true; type: "variables-written"; payload: WriteSummary }
   | { id: string; ok: true; type: "simulation-rendered"; payload: { created: number } }

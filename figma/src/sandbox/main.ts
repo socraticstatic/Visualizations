@@ -29,7 +29,11 @@ if (figma.mode === "codegen") {
 } else {
   figma.showUI(__html__, { width: 420, height: 720, themeColors: true });
 
-  const open: OpenMessage = { type: "open", tab: TAB_FOR_COMMAND[figma.command] ?? "generate" };
+  // Posting the tab immediately races the iframe attaching its listener, which
+  // is why every command used to land on Generate. Post it anyway for clients
+  // that are ready, and let the UI ask once it definitely is.
+  const launchTab: Tab = TAB_FOR_COMMAND[figma.command] ?? "generate";
+  const open: OpenMessage = { type: "open", tab: launchTab };
   figma.ui.postMessage(open);
 
   // Auditing should follow the canvas, not a button. Selecting a different
@@ -49,6 +53,11 @@ if (figma.mode === "codegen") {
   figma.ui.onmessage = async (msg: Request) => {
     try {
       switch (msg.type) {
+        case "read-command": {
+          reply({ id: msg.id, ok: true, type: "command", payload: launchTab });
+          return;
+        }
+
         case "read-selection": {
           const payload = readSelection();
           if (payload.nodes.length === 0) {
