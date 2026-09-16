@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "chart-color-system": "^0.7.3",
+    "chart-color-system": "^0.8.0",
     "culori": "^4.0.2",
     "zod": "^3.25.76"
   }
