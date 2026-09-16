@@ -1,99 +1,185 @@
 #!/usr/bin/env python3
 """
-Brand assets.
+Brand assets, rendered per-pixel.
 
 The mark is one colour as four people receive it: normal vision, deutan,
-protan, and total colour blindness. The base was not chosen by eye; it was
-searched with the plugin's own engine for the base whose four simulated views
-are maximally distinct from each other while all clearing the non-text contrast
-floor on the mark's ground. Base #f20ddf, minimum pairwise deltaE 12.1, worst
-contrast 4.00:1.
+protan, and total colour blindness, with the base colour at the centre. The
+base was searched with the plugin's own engine, not chosen by eye: the colour
+whose four simulated views are maximally distinct while all clearing the
+non-text contrast floor on the mark's ground.
 
-A ring rather than a pie: it reads at 16px, and the gaps keep it from looking
-like a stock chart glyph. Quadrants start at -45 degrees so the divisions are
-diagonal and the form has movement.
+Drawn as a field rather than with shape primitives, because flat arcs looked
+flat. Each quadrant carries an angular sweep and a radial tube shade, the gaps
+fall off smoothly, the ring throws a soft glow onto the ground, and the centre
+is lit like a sphere.
 
-Drawn locally and supersampled. Rasterising through a browser corrupted a PNG
-once with the byte count intact.
+Local and supersampled. Rasterising through a browser corrupted a PNG once with
+the byte count intact, and sips reported it fine because sips only reads the
+header.
 """
-from PIL import Image, ImageDraw
+import math
 
-S = 4
-GROUND = (0x14, 0x17, 0x1A, 255)
+import numpy as np
+from PIL import Image
 
-# normal, deutan, protan, achromatopsia — engine output for base #f20ddf
+SS = 4
+GROUND = np.array([0x14, 0x17, 0x1A], dtype=float)
+
+# Engine output for base #f20ddf: normal, deutan, protan, achromatopsia.
 VIEWS = [
-    (0xF2, 0x0D, 0xDF, 255),
-    (0x70, 0x92, 0xDA, 255),
-    (0x00, 0x75, 0xE4, 255),
-    (0x88, 0x88, 0x88, 255),
+    np.array([0xF2, 0x0D, 0xDF], dtype=float),
+    np.array([0x70, 0x92, 0xDA], dtype=float),
+    np.array([0x00, 0x75, 0xE4], dtype=float),
+    np.array([0x88, 0x88, 0x88], dtype=float),
 ]
 
-GAP_DEG = 7.0
-START_DEG = -45.0
-
-# True radii in the authored 128 space. Pillow's arc draws its stroke INWARD
-# from the bbox path, not centred on it, so the bbox radius IS the outer edge
-# and the ring occupies R_OUT - THICK .. R_OUT. Measured, not assumed: the
-# first version put the ring at 18..35 when the code claimed 27..44.
-R_OUT = 46.0
-THICK = 18.0
-R_MID = R_OUT - THICK / 2  # the ring's centre line, for sampling
-R_DOT = 9.0
+R_OUT, R_IN, R_DOT = 46.0, 27.0, 11.0
+GAP_DEG, START_DEG = 9.0, -45.0
+CORNER = 28.0
 
 
-def draw(size: int) -> Image.Image:
-    img = Image.new("RGBA", (size * S, size * S), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    k = size / 128.0
+def smoothstep(e0, e1, x):
+    t = np.clip((x - e0) / (e1 - e0), 0.0, 1.0)
+    return t * t * (3.0 - 2.0 * t)
 
-    d.rounded_rectangle([0, 0, size * S - 1, size * S - 1], radius=28 * k * S, fill=GROUND)
 
-    cx = cy = size / 2
-    r_out = R_OUT * k
-    thick = THICK * k
+def relative_luminance(rgb):
+    c = rgb / 255.0
+    lin = np.where(c <= 0.03928, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+    return 0.2126 * lin[..., 0] + 0.7152 * lin[..., 1] + 0.0722 * lin[..., 2]
 
-    bbox = [(cx - r_out) * S, (cy - r_out) * S, (cx + r_out) * S, (cy + r_out) * S]
 
+def contrast(a, b):
+    la, lb = relative_luminance(a), relative_luminance(b)
+    hi, lo = np.maximum(la, lb), np.minimum(la, lb)
+    return (hi + 0.05) / (lo + 0.05)
+
+
+TUBE_MIN = 1.0 - 0.34
+FLOOR_RATIO = 3.3  # margin over the 3:1 non-text floor
+
+
+def min_factor(colour):
+    """
+    The darkest a view can be scaled to and still clear the contrast floor.
+
+    The sweep gradient used to be a chosen range, which pushed the grey view
+    down to 1.02:1 against the ground. The floor is derived now, so the audit
+    passes by construction rather than by luck.
+    """
+    lo, hi = 0.05, 1.0
+    for _ in range(40):
+        mid = (lo + hi) / 2
+        if contrast(np.clip(colour * mid * TUBE_MIN, 0, 255), GROUND) >= FLOOR_RATIO:
+            hi = mid
+        else:
+            lo = mid
+    return hi
+
+
+def render(size):
+    n = size * SS
+    k = size / 128.0 * SS
+    cx = cy = n / 2.0
+
+    yy, xx = np.mgrid[0:n, 0:n]
+    px, py = xx + 0.5 - cx, yy + 0.5 - cy
+    r = np.hypot(px, py) / k                      # authored units
+    ang = (np.degrees(np.arctan2(py, px)) - START_DEG) % 360.0
+
+    rgb = np.repeat(GROUND[None, None, :], n, 0).repeat(n, 1)
+
+    # A faint lift toward the middle so the tile is not a dead slab.
+    lift = (1.0 - smoothstep(0.0, 62.0, r))[..., None] * 9.0
+    rgb = rgb + lift
+
+    quad = np.clip((ang // 90).astype(int), 0, 3)
+    within = ang - quad * 90.0                    # 0..90 inside the quadrant
+
+    # Soft gap at each quadrant boundary.
+    gap = np.minimum(within, 90.0 - within)
+    gap_a = smoothstep(0.0, GAP_DEG, gap)
+
+    # Ring edges, softened.
+    ring_a = smoothstep(R_IN - 1.0, R_IN + 0.9, r) * (1.0 - smoothstep(R_OUT - 0.9, R_OUT + 1.0, r))
+    ring_a = ring_a * gap_a
+
+    t = np.clip((within - GAP_DEG) / (90.0 - 2 * GAP_DEG), 0.0, 1.0)   # sweep
+    u = np.clip((r - R_IN) / (R_OUT - R_IN), 0.0, 1.0)                 # across
+    tube = 1.0 - 0.34 * (2.0 * u - 1.0) ** 2                           # lit tube
+
+    view = np.zeros((n, n, 3), dtype=float)
+    base = np.zeros((n, n), dtype=float)
     for i, colour in enumerate(VIEWS):
-        a0 = START_DEG + i * 90 + GAP_DEG / 2
-        a1 = START_DEG + (i + 1) * 90 - GAP_DEG / 2
-        d.arc(bbox, a0, a1, fill=colour, width=int(round(thick * S)))
+        m = quad == i
+        view[m] = colour
+        base[m] = min_factor(colour)
 
-    # A dot at the centre: the one colour all four views are of.
-    r = R_DOT * k
-    d.ellipse([(cx - r) * S, (cy - r) * S, (cx + r) * S, (cy + r) * S], fill=VIEWS[0])
+    # Sweep from each view's own contrast floor up to a slight overbright.
+    shade = (base + (1.14 - base) * t) * tube
+    ring_rgb = np.clip(view * shade[..., None], 0, 255)
 
-    return img.resize((size, size), Image.LANCZOS)
+    # Glow: the ring spilling onto the ground, inside and out.
+    glow_out = (1.0 - smoothstep(R_OUT, R_OUT + 13.0, r)) * smoothstep(R_OUT - 0.5, R_OUT + 0.5, r)
+    glow_in = (1.0 - smoothstep(R_IN - 13.0, R_IN, r)) * (1.0 - smoothstep(R_IN - 0.5, R_IN + 0.5, r))
+    glow = np.clip(glow_out + glow_in, 0, 1) * 0.26 * gap_a
+    rgb = rgb + view * glow[..., None] * 0.55
+
+    rgb = rgb * (1.0 - ring_a[..., None]) + ring_rgb * ring_a[..., None]
+
+    # Centre dot, lit from the upper left.
+    d = np.hypot(px + 3.0 * k, py + 3.0 * k) / k
+    dot_a = 1.0 - smoothstep(R_DOT - 1.0, R_DOT + 0.6, np.hypot(px, py) / k)
+    sphere = np.clip(1.22 - 0.62 * (d / R_DOT), 0.35, 1.32)
+    dot_rgb = np.clip(VIEWS[0] * sphere[..., None], 0, 255)
+    rgb = rgb * (1.0 - dot_a[..., None]) + dot_rgb * dot_a[..., None]
+
+    # Rounded-rect tile.
+    q = np.abs(np.stack([px, py], -1)) - (n / 2.0 - CORNER * k)
+    outside = np.hypot(np.maximum(q[..., 0], 0), np.maximum(q[..., 1], 0)) - CORNER * k
+    inside = np.minimum(np.maximum(q[..., 0], q[..., 1]), 0.0)
+    tile_a = 1.0 - smoothstep(-1.0, 1.0, outside + inside)
+
+    out = np.dstack([np.clip(rgb, 0, 255), tile_a * 255.0]).astype(np.uint8)
+    return Image.fromarray(out, "RGBA").resize((size, size), Image.LANCZOS)
 
 
-def verify(path: str, size: int) -> None:
-    """Check the file rather than trusting that the draw succeeded."""
-    import math
-
+def verify(path, size):
+    """Audit the artifact, not the intent."""
     im = Image.open(path).convert("RGBA")
-    assert im.size == (size, size), f"{path}: expected {size}px, got {im.size}"
-    px = im.load()
+    assert im.size == (size, size), f"{path}: {im.size}"
+    a = np.asarray(im).astype(float)
     k = size / 128.0
-    c = size / 2
+    c = size / 2.0
 
-    assert px[int(c), int(10 * k)][:3] == GROUND[:3], f"{path}: ground wrong"
-    assert px[2, 2][3] == 0, f"{path}: corner should be transparent"
-    assert px[int(c), int(c)][:3] == VIEWS[0][:3], f"{path}: centre dot wrong"
+    yy, xx = np.mgrid[0:size, 0:size]
+    pxx, pyy = xx + 0.5 - c, yy + 0.5 - c
+    r = np.hypot(pxx, pyy) / k
 
-    # One sample per quadrant, on the ring's measured centre line.
-    r = R_MID * k
-    for i, colour in enumerate(VIEWS):
-        ang = math.radians(START_DEG + i * 90 + 45)
-        x = int(c + r * math.cos(ang))
-        y = int(c + r * math.sin(ang))
-        got = px[x, y][:3]
-        near = all(abs(a - b) <= 6 for a, b in zip(got, colour[:3]))
-        assert near, f"{path}: quadrant {i} at ({x},{y}) is {got}, expected ~{colour[:3]}"
-    print(f"verified {path} {size}px: ground, corner, centre and four quadrants")
+    # The gaps between quadrants are deliberately ground-coloured, so measuring
+    # them against the ground and demanding 3:1 asks the art to be something it
+    # is not. Exclude them; an earlier version of this check did not, and
+    # reported the render as broken when the mask was.
+    ang = (np.degrees(np.arctan2(pyy, pxx)) - START_DEG) % 360.0
+    within = ang - np.clip((ang // 90).astype(int), 0, 3) * 90.0
+    off_gap = np.minimum(within, 90.0 - within) > GAP_DEG + 2.0
+
+    assert a[2, 2, 3] == 0, f"{path}: corner not transparent"
+
+    ring = (r > R_IN + 3) & (r < R_OUT - 3) & (a[..., 3] > 250) & off_gap
+    ring_px = a[ring][:, :3]
+    assert ring_px.shape[0] > 200, f"{path}: ring too small, {ring_px.shape[0]} px"
+
+    worst = contrast(ring_px, GROUND).min()
+    assert worst >= 3.0, f"{path}: a ring pixel is {worst:.2f}:1 on the ground"
+
+    spread = ring_px.std(axis=0).mean()
+    assert spread > 18.0, f"{path}: ring is too flat, channel spread {spread:.1f}"
+
+    print(f"verified {path} {size}px: {ring_px.shape[0]} ring px, worst {worst:.2f}:1, spread {spread:.1f}")
 
 
 if __name__ == "__main__":
     for size, name in [(128, "brand/icon-128.png"), (512, "brand/icon-512.png")]:
-        draw(size).save(name)
+        render(size).save(name)
         verify(name, size)
