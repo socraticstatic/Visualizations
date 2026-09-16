@@ -3,7 +3,7 @@ import type { VariableSpec, WrittenRecord } from "./spec";
 
 export type { VariableSpec, WrittenRecord, Drift } from "./spec";
 
-export type Tab = "generate" | "audit" | "simulate";
+export type Tab = "generate" | "audit" | "simulate" | "mockup";
 export type PaintKind = "solid" | "gradient" | "image" | "video" | "other";
 
 export interface SerializedPaint {
@@ -72,6 +72,7 @@ export type Request =
   | { id: string; type: "read-written-record" }
   | { id: string; type: "write-variables"; specs: VariableSpec[]; confirmedOverwrites: string[] }
   | { id: string; type: "render-simulation"; frames: SimulationSpec[] }
+  | { id: string; type: "insert-mockup"; svg: string; frameName: string; nodeEstimate: number }
   | { id: string; type: "store-get" }
   | { id: string; type: "store-set"; key: string; value: string };
 
@@ -81,6 +82,7 @@ export type Response =
   | { id: string; ok: true; type: "written-record"; payload: WrittenRecord | null }
   | { id: string; ok: true; type: "variables-written"; payload: WriteSummary }
   | { id: string; ok: true; type: "simulation-rendered"; payload: { created: number } }
+  | { id: string; ok: true; type: "mockup-inserted"; payload: { nodes: number; frameName: string } }
   | { id: string; ok: true; type: "store"; payload: Record<string, string> }
   | { id: string; ok: true; type: "stored" }
   | { id: string; ok: false; reason: FailureReason; detail: string };

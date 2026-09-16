@@ -448,3 +448,17 @@ body {
 
 .bg__note { margin: var(--space-xs) 0 0; font-size: 10px; color: var(--ui-text-secondary); }
 .bg__refusal { margin: var(--space-xs) 0 0; font-size: 10px; color: var(--ui-text-warning); }
+
+/* The mockup preview is the artifact itself, shrunk to the panel's width.
+   Showing a redrawn approximation would defeat the point of previewing. */
+.mockup-preview {
+  border: 1px solid var(--figma-color-border, #333a42);
+  border-radius: 4px;
+  overflow: hidden;
+  line-height: 0;
+}
+.mockup-preview svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}

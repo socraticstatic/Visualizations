@@ -11,6 +11,7 @@ import { readSelection } from "./selection";
 import { applySpecs, readCurrentRecord, readWrittenRecord } from "./variables";
 import { renderSimulation } from "./simulate";
 import { checkLicense } from "./gate";
+import { insertMockup } from "./mockup";
 
 const TAB_FOR_COMMAND: Record<string, Tab> = {
   generate: "generate",
@@ -102,6 +103,12 @@ if (figma.mode === "codegen") {
           return;
         }
 
+        case "insert-mockup": {
+          const r = insertMockup(msg.svg, msg.frameName, msg.nodeEstimate);
+          figma.commitUndo();
+          reply({ id: msg.id, ok: true, type: "mockup-inserted", payload: r });
+          break;
+        }
         case "store-get": {
           const raw = await figma.clientStorage.getAsync(STORE_KEY);
           reply({

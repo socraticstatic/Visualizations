@@ -26,6 +26,10 @@
     {
       "name": "Simulate vision",
       "command": "simulate"
+    },
+    {
+      "name": "Insert chart mockup",
+      "command": "mockup"
     }
   ],
   "capabilities": [

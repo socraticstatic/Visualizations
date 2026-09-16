@@ -3,11 +3,12 @@ import { PALETTE_VERSION } from "@engine/version";
 import { GenerateTab } from "./GenerateTab";
 import { AuditTab } from "./AuditTab";
 import { SimulateTab } from "./SimulateTab";
+import { MockupTab } from "./MockupTab";
 import { LicensePanel } from "./LicensePanel";
 import { useLicense } from "./useLicense";
 import { send } from "./bridge";
 
-type Tab = "generate" | "audit" | "simulate";
+import type { Tab } from "../shared/protocol";
 
 const TABS: Array<{ id: Tab; label: string; blurb: string }> = [
   {
@@ -21,6 +22,12 @@ const TABS: Array<{ id: Tab; label: string; blurb: string }> = [
     label: "Audit",
     blurb:
       "Measure the colours already in your selection for contrast and colour-vision deficiency, and say plainly which ones cannot be measured.",
+  },
+  {
+    id: "mockup",
+    label: "Mockup",
+    blurb:
+      "Put a chart on the canvas with the palette already audited, and the verdict, the relaxations and the missing decal layer written into the frame.",
   },
   {
     id: "simulate",
@@ -100,6 +107,7 @@ export function App() {
         {tab === "generate" && <GenerateTab theme={scheme} license={license} />}
         {tab === "audit" && <AuditTab />}
         {tab === "simulate" && <SimulateTab />}
+        {tab === "mockup" && <MockupTab theme={scheme} license={license} />}
         <LicensePanel status={license} activate={activate} storageWarning={storageWarning} />
       </main>
     </div>

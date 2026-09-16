@@ -29,3 +29,6 @@ export const MAX_CODEGEN_NODES = 200;
 export const MAX_SIMULATION_NODES = 250;
 
 export const SIMULATION_COPIES = 4;
+
+/** Nodes a single inserted mockup may create. See shared/mockup.ts. */
+export { MAX_MOCKUP_NODES } from "./mockup";
