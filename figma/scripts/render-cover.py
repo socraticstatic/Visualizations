@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
-Figma Community cover art, 1920x960.
+Figma Community cover art, 1920x1080.
+
+Figma's publish modal recommends 1920x1080 for a plugin cover. This was 1920x960
+until 2026-09-16, which is 2:1 rather than 16:9 - the listing would have letter-
+boxed or cropped it. Checked against Figma's own help centre rather than assumed.
 
 The cover makes one claim and shows the evidence for it: the same six series
 under normal vision, deutan, and total colour blindness. By the third row the
@@ -18,7 +22,7 @@ the intent.
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-W, H, SS = 1920, 960, 2
+W, H, SS = 1920, 1080, 2
 
 GROUND = (0x14, 0x17, 0x1A)
 HEADING = (0xF7, 0xF9, 0xFB)
@@ -119,14 +123,14 @@ def render():
 
     # ---- left: the claim -------------------------------------------------
     icon = Image.open("brand/icon-512.png").convert("RGBA").resize((132 * S, 132 * S), Image.LANCZOS)
-    im.paste(icon, (120 * S, 208 * S), icon)
+    im.paste(icon, (120 * S, 236 * S), icon)
 
-    d.text((120 * S, 388 * S), "F I G M A   P L U G I N", font=font(19, "Semibold"), fill=QUIET)
-    d.text((116 * S, 424 * S), "Chart Color System", font=font(86, "Bold"), fill=HEADING)
-    d.text((120 * S, 546 * S), "Palettes that still work", font=font(37), fill=BODY)
-    d.text((120 * S, 594 * S), "when the colour does not.", font=font(37), fill=BODY)
+    d.text((120 * S, 424 * S), "F I G M A   P L U G I N", font=font(19, "Semibold"), fill=QUIET)
+    d.text((116 * S, 462 * S), "Chart Color System", font=font(86, "Bold"), fill=HEADING)
+    d.text((120 * S, 596 * S), "Palettes that still work", font=font(37), fill=BODY)
+    d.text((120 * S, 644 * S), "when the colour does not.", font=font(37), fill=BODY)
 
-    d.line([120 * S, 674 * S, 176 * S, 674 * S], fill=ACCENT, width=4 * S)
+    d.line([120 * S, 730 * S, 176 * S, 730 * S], fill=ACCENT, width=4 * S)
     for i, line in enumerate(
         [
             "Solved against the background your chart",
@@ -135,10 +139,10 @@ def render():
             "identity when colour cannot.",
         ]
     ):
-        d.text((120 * S, (706 + i * 38) * S), line, font=font(26), fill=QUIET)
+        d.text((120 * S, (766 + i * 38) * S), line, font=font(26), fill=QUIET)
 
     # ---- right: the evidence --------------------------------------------
-    cx0, cy0, cx1, cy1 = 1004 * S, 156 * S, 1800 * S, 732 * S
+    cx0, cy0, cx1, cy1 = 1004 * S, 196 * S, 1800 * S, 832 * S
     d.rounded_rectangle([cx0, cy0, cx1, cy1], radius=20 * S, fill=CARD, outline=CARD_EDGE, width=2 * S)
 
     pad = 44 * S
@@ -167,9 +171,9 @@ def render():
     f = font(24, "Medium")
     for i, cap in enumerate(caps):
         if i:
-            d.text((x, 784 * S), "·", font=f, fill=ACCENT)
+            d.text((x, 886 * S), "·", font=f, fill=ACCENT)
             x += 24 * S
-        d.text((x, 784 * S), cap, font=f, fill=BODY)
+        d.text((x, 886 * S), cap, font=f, fill=BODY)
         x += int(d.textlength(cap, font=f)) + 24 * S
 
     return im.resize((W, H), Image.LANCZOS)
@@ -187,9 +191,9 @@ def verify(path):
     # heading with its own pixels and reports 1.00:1. The mask was wrong, not
     # the art - the same mistake the icon verifier made.
     ground = np.asarray(ground_with_glow()).astype(float)
-    left_ground = ground[200:900, 100:960].reshape(-1, 3)
+    left_ground = ground[230:1010, 100:960].reshape(-1, 3)
     # The capability line runs under the card, across the glow.
-    caps_ground = ground[780:820, 1000:1810].reshape(-1, 3)
+    caps_ground = ground[880:925, 1000:1810].reshape(-1, 3)
     worst_caps = contrast(np.array(BODY, float), caps_ground).min()
     assert worst_caps >= 4.5, f"{path}: capability line is {worst_caps:.2f}:1 on the glow"
     for name, colour, floor in [("heading", HEADING, 4.5), ("body", BODY, 4.5), ("quiet", QUIET, 4.5)]:
@@ -228,6 +232,6 @@ def verify(path):
 
 
 if __name__ == "__main__":
-    out = "brand/cover-1920x960.png"
+    out = "brand/cover-1920x1080.png"
     render().save(out)
     verify(out)
