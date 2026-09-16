@@ -1,18 +1,18 @@
 {
-  "engineVersion": "0.7.3",
+  "engineVersion": "0.8.0",
   "measuredOn": "2026-09-16",
   "measuredWith": "node v24.19.0",
   "solved6": {
-    "worstContrast": 4.1544837823312175,
-    "worstCvdDeltaE": 11.57687082513403,
-    "minPairDeltaE": 13.803309241718548,
+    "worstContrast": 4.565897011713226,
+    "worstCvdDeltaE": 11.80109376032578,
+    "minPairDeltaE": 12.049331615073095,
     "palette": [
-      "#00515f",
-      "#0087ab",
-      "#637039",
-      "#271366",
-      "#8400ab",
-      "#463600"
+      "#733c8a",
+      "#003307",
+      "#3e7b00",
+      "#2f5227",
+      "#541761",
+      "#9261b5"
     ]
   }
 }

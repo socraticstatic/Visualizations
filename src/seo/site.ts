@@ -223,10 +223,19 @@ export interface RouteMeta {
    * re-rendering it.
    *
    * Only safe when the route renders identically in Node and in the browser.
-   * That is not a given here: Math.cbrt (OKLab conversion) and Math.exp (the
-   * annealing acceptance test) return different values under Node 24 than
-   * under Chrome 152, so any route that runs the solver produces a different
-   * palette on each side and hydration fails with React #418/#425.
+   *
+   * That used to be false here: Math.cbrt (OKLab conversion) and Math.exp (the
+   * annealing acceptance test) returned different values under Node 24 than
+   * under Chrome 152, so any route running the solver produced a different
+   * palette on each side and hydration failed with React #418/#425.
+   *
+   * Fixed in 0.8.0 - palette/deterministic.ts replaced both with versions
+   * built only from correctly-rounded operations, and the same bundle now
+   * returns byte-identical palettes under Node 24, Chrome 152 and
+   * JavaScriptCore across all 64 configurations
+   * (docs/spikes/engine-divergence.md). So the reason these flags are false is
+   * gone, and they can be re-enabled once someone verifies a solver route
+   * hydrates clean. Not flipped blind.
    */
   hydrate: boolean;
   /** Left out of the sitemap when false. */
