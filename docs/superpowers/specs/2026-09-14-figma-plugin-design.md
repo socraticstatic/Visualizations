@@ -73,38 +73,31 @@ else. See Spike A results and command 4.
 `chartKinds.ts`, `bestPractices.ts`, `builtinBounds.ts`, `fixtures.ts`, and
 `echartsTheme.ts`, none of which are covered.
 
-**Decision: relicense those five files MIT.** The reasoning is that a published
-Figma plugin's `code.js` and `ui.html` are readable by anyone who installs it,
-per Figma's own developer material. A proprietary label on a readable shipped
-bundle is a fiction. Relicensing aligns the label with reality and lets people
-legitimately use what they can already read.
+**Decision reversed 2026-09-16: those five files stay proprietary.**
 
-**This is not a technical prerequisite.** Micah holds the copyright and can
-bundle his own proprietary files into anything he publishes. The plugin ships
-either way. The relicense is a decision about honesty and reuse.
+The MIT relicense was chosen on 2026-09-15 on the premise that the plugin would
+be free, that its bundle is readable by anyone who installs it, and that
+aligning the licence with that reality bought goodwill at no cost. Micah then
+decided to charge for the plugin, which inverts the reasoning entirely: MIT on
+`chartKinds`, `bestPractices`, `builtinBounds`, `fixtures` and `echartsTheme`
+would let anyone fork a paid plugin and republish it free, using the rules that
+are the reason to buy it.
 
-**MIT is one-way.** Any version shipped under it stays MIT, and anyone may fork
-those rules from that version.
+The bundle is still readable. That is a fact about Figma, not a licence choice,
+and readable is not the same as reusable: reading a minified `BEST_PRACTICE`
+table is a nuisance, relicensing it is an invitation.
 
-**Therefore the relicense lands in plan 2, after Spike A, and never before.**
-Its only justification is that the Mockup command needs these five files, and
-whether Mockup is buildable is exactly what Spike A determines. Relicensing
-first would put an irreversible act ahead of the test that says whether it is
-needed: if `<pattern>` does not survive the SVG boundary and Mockup is cut or
-redesigned, five files would be permanently MIT for a command that never
-shipped.
+Nothing was lost by waiting. The relicense sat in plan 2 behind Spike A
+precisely so an irreversible act could not run ahead of the test that justified
+it, and the reason it needed justifying changed before the door was opened.
 
-**Plan 1 needs no license change at all.** Commands 1 through 3 touch
-`solveCategorical`, `auditPalette`, `simulateRgb`, the ramps, `encoding`,
-`constraints`, and `version`. Every one of those is already MIT.
+**The plugin needs no licence change at all.** Micah holds the copyright and
+bundles his own proprietary files into his own published artifact. The npm
+package's public surface is untouched: `chart-color-system` keeps exporting the
+MIT engine and nothing else.
 
-`manualOverrides.ts` stays proprietary. It is 100 lines of demo-app DOM
-plumbing that detects whether a React ColorPicker wrote inline styles on
-`[data-chart-themed-root]` divs. It is not a rule and has no business in a
-library grant. See P0.
-
-Work, in plan 2 only: update `LICENSE` and `LICENSE-PROPRIETARY`, note the new
-surface in `README-lib.md`, bump `chart-color-system` minor.
+Work, in plan 2: none for licensing. `P1` shrinks to barrel hygiene for the
+already-MIT surface.
 
 ## Prerequisites
 
