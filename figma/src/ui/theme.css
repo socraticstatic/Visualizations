@@ -145,8 +145,25 @@ body {
 .panel__body {
   flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0 var(--space-md) var(--space-md);
+  /* Figma's own panels use a thin scrollbar that appears on hover. The default
+     chunky always-on track read as a web page inside the editor. */
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
 }
+
+.panel__body:hover { scrollbar-color: var(--ui-border-strong) transparent; }
+
+.panel__body::-webkit-scrollbar { width: 8px; }
+.panel__body::-webkit-scrollbar-track { background: transparent; }
+.panel__body::-webkit-scrollbar-thumb {
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background-clip: content-box;
+}
+.panel__body:hover::-webkit-scrollbar-thumb { background: var(--ui-border-strong); background-clip: content-box; }
 
 .note {
   margin: 0;
@@ -434,6 +451,11 @@ body {
 
 .licence__input {
   width: 100%;
+  /* One line that scrolls sideways, not a three-row box with its own
+     scrollbar wrapping a base64 blob. Nobody reads a licence key. */
+  white-space: nowrap;
+  overflow-x: auto;
+  text-overflow: ellipsis;
   font: inherit;
   font-size: 10px;
   color: var(--ui-text);

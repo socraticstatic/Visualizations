@@ -43,10 +43,11 @@ export function LicensePanel({
         >
           <label className="field">
             <span className="field__label">Licence key</span>
-            <textarea
+            <input
               className="licence__input"
-              rows={3}
+              type="text"
               spellCheck={false}
+              autoComplete="off"
               value={value}
               placeholder="CCS1...."
               onChange={(e) => setValue(e.target.value)}
