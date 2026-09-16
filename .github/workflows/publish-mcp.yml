@@ -1,0 +1,86 @@
+# Publishes mcp/server.json to the official MCP Registry.
+#
+# Auth is GitHub OIDC: the registry trusts this workflow because it runs in
+# socraticstatic/Visualizations, and the namespace it claims
+# (io.github.socraticstatic/...) is owned by that account. No token to store,
+# none to expire, no device-code login. Same trust model as release-lib.yml,
+# which publishes the npm package without a token.
+#
+# Release is one command:
+#   git tag mcp-v0.1.1 && git push origin mcp-v0.1.1
+#
+# mcp-v* rather than v*, matching lib-v* for the npm package, so the two
+# release trains cannot trigger each other.
+name: Publish MCP server
+
+on:
+  push:
+    tags: ["mcp-v*"]
+  workflow_dispatch:
+
+permissions:
+  id-token: write # OIDC
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      # The server card is served from the live endpoint by api/well-known.js,
+      # which imports this exact file. If it is malformed the endpoint 500s, so
+      # it gets checked before anything is published, not after.
+      - name: Test the server card
+        run: node --test test/well-known.test.mjs
+
+      - name: Take the version from the tag
+        if: startsWith(github.ref, 'refs/tags/mcp-v')
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/mcp-v}"
+          echo "Publishing version $VERSION"
+          jq --arg v "$VERSION" '.version = $v' server.json > server.tmp
+          mv server.tmp server.json
+          echo "MCP_VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Install mcp-publisher
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+          ./mcp-publisher --version || true
+
+      - name: Authenticate over OIDC
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish
+        run: ./mcp-publisher publish
+
+      # publish exiting 0 is not the same as the registry serving the server.
+      # Poll for the name we claimed and fail if it is not there - a release
+      # that reports success without landing is the failure mode worth
+      # catching, and it is the one nobody notices.
+      - name: Verify it is actually being served
+        run: |
+          NAME="$(jq -r .name server.json)"
+          for attempt in 1 2 3 4 5 6; do
+            FOUND="$(curl -fsS "https://registry.modelcontextprotocol.io/v0/servers?search=socraticstatic" \
+              | jq -r --arg n "$NAME" '.servers[].server | select(.name == $n) | .name' | head -1)"
+            if [ -n "$FOUND" ]; then
+              echo "registry is serving $FOUND"
+              exit 0
+            fi
+            echo "attempt $attempt: not visible yet, waiting"
+            sleep 10
+          done
+          echo "::error::published but the registry is not serving $NAME"
+          exit 1
