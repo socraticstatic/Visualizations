@@ -1,7 +1,7 @@
 /**
  * Dev Mode entry point. Runs in the sandbox with no DOM, on a 15 second budget.
  */
-import { hasLicense } from "./gate";
+import { checkLicense } from "./gate";
 import {
   echartsOption,
   cssTokens,
@@ -46,7 +46,7 @@ function collectFilled(root: Loose): Array<{ name: unknown; hex: string }> {
 
 export function registerCodegen(): void {
   figma.codegen.on("generate", async (event) => {
-    if (!(await hasLicense())) {
+    if (!(await checkLicense()).ok) {
       return [
         {
           title: "Chart Color System",

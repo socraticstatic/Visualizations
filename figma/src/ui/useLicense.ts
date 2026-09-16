@@ -11,6 +11,7 @@ const KEY = "license";
 export function useLicense() {
   const [status, setStatus] = useState<LicenseStatus | null>(null);
   const [checking, setChecking] = useState(true);
+  const [storageWarning, setStorageWarning] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,9 +36,12 @@ export function useLicense() {
   const activate = useCallback(async (raw: string): Promise<LicenseStatus> => {
     const verified = await verifyLicense(raw);
     setStatus(verified);
-    if (verified.ok) await send({ type: "store-set", key: KEY, value: raw.trim() });
+    if (verified.ok) {
+      const stored = await send({ type: "store-set", key: KEY, value: raw.trim() });
+      setStorageWarning(stored.ok ? null : stored.detail);
+    }
     return verified;
   }, []);
 
-  return { status, checking, activate };
+  return { status, checking, activate, storageWarning };
 }

@@ -24,3 +24,10 @@ choose `figma/manifest.json`.
 
 Plan: `../docs/superpowers/plans/2026-09-15-figma-plugin-plan-1.md`
 Spec: `../docs/superpowers/specs/2026-09-14-figma-plugin-design.md`
+
+## Plugin id
+
+`manifest.json` carries a local development `id`. `figma.clientStorage` refuses
+to work without one ("Cannot access client storage without a plugin ID"), which
+is how a licence verified in the panel and was rejected where the work happens.
+Figma assigns the real id on first publish; replace it then.

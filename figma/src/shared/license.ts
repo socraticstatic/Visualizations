@@ -8,10 +8,15 @@
  * key, so the plugin can be paid for and still declare allowedDomains: none.
  * It cannot phone home because it has nowhere to phone.
  *
- * ECDSA P-256 rather than Ed25519: P-256 has had universal WebCrypto support
- * for years, while Ed25519 arrived only recently and Figma's runtime is a
- * Chromium the plugin does not choose. The security properties are adequate
- * either way; portability is not.
+ * ECDSA P-256, verified with a pure-JS implementation rather than WebCrypto.
+ * This started on crypto.subtle and could never have worked: a Figma plugin
+ * iframe runs at a null origin, which is not a secure context, so subtle is
+ * undefined there. Every unit test passed because Node has it. Running the
+ * plugin is what found this. @noble/curves needs no secure context and works
+ * in the sandbox and the iframe alike.
+ *
+ * The public key is the raw uncompressed point, not SPKI, because that is what
+ * a curve library consumes directly.
  *
  * Key shape: CCS1.<base64url payload>.<base64url signature>
  */
@@ -19,7 +24,8 @@
 export const LICENSE_PREFIX = "CCS1";
 
 /** Replace with the public half of the signing key before publishing. */
-export const PUBLIC_KEY_SPKI_B64 = "REPLACE_WITH_PUBLIC_KEY_SPKI_BASE64";
+export const PUBLIC_KEY_SPKI_B64 =
+  "BOmaNShhzFsOaTcGDSjDoImYh2bNioww1RbGSBNZXe-bksDZXmgDnymf6VBGqPlkhHMo3HxzzAhulYFwKNvDFUc";
 
 export interface LicensePayload {
   /** Who it was issued to. Shown back to the user so a key is identifiable. */
@@ -38,7 +44,9 @@ export type LicenseFailure =
   | "malformed-payload"
   | "bad-signature"
   | "expired"
-  | "not-configured";
+  | "no-key-embedded"
+  | "key-unreadable"
+  | "crypto-unavailable";
 
 export type LicenseStatus =
   | { ok: true; payload: LicensePayload }
@@ -51,19 +59,73 @@ export const LICENSE_COPY: Record<LicenseFailure, string> = {
   "malformed-payload": "That key is damaged. Copy it again from your purchase email, whole.",
   "bad-signature": "That key did not verify. Check it copied completely, including the last characters.",
   expired: "That licence has expired.",
-  "not-configured": "This build has no signing key embedded, so licences cannot be checked.",
+  "no-key-embedded": "This build has no signing key embedded, so licences cannot be checked.",
+  "key-unreadable": "This build's signing key is malformed, so licences cannot be checked.",
+  "crypto-unavailable":
+    "This Figma build does not expose the cryptography needed to check a licence key here.",
 };
 
+import { p256 } from "@noble/curves/nist.js";
+import { sha256 } from "@noble/hashes/sha2.js";
+
+const B64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+/**
+ * Decoded by hand rather than with atob.
+ *
+ * atob exists in the plugin iframe and not in the sandbox, so a licence that
+ * verified in the panel was rejected where the work happens. Both halves need
+ * this, so it depends on no host global.
+ */
 function b64urlToBytes(s: string): Uint8Array | null {
-  try {
-    const pad = s.replace(/-/g, "+").replace(/_/g, "/");
-    const bin = atob(pad + "=".repeat((4 - (pad.length % 4)) % 4));
-    const out = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-    return out;
-  } catch {
-    return null;
+  const norm = s.replace(/-/g, "+").replace(/_/g, "/").replace(/\s+/g, "");
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(norm)) return null;
+
+  const clean = norm.replace(/=+$/, "");
+  const out = new Uint8Array(Math.floor((clean.length * 3) / 4));
+  let bits = 0;
+  let acc = 0;
+  let i = 0;
+
+  for (const ch of clean) {
+    const v = B64_ALPHABET.indexOf(ch);
+    if (v < 0) return null;
+    acc = (acc << 6) | v;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      out[i++] = (acc >> bits) & 0xff;
+    }
   }
+  return out.subarray(0, i);
+}
+
+/**
+ * UTF-8 decoded by hand, for the same reason as the base64: TextDecoder is a
+ * browser global and the sandbox does not have one. Licence payloads are JSON,
+ * so this covers the full range rather than assuming ASCII.
+ */
+function utf8Decode(bytes: Uint8Array): string | null {
+  let out = "";
+  let i = 0;
+  while (i < bytes.length) {
+    const b = bytes[i++];
+    let cp: number;
+    if (b < 0x80) cp = b;
+    else if (b >= 0xc2 && b <= 0xdf) cp = ((b & 0x1f) << 6) | (bytes[i++] & 0x3f);
+    else if (b >= 0xe0 && b <= 0xef)
+      cp = ((b & 0x0f) << 12) | ((bytes[i++] & 0x3f) << 6) | (bytes[i++] & 0x3f);
+    else if (b >= 0xf0 && b <= 0xf4)
+      cp =
+        ((b & 0x07) << 18) |
+        ((bytes[i++] & 0x3f) << 12) |
+        ((bytes[i++] & 0x3f) << 6) |
+        (bytes[i++] & 0x3f);
+    else return null;
+    if (!Number.isFinite(cp) || cp < 0) return null;
+    out += String.fromCodePoint(cp);
+  }
+  return out;
 }
 
 export interface ParsedLicense {
@@ -87,9 +149,12 @@ export function parseLicense(raw: string): ParsedLicense | LicenseFailure {
   const signature = b64urlToBytes(sigSeg);
   if (!payloadBytes || !signature) return "malformed-payload";
 
+  const json = utf8Decode(payloadBytes);
+  if (json === null) return "malformed-payload";
+
   let payload: LicensePayload;
   try {
-    payload = JSON.parse(new TextDecoder().decode(payloadBytes));
+    payload = JSON.parse(json);
   } catch {
     return "malformed-payload";
   }
@@ -117,30 +182,14 @@ export async function verifyLicense(
   const parsed = parseLicense(raw);
   if (typeof parsed === "string") return { ok: false, reason: parsed };
 
-  const spki = b64urlToBytes(publicKeyB64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""));
-  if (!spki || spki.length < 16) return { ok: false, reason: "not-configured" };
+  if (publicKeyB64.startsWith("REPLACE_WITH")) return { ok: false, reason: "no-key-embedded" };
 
-  let key: CryptoKey;
-  try {
-    key = await crypto.subtle.importKey(
-      "spki",
-      spki as unknown as ArrayBuffer,
-      { name: "ECDSA", namedCurve: "P-256" },
-      false,
-      ["verify"]
-    );
-  } catch {
-    return { ok: false, reason: "not-configured" };
-  }
+  const pub = b64urlToBytes(publicKeyB64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""));
+  if (!pub || pub.length < 33) return { ok: false, reason: "key-unreadable" };
 
   let good = false;
   try {
-    good = await crypto.subtle.verify(
-      { name: "ECDSA", hash: "SHA-256" },
-      key,
-      parsed.signature as unknown as ArrayBuffer,
-      parsed.signed as unknown as ArrayBuffer
-    );
+    good = p256.verify(parsed.signature, sha256(parsed.signed), pub);
   } catch {
     return { ok: false, reason: "bad-signature" };
   }

@@ -54,7 +54,7 @@ export function App() {
     return () => window.removeEventListener("message", onMessage);
   }, []);
 
-  const { status: license, activate } = useLicense();
+  const { status: license, activate, storageWarning } = useLicense();
 
   const active = TABS.find((t) => t.id === tab)!;
 
@@ -90,7 +90,7 @@ export function App() {
         {tab === "generate" && <GenerateTab theme={scheme} license={license} />}
         {tab === "audit" && <AuditTab />}
         {tab === "simulate" && <SimulateTab />}
-        <LicensePanel status={license} activate={activate} />
+        <LicensePanel status={license} activate={activate} storageWarning={storageWarning} />
       </main>
     </div>
   );

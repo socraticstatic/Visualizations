@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { solveCategorical } from "@engine/palette/categorical";
 import { auditPalette, contrastRatio, simulateColor, type VisionMode } from "@engine/audit";
 import { POSTURE, type Posture } from "@engine/constraints";
 import { MAX_SLOTS } from "@engine/encoding";
 import { DEFAULT_TOKENS } from "../shared/defaults";
+import { BackgroundControl, type BackgroundChoice } from "./BackgroundControl";
 import { buildVariableSpec, type Drift } from "../shared/spec";
 import { isUnlocked, type LicenseStatus } from "../shared/license";
 import { send } from "./bridge";
@@ -37,34 +38,52 @@ export function GenerateTab({
   const cap = Math.min(MAX_SLOTS, POSTURE[posture].maxCategorical);
   const n = Math.min(requestedN, cap);
 
+  // The surface the chart actually sits on. Solving against a default and
+  // shipping the result is the failure this whole system exists to catch.
+  const [background, setBackground] = useState<BackgroundChoice>({
+    color: tokens.surface,
+    source: "default",
+    refusal: null,
+  });
+  // While the background is still this plugin's default it tracks the theme.
+  // Once it comes from the canvas or the designer, it is theirs and stays put.
+  useEffect(() => {
+    setBackground((b) => (b.source === "default" ? { ...b, color: tokens.surface } : b));
+  }, [tokens.surface]);
+
+  const surface = background.color;
+
   const solve = useMemo(
     () =>
       solveCategorical({
         n,
         posture,
-        background: tokens.surface,
+        background: surface,
         grid: tokens.grid,
         locks: [],
       }),
-    [n, posture, tokens]
+    [n, posture, tokens, surface]
   );
 
-  const audit = useMemo(() => auditPalette(solve.palette, tokens.surface), [solve, tokens]);
+  const audit = useMemo(() => auditPalette(solve.palette, surface), [solve, surface]);
 
   /** Both modes are solved, because a variable needs a value in each. */
   const specs = useMemo(() => {
     const forTheme = (t: "light" | "dark") => {
       const tk = DEFAULT_TOKENS[t];
+      // The chosen background governs the mode it belongs to; the other mode
+      // keeps this plugin's default, which the panel says out loud.
+      const bg = t === theme && background.source !== "default" ? surface : tk.surface;
       return {
-        palette: solveCategorical({ n, posture, background: tk.surface, grid: tk.grid, locks: [] }).palette,
-        surface: tk.surface,
+        palette: solveCategorical({ n, posture, background: bg, grid: tk.grid, locks: [] }).palette,
+        surface: bg,
         grid: tk.grid,
         axis: tk.axis,
         label: tk.label,
       };
     };
     return buildVariableSpec({ light: forTheme("light"), dark: forTheme("dark") });
-  }, [n, posture]);
+  }, [n, posture, theme, surface, background.source]);
 
   const canWrite = isUnlocked("write-variables", license);
 
@@ -128,6 +147,12 @@ export function GenerateTab({
             ))}
           </select>
         </label>
+
+        <BackgroundControl
+          fallback={tokens.surface}
+          value={background}
+          onChange={setBackground}
+        />
 
         <div className="field">
           <span className="field__label">
@@ -204,7 +229,7 @@ export function GenerateTab({
               <ShapeMarker slot={i} color={c.hex} />
               <DecalSwatch slot={i} color={c.hex} />
               <span className="slot__contrast num">
-                {contrastRatio(c, tokens.surface).toFixed(2)}
+                {contrastRatio(c, surface).toFixed(2)}
               </span>
             </li>
           ))}
@@ -223,13 +248,13 @@ export function GenerateTab({
                 <span className="vision__label">{v.label}</span>
                 <span className="vision__note">{v.note}</span>
               </div>
-              <div className="vision__strip" style={{ background: tokens.surface.hex }}>
+              <div className="vision__strip" style={{ background: surface.hex }}>
                 {solve.palette.map((c, i) => (
                   <Specimen
                     key={i}
                     slot={i}
                     color={simulateColor(c, v.mode).hex}
-                    surface={tokens.surface.hex}
+                    surface={surface.hex}
                   />
                 ))}
               </div>
@@ -265,6 +290,12 @@ export function GenerateTab({
           <button className="btn" disabled={busy || !canWrite} onClick={() => void writeChecked()}>
             {busy ? "Writing" : `Write ${specs.length} variables into this file`}
           </button>
+        )}
+        {background.source !== "default" && (
+          <p className="note">
+            Your background applies to the {theme} mode. The other mode keeps this plugin's default
+            surface, because one colour cannot stand for both.
+          </p>
         )}
         {!canWrite && (
           <p className="note">

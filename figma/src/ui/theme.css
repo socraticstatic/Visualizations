@@ -409,3 +409,42 @@ body {
 }
 
 .licence__error { margin: var(--space-sm) 0 0; color: var(--ui-text-danger); }
+
+/* ---- background input -------------------------------------------------- */
+
+.bg { display: flex; align-items: center; gap: var(--space-sm); }
+
+.bg__chip {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1px rgb(127 127 127 / 0.45);
+}
+
+.bg__hex {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: var(--text-label);
+  color: var(--ui-text);
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--radius);
+  padding: 4px var(--space-sm);
+}
+
+.bg__btn {
+  flex: none;
+  font: inherit;
+  font-size: var(--text-label);
+  color: var(--ui-text);
+  background: transparent;
+  border: 1px solid var(--ui-border-strong);
+  border-radius: var(--radius);
+  padding: 4px var(--space-sm);
+  cursor: pointer;
+}
+
+.bg__note { margin: var(--space-xs) 0 0; font-size: 10px; color: var(--ui-text-secondary); }
+.bg__refusal { margin: var(--space-xs) 0 0; font-size: 10px; color: var(--ui-text-warning); }

@@ -10,7 +10,7 @@ import { registerCodegen } from "./codegen";
 import { readSelection } from "./selection";
 import { applySpecs, readCurrentRecord, readWrittenRecord } from "./variables";
 import { renderSimulation } from "./simulate";
-import { hasLicense } from "./gate";
+import { checkLicense } from "./gate";
 
 const TAB_FOR_COMMAND: Record<string, Tab> = {
   generate: "generate",
@@ -65,13 +65,9 @@ if (figma.mode === "codegen") {
         }
 
         case "write-variables": {
-          if (!(await hasLicense())) {
-            reply({
-              id: msg.id,
-              ok: false,
-              reason: "unlicensed",
-              detail: "Writing variables needs a licence. Auditing and simulating do not.",
-            });
+          const gate = await checkLicense();
+          if (!gate.ok) {
+            reply({ id: msg.id, ok: false, reason: "unlicensed", detail: gate.detail });
             return;
           }
           const payload = await applySpecs(msg.specs, msg.confirmedOverwrites);
@@ -109,10 +105,31 @@ if (figma.mode === "codegen") {
         }
 
         case "store-set": {
-          const raw = (await figma.clientStorage.getAsync(STORE_KEY)) as Record<string, string> | undefined;
-          const next = { ...(raw && typeof raw === "object" ? raw : {}), [msg.key]: msg.value };
-          await figma.clientStorage.setAsync(STORE_KEY, next);
-          reply({ id: msg.id, ok: true, type: "stored" });
+          try {
+            const raw = (await figma.clientStorage.getAsync(STORE_KEY)) as Record<string, string> | undefined;
+            const next = { ...(raw && typeof raw === "object" ? raw : {}), [msg.key]: msg.value };
+            await figma.clientStorage.setAsync(STORE_KEY, next);
+            // Read back. A write that reports success and does not persist is
+            // how a licence verifies in the panel and fails where it matters.
+            const check = (await figma.clientStorage.getAsync(STORE_KEY)) as Record<string, string> | undefined;
+            if (!check || check[msg.key] !== msg.value) {
+              reply({
+                id: msg.id,
+                ok: false,
+                reason: "storage-unavailable",
+                detail: "Figma accepted the write but did not store it, so this will not be remembered.",
+              });
+              return;
+            }
+            reply({ id: msg.id, ok: true, type: "stored" });
+          } catch (e) {
+            reply({
+              id: msg.id,
+              ok: false,
+              reason: "storage-unavailable",
+              detail: e instanceof Error ? e.message : String(e),
+            });
+          }
           return;
         }
 

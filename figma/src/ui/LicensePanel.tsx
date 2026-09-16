@@ -4,9 +4,11 @@ import { LICENSE_COPY, type LicenseStatus } from "../shared/license";
 export function LicensePanel({
   status,
   activate,
+  storageWarning,
 }: {
   status: LicenseStatus | null;
   activate: (raw: string) => Promise<LicenseStatus>;
+  storageWarning?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState("");
@@ -14,10 +16,13 @@ export function LicensePanel({
 
   if (status?.ok) {
     return (
-      <p className="licence licence--ok">
-        Licensed to <strong>{status.payload.sub}</strong>
-        {status.payload.exp ? ` until ${new Date(status.payload.exp * 1000).toISOString().slice(0, 10)}` : ""}.
-      </p>
+      <div className="licence licence--ok">
+        <p style={{ margin: 0 }}>
+          Licensed to <strong>{status.payload.sub}</strong>
+          {status.payload.exp ? ` until ${new Date(status.payload.exp * 1000).toISOString().slice(0, 10)}` : ""}.
+        </p>
+        {storageWarning && <p className="licence__error">{storageWarning}</p>}
+      </div>
     );
   }
 

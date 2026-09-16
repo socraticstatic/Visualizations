@@ -4,6 +4,8 @@
  * that the parser splits strings.
  */
 import { describe, it, expect, beforeAll } from "vitest";
+import { p256 } from "@noble/curves/nist.js";
+import { sha256 } from "@noble/hashes/sha2.js";
 import {
   parseLicense,
   verifyLicense,
@@ -17,26 +19,21 @@ import {
 const b64url = (bytes: Uint8Array) =>
   btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
-let keys: CryptoKeyPair;
+let secret: Uint8Array;
 let publicB64: string;
 
-async function issue(payload: LicensePayload, signWith: CryptoKey = keys.privateKey): Promise<string> {
+function issue(payload: LicensePayload, signWith: Uint8Array = secret): string {
   const bytes = new TextEncoder().encode(JSON.stringify(payload));
-  const sig = new Uint8Array(
-    await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, signWith, bytes as unknown as ArrayBuffer)
-  );
+  const sig = p256.sign(sha256(bytes), signWith);
   return `CCS1.${b64url(bytes)}.${b64url(sig)}`;
 }
 
 const NOW = 1_800_000_000;
 const valid: LicensePayload = { sub: "micah@example.com", plan: "pro", iat: NOW - 100 };
 
-beforeAll(async () => {
-  keys = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
-    "sign",
-    "verify",
-  ])) as CryptoKeyPair;
-  publicB64 = b64url(new Uint8Array(await crypto.subtle.exportKey("spki", keys.publicKey)));
+beforeAll(() => {
+  secret = p256.utils.randomSecretKey();
+  publicB64 = b64url(p256.getPublicKey(secret, false));
 });
 
 describe("parseLicense", () => {
@@ -57,7 +54,7 @@ describe("parseLicense", () => {
   });
 
   it("tolerates whitespace inside a pasted key", async () => {
-    const key = await issue(valid);
+    const key = issue(valid);
     const mangled = key.slice(0, 20) + "\n  " + key.slice(20);
     expect(typeof parseLicense(mangled)).not.toBe("string");
   });
@@ -65,22 +62,19 @@ describe("parseLicense", () => {
 
 describe("verifyLicense", () => {
   it("accepts a genuine key and returns who it belongs to", async () => {
-    const res = await verifyLicense(await issue(valid), publicB64, NOW);
+    const res = await verifyLicense(issue(valid), publicB64, NOW);
     expect(res.ok).toBe(true);
     if (res.ok) expect(res.payload.sub).toBe("micah@example.com");
   });
 
   it("rejects a key signed by a different keypair", async () => {
-    const other = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
-      "sign",
-      "verify",
-    ])) as CryptoKeyPair;
-    const res = await verifyLicense(await issue(valid, other.privateKey), publicB64, NOW);
+    const other = p256.utils.randomSecretKey();
+    const res = await verifyLicense(issue(valid, other), publicB64, NOW);
     expect(res).toEqual({ ok: false, reason: "bad-signature" });
   });
 
   it("rejects a payload edited after signing", async () => {
-    const key = await issue(valid);
+    const key = issue(valid);
     const [v, , sig] = key.split(".");
     const tampered = b64url(new TextEncoder().encode(JSON.stringify({ ...valid, plan: "enterprise" })));
     const res = await verifyLicense(`${v}.${tampered}.${sig}`, publicB64, NOW);
@@ -88,28 +82,27 @@ describe("verifyLicense", () => {
   });
 
   it("reports forgery rather than expiry when a key is both", async () => {
-    const other = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
-      "sign",
-      "verify",
-    ])) as CryptoKeyPair;
+    const other = p256.utils.randomSecretKey();
     const stale = { ...valid, exp: NOW - 1 };
-    const res = await verifyLicense(await issue(stale, other.privateKey), publicB64, NOW);
+    const res = await verifyLicense(issue(stale, other), publicB64, NOW);
     expect(res).toEqual({ ok: false, reason: "bad-signature" });
   });
 
   it("rejects a genuine key past its expiry", async () => {
-    const res = await verifyLicense(await issue({ ...valid, exp: NOW - 1 }), publicB64, NOW);
+    const res = await verifyLicense(issue({ ...valid, exp: NOW - 1 }), publicB64, NOW);
     expect(res).toEqual({ ok: false, reason: "expired" });
   });
 
   it("accepts a genuine key before its expiry", async () => {
-    const res = await verifyLicense(await issue({ ...valid, exp: NOW + 86400 }), publicB64, NOW);
+    const res = await verifyLicense(issue({ ...valid, exp: NOW + 86400 }), publicB64, NOW);
     expect(res.ok).toBe(true);
   });
 
-  it("says so plainly when the build has no key embedded", async () => {
-    const res = await verifyLicense(await issue(valid), "REPLACE_WITH_PUBLIC_KEY_SPKI_BASE64", NOW);
-    expect(res).toEqual({ ok: false, reason: "not-configured" });
+  it("distinguishes a missing key from an unreadable one", async () => {
+    expect(await verifyLicense(issue(valid), "REPLACE_WITH_PUBLIC_KEY_SPKI_BASE64", NOW))
+      .toEqual({ ok: false, reason: "no-key-embedded" });
+    expect(await verifyLicense(issue(valid), "aaaa", NOW))
+      .toEqual({ ok: false, reason: "key-unreadable" });
   });
 
   it("has human copy for every failure, with no em dashes", () => {
@@ -134,11 +127,56 @@ describe("isUnlocked", () => {
   });
 
   it("gates producing behind a verified licence", async () => {
-    const good = await verifyLicense(await issue(valid), publicB64, NOW);
+    const good = await verifyLicense(issue(valid), publicB64, NOW);
     for (const f of PAID_FEATURES) {
       expect(isUnlocked(f, null)).toBe(false);
       expect(isUnlocked(f, { ok: false, reason: "expired" })).toBe(false);
       expect(isUnlocked(f, good)).toBe(true);
     }
+  });
+});
+
+describe("runs without browser globals", () => {
+  /**
+   * This module runs in the plugin iframe AND the sandbox. The sandbox has no
+   * atob, no TextDecoder and no crypto.subtle. Each of those was found the hard
+   * way, one build at a time, by a licence that verified in the panel and was
+   * rejected where the work happens. Stripping them here is cheaper than
+   * finding the fourth one in Figma.
+   */
+  const GLOBALS = ["atob", "btoa", "TextDecoder", "TextEncoder", "crypto"] as const;
+
+  it("verifies a genuine key with every browser global removed", async () => {
+    const key = issue(valid);
+    const saved: Record<string, unknown> = {};
+    for (const g of GLOBALS) {
+      saved[g] = (globalThis as any)[g];
+      delete (globalThis as any)[g];
+    }
+    try {
+      const res = await verifyLicense(key, publicB64, NOW);
+      expect(res.ok).toBe(true);
+    } finally {
+      for (const g of GLOBALS) (globalThis as any)[g] = saved[g];
+    }
+  });
+
+  it("still rejects a forged key with every browser global removed", async () => {
+    const other = p256.utils.randomSecretKey();
+    const key = issue(valid, other);
+    const saved: Record<string, unknown> = {};
+    for (const g of GLOBALS) {
+      saved[g] = (globalThis as any)[g];
+      delete (globalThis as any)[g];
+    }
+    try {
+      expect((await verifyLicense(key, publicB64, NOW)).ok).toBe(false);
+    } finally {
+      for (const g of GLOBALS) (globalThis as any)[g] = saved[g];
+    }
+  });
+
+  it("rejects characters outside the alphabet", () => {
+    expect(parseLicense("CCS1.!!!!.####")).toBe("malformed-payload");
   });
 });

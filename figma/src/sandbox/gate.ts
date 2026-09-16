@@ -12,7 +12,7 @@
  * signature is verified in the UI, which has WebCrypto; this side re-checks
  * that a key is present, well-formed and unexpired before touching the file.
  */
-import { parseLicense, isExpired, verifyLicense } from "../shared/license";
+import { verifyLicense } from "../shared/license";
 
 const STORE_KEY = "chart-color-system:panel";
 
@@ -27,20 +27,32 @@ export function sandboxCanVerifySignatures(): boolean {
   return typeof crypto !== "undefined" && typeof crypto?.subtle?.importKey === "function";
 }
 
-export async function hasLicense(): Promise<boolean> {
+export interface GateResult {
+  ok: boolean;
+  /** Why not, in words. A gate that fails silently is unfixable in the field. */
+  detail: string;
+}
+
+export async function checkLicense(): Promise<GateResult> {
+  let key: string | undefined;
   try {
     const raw = (await figma.clientStorage.getAsync(STORE_KEY)) as Record<string, string> | undefined;
-    const key = raw?.license;
-    if (!key) return false;
-
-    if (sandboxCanVerifySignatures()) {
-      return (await verifyLicense(key)).ok;
-    }
-
-    const parsed = parseLicense(key);
-    if (typeof parsed === "string") return false;
-    return !isExpired(parsed.payload, Math.floor(Date.now() / 1000));
-  } catch {
-    return false;
+    key = raw?.license;
+  } catch (e) {
+    return { ok: false, detail: `Could not read stored licence: ${e instanceof Error ? e.message : String(e)}` };
   }
+
+  if (!key) return { ok: false, detail: "No licence key is stored. Enter one in the plugin panel." };
+
+  try {
+    const verified = await verifyLicense(key);
+    if (verified.ok) return { ok: true, detail: "" };
+    return { ok: false, detail: `Stored licence did not verify: ${verified.reason}.` };
+  } catch (e) {
+    return { ok: false, detail: `Licence check failed: ${e instanceof Error ? e.message : String(e)}` };
+  }
+}
+
+export async function hasLicense(): Promise<boolean> {
+  return (await checkLicense()).ok;
 }
