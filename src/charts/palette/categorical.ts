@@ -18,8 +18,8 @@ import {
   THRESHOLDS,
   type Posture,
 } from "../constraints";
-import { cvdDeltaE, deltaE, deltaL, fromCss, type ColorRecord } from "./distance";
-import { oklchToRgb, oklchOf, reduceToSrgb } from "./gamut";
+import { cvdDeltaE, deltaE, deltaL, type ColorRecord } from "./distance";
+import { oklchToRgb, reduceToSrgb } from "./gamut";
 import { converter, type Oklab } from "culori";
 
 const toOklab = converter("oklab");

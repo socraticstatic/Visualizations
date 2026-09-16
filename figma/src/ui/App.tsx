@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { PALETTE_VERSION } from "@engine/version";
+import { GenerateTab } from "./GenerateTab";
 
 type Tab = "generate" | "audit" | "simulate";
 
@@ -26,6 +27,19 @@ const TABS: Array<{ id: Tab; label: string; blurb: string }> = [
 
 export function App() {
   const [tab, setTab] = useState<Tab>("generate");
+  const [scheme, setScheme] = useState<"light" | "dark">(() =>
+    typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light"
+  );
+
+  useEffect(() => {
+    if (typeof matchMedia !== "function") return;
+    const mq = matchMedia("(prefers-color-scheme: dark)");
+    const onChange = () => setScheme(mq.matches ? "dark" : "light");
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
@@ -67,7 +81,11 @@ export function App() {
         id={`panel-${active.id}`}
         aria-labelledby={`tab-${active.id}`}
       >
-        <p className="note">{active.blurb}</p>
+        {tab === "generate" ? (
+          <GenerateTab theme={scheme} />
+        ) : (
+          <p className="note">{active.blurb}</p>
+        )}
       </main>
     </div>
   );
