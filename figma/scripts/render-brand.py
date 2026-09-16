@@ -17,7 +17,6 @@ Local and supersampled. Rasterising through a browser corrupted a PNG once with
 the byte count intact, and sips reported it fine because sips only reads the
 header.
 """
-import math
 
 import numpy as np
 from PIL import Image
