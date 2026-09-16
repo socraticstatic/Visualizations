@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { solveCategorical } from "@engine/palette/categorical";
 import { auditPalette } from "@engine/audit";
 import { POSTURE, type Posture } from "@engine/constraints";
 import { PALETTE_VERSION } from "@engine/version";
 import { DEFAULT_TOKENS } from "../shared/defaults";
 import { buildMockup, MAX_MOCKUP_NODES } from "../shared/mockup";
+import { BackgroundControl, type BackgroundChoice } from "./BackgroundControl";
 import { isUnlocked, type LicenseStatus } from "../shared/license";
 import { send } from "./bridge";
 
@@ -27,6 +28,7 @@ export function MockupTab({
 }) {
   const [posture, setPosture] = useState<Posture>("comparative");
   const [n, setN] = useState(6);
+  const [points, setPoints] = useState(12);
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
 
@@ -34,15 +36,35 @@ export function MockupTab({
   const cap = POSTURE[posture].maxCategorical;
   const count = Math.min(n, cap);
 
+  /**
+   * The surface the mockup will actually sit on.
+   *
+   * This tab solved against DEFAULT_TOKENS[theme].surface regardless - the
+   * plugin's own dark grey - and then drew the chart on it. So the one command
+   * that puts a chart on the user's canvas was the one command NOT solving
+   * against the canvas, in a plugin whose whole argument is that the
+   * background is an input.
+   */
+  const [background, setBackground] = useState<BackgroundChoice>({
+    color: tokens.surface,
+    source: "default",
+    refusal: null,
+  });
+  useEffect(() => {
+    setBackground((b) => (b.source === "default" ? { ...b, color: tokens.surface } : b));
+  }, [tokens.surface]);
+  const surface = background.color;
+  const chartTokens = useMemo(() => ({ ...tokens, surface }), [tokens, surface]);
+
   const mockup = useMemo(() => {
     const solve = solveCategorical({
       n: count,
       posture,
-      background: tokens.surface,
+      background: surface,
       grid: tokens.grid,
       locks: [],
     });
-    const audit = auditPalette(solve.palette, tokens.surface);
+    const audit = auditPalette(solve.palette, surface);
     const advisories: string[] = [];
     if (count > 7) advisories.push("Past ~7 series a chart reads as busy; small multiples often work better.");
     if (audit.worstContrastVsBg < 3) {
@@ -52,13 +74,14 @@ export function MockupTab({
       n: count,
       kind: "line",
       palette: solve.palette,
-      tokens,
+      tokens: chartTokens,
       verdict: audit.overall,
+      pointsPerSeries: points,
       relaxations: solve.relaxations,
       advisories,
       engineVersion: PALETTE_VERSION,
     });
-  }, [count, posture, tokens]);
+  }, [count, posture, tokens, chartTokens, surface, points]);
 
   const canInsert = isUnlocked("mockup", license);
 
@@ -98,6 +121,8 @@ export function MockupTab({
           </select>
         </label>
 
+        <BackgroundControl fallback={tokens.surface} value={background} onChange={setBackground} />
+
         <div className="field">
           <span className="field__label">
             Series <span className="num field__value">{count}</span>
@@ -107,6 +132,17 @@ export function MockupTab({
             <button className="stepper__btn" onClick={() => setN((v) => Math.max(1, Math.min(v, cap) - 1))} disabled={count <= 1} aria-label={`Decrease to ${count - 1}`}>−</button>
             <input className="stepper__range" type="range" min={1} max={cap} value={count} aria-label="Number of series" onChange={(e) => setN(Number(e.target.value))} />
             <button className="stepper__btn" onClick={() => setN((v) => Math.min(cap, Math.min(v, cap) + 1))} disabled={count >= cap} aria-label={`Increase to ${count + 1}`}>+</button>
+          </div>
+        </div>
+        <div className="field">
+          <span className="field__label">
+            Points per series <span className="num field__value">{points}</span>
+            <span className="field__hint"> of 120</span>
+          </span>
+          <div className="stepper">
+            <button className="stepper__btn" onClick={() => setPoints((v) => Math.max(2, v - 6))} disabled={points <= 2} aria-label={`Decrease to ${Math.max(2, points - 6)}`}>−</button>
+            <input className="stepper__range" type="range" min={2} max={120} step={2} value={points} aria-label="Points per series" onChange={(e) => setPoints(Number(e.target.value))} />
+            <button className="stepper__btn" onClick={() => setPoints((v) => Math.min(120, v + 6))} disabled={points >= 120} aria-label={`Increase to ${Math.min(120, points + 6)}`}>+</button>
           </div>
         </div>
       </section>

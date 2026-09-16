@@ -6,6 +6,7 @@
 import { describe, expect, it } from "vitest";
 import { buildMockup, MAX_MOCKUP_NODES } from "./mockup";
 import { DEFAULT_TOKENS } from "./defaults";
+import { fromCss } from "@engine/palette/distance";
 import { solveCategorical } from "@engine/palette/categorical";
 
 const tokens = DEFAULT_TOKENS.light;
@@ -66,6 +67,31 @@ describe("buildMockup", () => {
     expect(svg).toContain("Past ~7 series");
     expect(svg).toContain("minDeltaL");
     expect(svg.toLowerCase()).toContain("warn");
+  });
+
+  it("has a ceiling the panel can actually reach", () => {
+    // The ceiling protected against nothing while the panel was fixed at 12
+    // points: 12 series x 12 points is 170 nodes against a 1200 ceiling, so
+    // both the refusal and the sandbox throw were dead code and the spec's
+    // "refused with the estimate shown" could never be exercised. The panel
+    // now goes to 120 points.
+    const top = build(12, { pointsPerSeries: 120 });
+    expect(top.nodeEstimate).toBeGreaterThan(MAX_MOCKUP_NODES);
+    expect(top.refusal).not.toBeNull();
+  });
+
+  it("draws on the surface it was solved against", () => {
+    const paper = { ...tokens, surface: fromCss("#ffffff") };
+    const s = solveCategorical({
+      n: 4, posture: "comparative", background: paper.surface, grid: paper.grid, locks: [],
+    });
+    const { svg } = buildMockup({
+      n: 4, kind: "line", palette: s.palette, tokens: paper, verdict: "pass",
+      relaxations: [], advisories: [], engineVersion: "0.0.0-test",
+    });
+    // The background rect is the chosen surface, not the plugin's own default.
+    expect(svg).toContain('fill="#ffffff"');
+    expect(svg).not.toContain('fill="#14171a"');
   });
 
   it("refuses rather than freezing Figma, and shows the estimate", () => {
