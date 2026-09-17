@@ -65,3 +65,35 @@ describe("resolveBackground", () => {
     }
   });
 });
+
+/**
+ * Caught while recording the demo video on 2026-09-17: the plugin refused to
+ * measure its own mockup, and every chart inside a frame in a real file, because
+ * Figma reports PASS_THROUGH on containers and the check only allowed NORMAL.
+ */
+describe("PASS_THROUGH is not a blend hazard", () => {
+  const solid = (hex: string) => ({
+    kind: "solid" as const, visible: true, opacity: 1, blendMode: "NORMAL",
+    color: { r: parseInt(hex.slice(1, 3), 16) / 255, g: parseInt(hex.slice(3, 5), 16) / 255, b: parseInt(hex.slice(5, 7), 16) / 255 },
+  });
+  const layer = (blendMode: string, hex: string) => ({
+    nodeId: `n-${blendMode}`, blendMode, opacity: 1, fills: [solid(hex)],
+  });
+
+  it("resolves through a container that passes blending through", () => {
+    const res = resolveBackground([layer("PASS_THROUGH", "#1B1F24") as never]);
+    expect(res.ok).toBe(true);
+  });
+
+  it("still refuses a real blend mode", () => {
+    const res = resolveBackground([layer("MULTIPLY", "#1B1F24") as never]);
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.reason).toBe("non-normal-blend");
+  });
+
+  it("accepts a paint that reports no blend mode at all", () => {
+    const l = layer("NORMAL", "#1B1F24") as never as { fills: { blendMode?: string }[] };
+    delete l.fills[0].blendMode;
+    expect(resolveBackground([l as never]).ok).toBe(true);
+  });
+});

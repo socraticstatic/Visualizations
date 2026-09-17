@@ -37,19 +37,35 @@ const firstVisible = (fills: SerializedPaint[]): SerializedPaint | null =>
  *
  * @param chain ancestors of the selection, innermost first.
  */
+/**
+ * A blend mode that leaves the colour underneath alone.
+ *
+ * Figma reports "NORMAL" on shapes and "PASS_THROUGH" on containers, and a paint
+ * can report either. Both composite plainly; everything else (MULTIPLY, SCREEN,
+ * OVERLAY and the rest) changes the colour that reaches the eye, which is what
+ * this check exists to catch.
+ */
+export function isPlainBlend(mode: string | null | undefined): boolean {
+  return mode === "NORMAL" || mode === "PASS_THROUGH" || mode == null;
+}
+
 export function resolveBackground(chain: BackdropLayer[]): BackgroundResolution {
   if (chain.length === 0) return { ok: false, reason: "empty-chain" };
 
   const pending: Array<{ color: ColorRecord; alpha: number }> = [];
 
   for (const layer of chain) {
-    if (layer.blendMode !== "NORMAL") return { ok: false, reason: "non-normal-blend" };
+    // PASS_THROUGH is the default blend mode of every Figma frame, group and
+    // section: it means "do not isolate", which is exactly the ordinary case.
+    // Treating it as a hazard refused to measure almost any real file, including
+    // the mockups this plugin places itself.
+    if (!isPlainBlend(layer.blendMode)) return { ok: false, reason: "non-normal-blend" };
     if (layer.fills === "mixed") return { ok: false, reason: "mixed-fills" };
 
     const paint = firstVisible(layer.fills);
     if (!paint) continue;
 
-    if (paint.blendMode !== "NORMAL") return { ok: false, reason: "non-normal-blend" };
+    if (!isPlainBlend(paint.blendMode)) return { ok: false, reason: "non-normal-blend" };
     if (paint.kind === "image" || paint.kind === "video") return { ok: false, reason: "image-backdrop" };
     if (paint.kind === "gradient") return { ok: false, reason: "gradient-backdrop" };
     if (paint.kind !== "solid" || !paint.color) return { ok: false, reason: "no-opaque-backdrop" };

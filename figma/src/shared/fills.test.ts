@@ -69,3 +69,15 @@ describe("extractFills", () => {
     }
   });
 });
+
+describe("a container's PASS_THROUGH is not a reason to skip its colour", () => {
+  it("measures a node Figma reports as PASS_THROUGH", () => {
+    const node = {
+      id: "n1", name: "chart", type: "FRAME", opacity: 1, blendMode: "PASS_THROUGH",
+      fills: [{ kind: "solid", visible: true, opacity: 1, blendMode: "PASS_THROUGH", color: { r: 1, g: 0, b: 0 } }],
+    };
+    const out = extractFills([node as never]);
+    expect(out).toHaveLength(1);
+    expect(out[0].reason).toBeUndefined();
+  });
+});

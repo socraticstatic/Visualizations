@@ -1,4 +1,5 @@
 import type { ColorRecord } from "@engine/palette/distance";
+import { isPlainBlend } from "./background";
 import { fromFigmaRgb } from "./color";
 import type { SerializedNode, SerializedPaint } from "./protocol";
 
@@ -43,7 +44,7 @@ const skip = (n: SerializedNode, reason: SkipReason): ExtractedFill => ({
 
 function fromPaint(n: SerializedNode, p: SerializedPaint): ExtractedFill[] {
   if (!p.visible) return [skip(n, "hidden")];
-  if (p.blendMode !== "NORMAL") return [skip(n, "non-normal-blend")];
+  if (!isPlainBlend(p.blendMode)) return [skip(n, "non-normal-blend")];
 
   if (p.kind === "solid" && p.color) {
     return [
@@ -84,7 +85,8 @@ function fromPaint(n: SerializedNode, p: SerializedPaint): ExtractedFill[] {
 export function extractFills(nodes: SerializedNode[]): ExtractedFill[] {
   const out: ExtractedFill[] = [];
   for (const n of nodes) {
-    if (n.blendMode !== "NORMAL") {
+    // PASS_THROUGH is what Figma reports on a frame or group. See background.ts.
+    if (!isPlainBlend(n.blendMode)) {
       out.push(skip(n, "non-normal-blend"));
       continue;
     }
