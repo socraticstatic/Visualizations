@@ -13,4 +13,6 @@ Deploy and verify:
 cd mcp && npm run deploy && npm test
 ```
 
-`npm test` runs the contract tests against production; `MCP_BASE=<preview url> npm test` runs them against a preview deployment.
+`npm test` runs the contract tests against production plus the local card and handler tests; `MCP_BASE=<preview url> npm test` runs the contract tests against a preview deployment.
+
+Release to the MCP Registry (`io.github.socraticstatic/chart-color-system`): bump `version` in `server.json` and `package.json` (one number, the server reports it), deploy, then tag `mcp-v<version>` and push the tag. `.github/workflows/publish-mcp.yml` publishes over GitHub OIDC and refuses a tag that disagrees with the card or with what the live server reports.

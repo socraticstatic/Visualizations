@@ -1,8 +1,9 @@
 {
   "name": "chart-color-mcp",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
-  "description": "The Chart Color System as a read-only MCP server: solve, audit, simulate and ramp chart palettes with the same engine as socraticstatic.github.io/Visualizations. Its own Vercel project (chart-color-mcp). \"type\": \"module\" so the function runs as native ESM.",
+  "description": "The Chart Color System as a read-only MCP server: solve, audit, simulate and ramp chart palettes with the same engine as socraticstatic.github.io/Visualizations. Its own Vercel project (chart-color-mcp).",
   "scripts": {
     "deploy": "vercel --prod",
     "test": "node --test test/*.test.mjs"

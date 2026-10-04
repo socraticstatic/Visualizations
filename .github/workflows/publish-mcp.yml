@@ -6,8 +6,10 @@
 # none to expire, no device-code login. Same trust model as release-lib.yml,
 # which publishes the npm package without a token.
 #
-# Release is one command:
-#   git tag mcp-v0.1.1 && git push origin mcp-v0.1.1
+# Release: bump "version" in mcp/server.json and mcp/package.json, deploy
+# (cd mcp && vercel --prod && npm test), then tag the same version:
+#   git tag mcp-v0.1.2 && git push origin mcp-v0.1.2
+# The job refuses a tag that disagrees with the card or with the live server.
 #
 # mcp-v* rather than v*, matching lib-v* for the npm package, so the two
 # release trains cannot trigger each other.
@@ -42,21 +44,42 @@ jobs:
       # The server card is served from the live endpoint by api/well-known.js,
       # which imports this exact file. If it is malformed the endpoint 500s, so
       # it gets checked before anything is published, not after.
-      - name: Test the server card
-        run: node --test test/well-known.test.mjs
+      - name: Test the server card and the handler's metadata
+        run: node --test test/well-known.test.mjs test/handler.test.mjs
 
-      - name: Take the version from the tag
+      # server.json is the one place the version lives: api/mcp.js reports it
+      # and api/well-known.js serves it. The tag must agree with it, never
+      # overwrite it - the 0.1.1 release rewrote the card in CI and left the
+      # live server saying 0.1.0 while the registry said 0.1.1.
+      - name: Tag must match server.json
         if: startsWith(github.ref, 'refs/tags/mcp-v')
         run: |
-          VERSION="${GITHUB_REF#refs/tags/mcp-v}"
-          echo "Publishing version $VERSION"
-          jq --arg v "$VERSION" '.version = $v' server.json > server.tmp
-          mv server.tmp server.json
-          echo "MCP_VERSION=$VERSION" >> "$GITHUB_ENV"
+          TAG="${GITHUB_REF#refs/tags/mcp-v}"
+          CARD="$(jq -r .version server.json)"
+          if [ "$TAG" != "$CARD" ]; then
+            echo "::error::tag mcp-v$TAG does not match server.json version $CARD"
+            exit 1
+          fi
+          echo "Publishing version $CARD"
+
+      # The registry entry points at the live endpoint; publish only what it
+      # already serves, or the card and the server disagree for everyone.
+      - name: Live server must already report this version
+        run: |
+          CARD="$(jq -r .version server.json)"
+          LIVE="$(curl -fsS -X POST https://chart-color-mcp.vercel.app/mcp \
+            -H 'content-type: application/json' -H 'accept: application/json, text/event-stream' \
+            -d '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' \
+            | sed -n 's/^data: //p' | jq -r .result.serverInfo.version)"
+          if [ "$LIVE" != "$CARD" ]; then
+            echo "::error::live server reports $LIVE, card says $CARD - deploy first (cd mcp && vercel --prod)"
+            exit 1
+          fi
 
       - name: Install mcp-publisher
+        # Pinned release; update deliberately, not via `latest`.
         run: |
-          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
           ./mcp-publisher --version || true
 
       - name: Authenticate over OIDC

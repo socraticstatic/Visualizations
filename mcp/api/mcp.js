@@ -12,6 +12,7 @@
 // browser callers limited to the origins below. Server-to-server callers
 // (ChatGPT, Claude) send no Origin.
 
+import { readFileSync } from 'node:fs';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
@@ -26,7 +27,11 @@ const VISION_MODES = ['normal', 'deutan', 'protan', 'tritan', 'achromatopsia'];
 
 const APP = 'https://socraticstatic.github.io/Visualizations/';
 const DOCS = `${APP}mcp-docs.html`;
-const VERSION = '0.1.0';
+// One version, declared once: the registry card. The server reports it, the
+// discovery document serves it, and the publish workflow refuses a tag that
+// disagrees with it.
+export const VERSION = JSON.parse(readFileSync(new URL('../server.json', import.meta.url), 'utf8')).version;
+const APP_ORIGIN = new URL(APP).origin;
 const ORIGINS = ['socraticstatic.github.io', 'chatgpt.com', 'openai.com', 'claude.ai', 'anthropic.com', 'localhost'];
 
 // The solver accepts up to MAX_SLOTS, but the 2026-08-16 audit showed the
@@ -179,7 +184,7 @@ function originOk(req) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', req.headers.origin && originOk(req) ? req.headers.origin : APP);
+  res.setHeader('Access-Control-Allow-Origin', req.headers.origin && originOk(req) ? req.headers.origin : APP_ORIGIN);
   res.setHeader('Access-Control-Allow-Headers', 'content-type, mcp-protocol-version, mcp-session-id, accept, authorization');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Expose-Headers', 'mcp-protocol-version');
