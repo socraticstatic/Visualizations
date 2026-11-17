@@ -38,10 +38,13 @@ async function settledCount(): Promise<number> {
 }
 
 describe("SystemAudit", () => {
+  // The first mount in this file pays the cold start: about 2.2 s on a quiet
+  // four-core machine, and past the 5 s default on a loaded CI runner, where it
+  // failed the 0.8.1 release run on 2026-11-17. It gets the sweep's margin.
   it("defaults to the current chart type", () => {
     render(<SystemAudit {...props} />);
     expect(screen.getByRole("radio", { name: /this chart type/i })).toBeChecked();
-  });
+  }, SWEEP_TIMEOUT);
 
   it("offers both scopes", () => {
     render(<SystemAudit {...props} />);
