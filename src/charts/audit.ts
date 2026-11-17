@@ -8,7 +8,7 @@
  * ≥ 3:1 per WCAG 2.2 SC 1.4.11 "Non-text contrast").
  */
 import type { ColorRecord } from "./palette/distance";
-import { deltaE } from "./palette/distance";
+import { compositeOver, deltaE } from "./palette/distance";
 import { simulateRgb } from "./palette/cvd";
 import { converter, formatHex, type Oklab } from "culori";
 import { THRESHOLDS, CVD_SEVERITY } from "./constraints";
@@ -159,6 +159,16 @@ export function auditPalette(
 ): AuditReport {
   const isRamp = ramp !== false;
   const rampKind: RampKind | null = typeof ramp === "string" ? ramp : null;
+
+  // A translucent color is seen blended with the background, so that blend
+  // is what every check below measures. A translucent background has nothing
+  // known beneath it, so it cannot be audited against.
+  if (background.alpha !== undefined && background.alpha < 1) {
+    throw new Error(
+      `auditPalette: the background ${background.hex} is not opaque (alpha ${background.alpha}). Give the solid color the marks sit on.`
+    );
+  }
+  palette = palette.map((c) => compositeOver(c, background));
 
   const perVision: VisionResult[] = VISION_MODES.map((mode) => {
     const threshold =

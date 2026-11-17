@@ -14,6 +14,7 @@ export {
   fromCss,
   fromHsl,
   fromCssVar,
+  compositeOver,
   deltaE,
   deltaL,
   cvdDeltaE,

@@ -16,6 +16,7 @@ import { readFileSync } from 'node:fs';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { z } from 'zod';
+import { parse } from 'culori';
 import {
   fromCss, solveCategorical, auditPalette, simulateColor, contrastRatio,
   sequentialRamp, divergingRamp, MAX_SLOTS, PALETTE_VERSION,
@@ -49,9 +50,33 @@ function color(css, what = 'color') {
   if (!c || !Number.isFinite(c.rgb.r) || !Number.isFinite(c.oklab.l)) {
     throw new Error(`Unrecognized ${what} "${css}". Use #hex, rgb(), hsl(), or a CSS color name.`);
   }
+  // The engine's records carry no opacity, so read it here. A translucent
+  // color was once measured as if solid: "transparent" on white came back as
+  // black at 21:1 and passed.
+  const alpha = parse(String(css).trim())?.alpha;
+  return alpha !== undefined && alpha < 1 ? { ...c, alpha: Math.max(0, alpha) } : c;
+}
+const isTranslucent = (c) => c.alpha !== undefined && c.alpha < 1;
+
+// A color that must be opaque for the tool to mean anything: a background,
+// an anchor the solver keeps exactly, a ramp endpoint, a color to simulate
+// with no background to blend it into.
+function solid(css, what = 'color') {
+  const c = color(css, what);
+  if (isTranslucent(c)) {
+    throw new Error(`The ${what} "${css}" is translucent (alpha ${r3(c.alpha)}). Give the opaque color it renders as.`);
+  }
   return c;
 }
-const colors = (list, what) => list.map((s) => color(s, what));
+
+// What a translucent mark looks like on an opaque background: source-over
+// compositing in sRGB, as browsers do by default.
+function over(c, bg) {
+  if (!isTranslucent(c)) return c;
+  const mix = (k) => c.rgb[k] * c.alpha + bg.rgb[k] * (1 - c.alpha);
+  return { ...fromCss(`color(srgb ${mix('r')} ${mix('g')} ${mix('b')})`), alpha: c.alpha };
+}
+const colors = (list, what) => list.map((s) => solid(s, what));
 const isDark = (bg) => bg.oklab.l < 0.5;
 const appUrl = (n, bg) => `${APP}#n=${n}&t=${isDark(bg) ? 'dark' : 'light'}&v=normal`;
 
@@ -62,6 +87,22 @@ function auditOut(palette, bg, ramp = false) {
     bg_pass: a.bgPass,
     worst_contrast_vs_bg: r3(a.worstContrastVsBg),
     per_vision: a.perVision.map((v) => ({ mode: v.mode, min_delta_e: r3(v.minDeltaE), threshold: r3(v.threshold), pass: v.pass })),
+  };
+}
+
+// The audit_palette tool's answer, exported so it can be tested without a
+// transport. Translucent colors are composited over the background first:
+// `hex` is the color as rendered and `alpha` is the opacity that was given.
+export function auditTool({ colors: list, background = '#ffffff', ramp = false }) {
+  const bg = solid(background, 'background');
+  const pal = list.map((s) => over(color(s, 'color'), bg));
+  return {
+    ...auditOut(pal, bg, ramp),
+    per_color: pal.map((c, i) => ({
+      slot: i + 1, hex: c.hex, contrast_vs_background: r3(contrastRatio(c, bg)),
+      ...(isTranslucent(c) ? { alpha: r3(c.alpha), composited_over_background: true } : {}),
+    })),
+    background: bg.hex, engine_version: PALETTE_VERSION, app_url: appUrl(Math.min(pal.length, MAX_SLOTS), bg),
   };
 }
 
@@ -90,8 +131,8 @@ function buildServer() {
     annotations: ro,
   }, async ({ n, anchors, background, grid, posture }) => {
     try {
-      const bg = color(background, 'background');
-      const gridC = color(grid ?? (isDark(bg) ? '#374151' : '#e5e7eb'), 'grid');
+      const bg = solid(background, 'background');
+      const gridC = solid(grid ?? (isDark(bg) ? '#374151' : '#e5e7eb'), 'grid');
       const locks = colors(anchors, 'anchor');
       const r = solveCategorical({ n, posture, background: bg, grid: gridC, locks });
       return text({
@@ -111,23 +152,15 @@ function buildServer() {
 
   server.registerTool('audit_palette', {
     title: 'Audit a chart palette',
-    description: 'Audit existing chart colors for accessibility: pairwise OKLab separation under normal vision, deuteranopia, protanopia, tritanopia and achromatopsia, plus WCAG 2.2 non-text contrast (3:1) of every color against the chart background. Returns a pass / warn / fail verdict with the numbers behind it. Set ramp=true for sequential or diverging scales, whose steps are meant to be close.',
+    description: 'Audit existing chart colors for accessibility: pairwise OKLab separation under normal vision, deuteranopia, protanopia, tritanopia and achromatopsia, plus WCAG 2.2 non-text contrast (3:1) of every color against the chart background. A translucent color is composited over the background first and reported as rendered. Returns a pass / warn / fail verdict with the numbers behind it. Set ramp=true for sequential or diverging scales, whose steps are meant to be close.',
     inputSchema: {
       colors: z.array(z.string()).min(1).max(24).describe('Palette colors in slot order (CSS syntax)'),
       background: z.string().default('#ffffff').describe('Chart background color'),
       ramp: z.boolean().default(false).describe('true for a sequential or diverging scale (skips pairwise separation)'),
     },
     annotations: ro,
-  }, async ({ colors: list, background, ramp }) => {
-    try {
-      const bg = color(background, 'background');
-      const pal = colors(list, 'color');
-      return text({
-        ...auditOut(pal, bg, ramp),
-        per_color: pal.map((c, i) => ({ slot: i + 1, hex: c.hex, contrast_vs_background: r3(contrastRatio(c, bg)) })),
-        background: bg.hex, engine_version: PALETTE_VERSION, app_url: appUrl(Math.min(pal.length, MAX_SLOTS), bg),
-      });
-    } catch (e) { return fail(e.message); }
+  }, async (args) => {
+    try { return text(auditTool(args)); } catch (e) { return fail(e.message); }
   });
 
   server.registerTool('simulate_palette', {
@@ -162,11 +195,11 @@ function buildServer() {
     annotations: ro,
   }, async ({ kind, start, end, mid, steps, background }) => {
     try {
-      const bg = color(background, 'background');
-      const a = color(start, 'start'), b = color(end, 'end');
+      const bg = solid(background, 'background');
+      const a = solid(start, 'start'), b = solid(end, 'end');
       const ramp = kind === 'sequential'
         ? sequentialRamp(a, b, steps)
-        : divergingRamp(a, color(mid ?? (isDark(bg) ? '#4b5563' : '#f5f5f4'), 'mid'), b, steps);
+        : divergingRamp(a, solid(mid ?? (isDark(bg) ? '#4b5563' : '#f5f5f4'), 'mid'), b, steps);
       return text({
         kind, ramp: ramp.map((c, i) => ({ step: i + 1, hex: c.hex, contrast_vs_background: r3(contrastRatio(c, bg)) })),
         audit: auditOut(ramp, bg, true), background: bg.hex, engine_version: PALETTE_VERSION,
