@@ -1,7 +1,7 @@
 {
-  "engineVersion": "0.8.0",
-  "measuredOn": "2026-09-16",
-  "measuredWith": "node v24.19.0",
+  "engineVersion": "0.8.1",
+  "measuredOn": "2026-11-17",
+  "measuredWith": "node v22.23.4",
   "solved6": {
     "worstContrast": 4.565897011713226,
     "worstCvdDeltaE": 11.80109376032578,
