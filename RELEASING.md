@@ -20,7 +20,11 @@ solver once returned a different palette per JavaScript engine
 
 Order matters. Step 2 cannot resolve until step 1 is on the registry.
 
-1. **npm.** `npm run build:lib && npm run publish:lib`.
+1. **npm.** Run the "Release chart-color-system" workflow from the Actions
+   tab on `main`. It tests, builds, publishes with provenance through npm
+   trusted publishing, and creates the `lib-vX.Y.Z` tag. First used for
+   0.8.1 on 2026-11-17. The manual path is still
+   `npm run build:lib && npm run publish:lib`.
    Auth is a WebAuthn security key on the `socraticstatic` account; there is no
    TOTP fallback, so this cannot be automated and has to be driven by a human
    at the machine.

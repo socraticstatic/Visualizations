@@ -8,9 +8,16 @@ name: Release chart-color-system
 # After that, no token and no 2FA tap is ever needed: `git tag lib-v0.7.3 &&
 # git push origin lib-v0.7.3` is the entire release.
 
+#
+# It can also be run by hand from the Actions tab, on main only. A manual run
+# publishes the version in package.json, then creates the lib-vX.Y.Z tag
+# itself. A tag created by the workflow's own token does not start a second
+# run.
+
 on:
   push:
     tags: ["lib-v*"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,7 +26,15 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # a manual run creates the tag
+      id-token: write
     steps:
+      - name: Manual runs release from main only
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Run this workflow from main, not $GITHUB_REF."
+          exit 1
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
@@ -31,6 +46,7 @@ jobs:
       - run: npm install -g npm@latest
       - run: npm ci
       - name: Tag must match package version
+        if: github.event_name == 'push'
         run: |
           TAG="${GITHUB_REF_NAME#lib-v}"
           PKG="$(node -p "require('./package.json').version")"
@@ -40,3 +56,10 @@ jobs:
       - run: npm test
       - run: npm run build:lib
       - run: npm publish ./dist-lib --provenance --access public
+      - name: Tag the release (manual runs)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          gh api "repos/$GITHUB_REPOSITORY/git/refs" -f ref="refs/tags/lib-v$VERSION" -f sha="$GITHUB_SHA"

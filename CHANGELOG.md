@@ -8,6 +8,8 @@ The version here is also exported from code as `PALETTE_VERSION`.
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-11-17
+
 ### Fixed
 - **Transparency was ignored.** `fromCss` dropped alpha, so `transparent` and `rgba(0, 0, 0, 0.1)` on white were measured as solid black, 21:1, and passed the contrast floor. `fromCss` now records `alpha` on a translucent color, and `auditPalette` composites every color over the background before measuring, which is how it renders. A translucent background is an error. The hosted MCP server composites the same way in `audit_palette`, reporting the composited hex with the input's alpha, and refuses a translucent background, anchor, ramp endpoint or color to simulate, where there is nothing to blend it into. No solver output changes: built-in palettes are opaque.
 
