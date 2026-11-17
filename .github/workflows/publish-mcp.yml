@@ -44,8 +44,8 @@ jobs:
       # The server card is served from the live endpoint by api/well-known.js,
       # which imports this exact file. If it is malformed the endpoint 500s, so
       # it gets checked before anything is published, not after.
-      - name: Test the server card and the handler's metadata
-        run: node --test test/well-known.test.mjs test/handler.test.mjs
+      - name: Test the server card, the handler metadata and transparency
+        run: node --test test/well-known.test.mjs test/handler.test.mjs test/alpha.test.mjs
 
       # server.json is the one place the version lives: api/mcp.js reports it
       # and api/well-known.js serves it. The tag must agree with it, never

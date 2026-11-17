@@ -79,3 +79,11 @@ test('a bad color is a tool error, not a crash', async () => {
   const r = await call('audit_palette', { colors: ['not-a-color'], background: '#ffffff' });
   assert.equal(r.isError, true);
 });
+
+// Fails against a deployment that predates the transparency fix: that server
+// measures "transparent" as solid black, 21:1, and passes it.
+test('audit_palette measures a transparent color as it renders, not as black', async () => {
+  const out = parse(await call('audit_palette', { colors: ['transparent'], background: '#ffffff' }));
+  assert.equal(out.per_color[0].contrast_vs_background, 1);
+  assert.equal(out.bg_pass, false);
+});

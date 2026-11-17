@@ -13,6 +13,13 @@ export interface ColorRecord {
   hex: string;
   rgb: { r: number; g: number; b: number };
   oklab: { l: number; a: number; b: number };
+  /**
+   * Opacity in 0..1, present only when the source color was translucent.
+   * Absent means opaque. hex, rgb and oklab describe the color with alpha
+   * ignored, so a translucent record has to go through `compositeOver`
+   * before it is measured.
+   */
+  alpha?: number;
 }
 
 export function fromCss(css: string): ColorRecord {
@@ -20,10 +27,39 @@ export function fromCss(css: string): ColorRecord {
   if (!parsed) throw new Error(`Cannot parse color: ${css}`);
   const lab = toOklab(parsed) as Oklab;
   const rgb = toRgb(parsed) as Rgb;
-  return {
+  const record: ColorRecord = {
     hex: formatHex(parsed) ?? "#000000",
     ...normalizeRecordParts(
       { r: rgb.r ?? 0, g: rgb.g ?? 0, b: rgb.b ?? 0 },
+      { l: lab.l ?? 0, a: lab.a ?? 0, b: lab.b ?? 0 }
+    ),
+  };
+  if (parsed.alpha !== undefined && parsed.alpha < 1) record.alpha = Math.max(0, parsed.alpha);
+  return record;
+}
+
+/**
+ * The color a viewer sees when `color` is drawn on an opaque `background`:
+ * source-over compositing in sRGB, as browsers do by default. An opaque
+ * color is returned unchanged.
+ *
+ * Without this, `transparent` and `rgba(0, 0, 0, 0.1)` on white were both
+ * measured as solid black, 21:1, and passed the contrast floor.
+ */
+export function compositeOver(color: ColorRecord, background: ColorRecord): ColorRecord {
+  const a = color.alpha;
+  if (a === undefined || a >= 1) return color;
+  const mixed = {
+    mode: "rgb" as const,
+    r: color.rgb.r * a + background.rgb.r * (1 - a),
+    g: color.rgb.g * a + background.rgb.g * (1 - a),
+    b: color.rgb.b * a + background.rgb.b * (1 - a),
+  };
+  const lab = toOklab(mixed) as Oklab;
+  return {
+    hex: formatHex(mixed) ?? "#000000",
+    ...normalizeRecordParts(
+      { r: mixed.r, g: mixed.g, b: mixed.b },
       { l: lab.l ?? 0, a: lab.a ?? 0, b: lab.b ?? 0 }
     ),
   };
