@@ -3,7 +3,7 @@
   "name": "io.github.socraticstatic/chart-color-system",
   "title": "Chart Color System",
   "description": "Solve, audit and simulate colorblind-safe chart palettes. WCAG contrast, OKLab ΔE. Read-only.",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "websiteUrl": "https://socraticstatic.github.io/Visualizations/mcp-docs.html",
   "icons": [
     {
