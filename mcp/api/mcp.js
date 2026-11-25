@@ -33,6 +33,7 @@ const DOCS = `${APP}mcp-docs.html`;
 // disagrees with it.
 export const VERSION = JSON.parse(readFileSync(new URL('../server.json', import.meta.url), 'utf8')).version;
 const APP_ORIGIN = new URL(APP).origin;
+const MAX_BODY_BYTES = 32 * 1024;
 const ORIGINS = ['socraticstatic.github.io', 'chatgpt.com', 'openai.com', 'claude.ai', 'anthropic.com', 'localhost'];
 
 // The solver accepts up to MAX_SLOTS, but the 2026-08-16 audit showed the
@@ -226,6 +227,15 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST, OPTIONS');
     res.status(405).json({ jsonrpc: '2.0', error: { code: -32000, message: `This server is stateless: send JSON-RPC over POST. Docs: ${DOCS}` }, id: null });
+    return;
+  }
+  // The largest real call is 24 short color strings, well under 2 KB. zod 3
+  // walks every element of an array before .max() refuses it, so an oversized
+  // list would cost memory before the schema said no. Refuse it here instead.
+  const declared = Number(req.headers['content-length'] || 0);
+  const size = declared || (req.body ? JSON.stringify(req.body).length : 0);
+  if (size > MAX_BODY_BYTES) {
+    res.status(413).json({ jsonrpc: '2.0', error: { code: -32600, message: `Request too large (${size} bytes; limit ${MAX_BODY_BYTES})` }, id: null });
     return;
   }
   const server = buildServer();

@@ -40,3 +40,20 @@ test('the card names the monorepo subfolder and a same-site https icon', () => {
     assert.ok(/^image\/(png|svg\+xml|jpeg|webp)$/.test(icon.mimeType), `mimeType ${icon.mimeType}`);
   }
 });
+
+test('an oversized request is refused before it reaches the schema checks', async () => {
+  // zod 3 walks every element of an array before .max() refuses it, so a
+  // few-megabyte list of colors costs memory the real requests never need.
+  const res = mockRes();
+  const colors = Array.from({ length: 200000 }, () => '#000000');
+  const body = { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'audit_palette', arguments: { colors } } };
+  await handler({ method: 'POST', headers: { 'content-type': 'application/json' }, body }, res);
+  assert.equal(res.statusCode, 413);
+  assert.equal(res.body.error.code, -32600);
+});
+
+test('an oversized request is refused on its declared length alone', async () => {
+  const res = mockRes();
+  await handler({ method: 'POST', headers: { 'content-length': String(5 * 1024 * 1024) }, body: {} }, res);
+  assert.equal(res.statusCode, 413);
+});
